@@ -295,7 +295,7 @@ int main(int argc, char const ** argv)
         if (options.filter_type == BLOOM)
         {
             typedef BinningDirectory<InterleavedBloomFilter,
-                                     BDConfig<Dna, Normal, Uncompressed> > BinningDirectoriesIBF;
+                                     BDConfig<Dna, Minimizer<19, 25>, Uncompressed> > BinningDirectoriesIBF;
             BinningDirectoriesIBF filter;
             retrieve(filter, toCString(options.filter_file));
             update_filter(options, filter);
@@ -303,7 +303,7 @@ int main(int argc, char const ** argv)
         else if (options.filter_type == KMER_DIRECT)
         {
             typedef BinningDirectory<DirectAddressing,
-                                     BDConfig<Dna, Normal, Uncompressed> > BinningDirectoriesDA;
+                                     BDConfig<Dna, Minimizer<19, 25>, Uncompressed> > BinningDirectoriesDA;
 
             BinningDirectoriesDA filter;
             retrieve(filter, toCString(options.filter_file));

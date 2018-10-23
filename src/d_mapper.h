@@ -85,6 +85,11 @@ public:
         return contig_offsets[cur_bin_number];
     }
 
+    uint16_t get_errors(uint16_t read_len)
+    {
+        return errorRate * read_len;
+    }
+
     uint16_t get_threshold(uint16_t read_len)
     {
         uint16_t max_error = errorRate * read_len;
@@ -353,19 +358,20 @@ inline void clasify_loaded_reads(Mapper<TSpec, TMainConfig>  & d_mapper, TFilter
             uint16_t threshold = 0;
             for (uint32_t readID = taskNo*batchSize; readID < number_of_reads && readID < (taskNo +1) * batchSize; ++readID)
             {
-                threshold = d_options.get_threshold(length(d_mapper.reads.seqs[readID]));
+                // threshold = d_options.get_threshold(length(d_mapper.reads.seqs[readID]));
+                threshold = d_options.get_errors(length(d_mapper.reads.seqs[readID]));
                 std::vector<bool> selectedBins(d_options.number_of_bins, false);
-                // select(filter, selectedBins, d_mapper.reads.seqs[readID], threshold);
-                // select(filter, selectedBins, d_mapper.reads.seqs[readID + number_of_reads], threshold);
-                select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID], threshold);
-                select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID + number_of_reads], threshold);
+                select(filter, selectedBins, d_mapper.reads.seqs[readID], threshold);
+                select(filter, selectedBins, d_mapper.reads.seqs[readID + number_of_reads], threshold);
+                // select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID], threshold);
+                // select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID + number_of_reads], threshold);
 
                 if (IsSameType<typename TMainConfig::TSequencing, PairedEnd>::VALUE)
                 {
-                    // select(filter, selectedBins, d_mapper.reads.seqs[readID + 2*number_of_reads], threshold);
-                    // select(filter, selectedBins, d_mapper.reads.seqs[readID + 3*number_of_reads], threshold);
-                    select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID + 2*number_of_reads], threshold);
-                    select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID + 3*number_of_reads], threshold);
+                    select(filter, selectedBins, d_mapper.reads.seqs[readID + 2*number_of_reads], threshold);
+                    select(filter, selectedBins, d_mapper.reads.seqs[readID + 3*number_of_reads], threshold);
+                    // select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID + 2*number_of_reads], threshold);
+                    // select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID + 3*number_of_reads], threshold);
                 }
 
                 for (uint32_t binNo = 0; binNo < d_options.number_of_bins; ++binNo)
@@ -922,7 +928,7 @@ inline void spawn_d_mapper(DisOptions & d_options,
     if (d_options.filter_type == BLOOM)
     {
         typedef BinningDirectory<InterleavedBloomFilter,
-                                 BDConfig<Dna, Normal, Uncompressed> > BinningDirectoriesIBF;
+                                 BDConfig<Dna, Minimizer<19, 25>, Uncompressed> > BinningDirectoriesIBF;
 
         BinningDirectoriesIBF filter;
         retrieve(filter, toCString(d_options.filter_file));
@@ -936,7 +942,7 @@ inline void spawn_d_mapper(DisOptions & d_options,
     else if (d_options.filter_type == KMER_DIRECT)
     {
         typedef BinningDirectory<DirectAddressing,
-                                 BDConfig<Dna, Normal, Uncompressed> > BinningDirectoriesDA;
+                                 BDConfig<Dna, Minimizer<19, 25>, Uncompressed> > BinningDirectoriesDA;
         BinningDirectoriesDA filter;
         retrieve(filter, toCString(d_options.filter_file));
 
@@ -950,7 +956,7 @@ inline void spawn_d_mapper(DisOptions & d_options,
     {
         // dummy filter in case of nofilter option
         typedef BinningDirectory<InterleavedBloomFilter,
-                                 BDConfig<Dna, Normal, Uncompressed> > BinningDirectoriesIBF;
+                                 BDConfig<Dna, Minimizer<19, 25>, Uncompressed> > BinningDirectoriesIBF;
 
         BinningDirectoriesIBF filter(64, 3, 20, 1);
 
