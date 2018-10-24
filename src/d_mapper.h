@@ -39,7 +39,7 @@
 #ifdef FILTER_SKIP_KMER
     const int _FILTER_SKIP_KMER = FILTER_SKIP_KMER;
 #else
-    const int _FILTER_SKIP_KMER = 0;
+    const int _FILTER_SKIP_KMER = 1;
 #endif
 
 using namespace seqan;
