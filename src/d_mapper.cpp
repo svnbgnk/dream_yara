@@ -186,6 +186,12 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & d_options)
     setMaxValue(parser, "error-rate", "10");
     setDefaultValue(parser, "error-rate", 100.0 * d_options.errorRate);
 
+    addOption(parser, ArgParseOption("-p", "--penalty", "Lower threshold by p.",
+                                     ArgParseOption::INTEGER));
+    setMinValue(parser, "penalty", "0");
+    setMaxValue(parser, "penalty", "10");
+    setDefaultValue(parser, "penalty", 0);
+
     addOption(parser, ArgParseOption("s", "strata-rate", "Consider suboptimal alignments within this percentual number \
                                      of errors from the optimal alignment. Increase this threshold to increase \
                                      the number of alternative alignments at the expense of runtime.",

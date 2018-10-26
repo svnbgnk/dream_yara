@@ -361,8 +361,8 @@ inline void clasify_loaded_reads(Mapper<TSpec, TMainConfig>  & d_mapper, TFilter
                 // threshold = d_options.get_threshold(length(d_mapper.reads.seqs[readID]));
                 threshold = d_options.get_errors(length(d_mapper.reads.seqs[readID]));
                 std::vector<bool> selectedBins(d_options.number_of_bins, false);
-                select(filter, selectedBins, d_mapper.reads.seqs[readID], threshold);
-                select(filter, selectedBins, d_mapper.reads.seqs[readID + number_of_reads], threshold);
+                select(filter, selectedBins, d_mapper.reads.seqs[readID], threshold, d_options.penalty);
+                select(filter, selectedBins, d_mapper.reads.seqs[readID + number_of_reads], threshold, d_options.penalty);
                 // select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID], threshold);
                 // select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID + number_of_reads], threshold);
 
