@@ -370,8 +370,8 @@ inline void clasify_loaded_reads(Mapper<TSpec, TMainConfig>  & d_mapper, TFilter
 
                 if (IsSameType<typename TMainConfig::TSequencing, PairedEnd>::VALUE)
                 {
-                    select(filter, selectedBins, d_mapper.reads.seqs[readID + 2*number_of_reads], threshold);
-                    select(filter, selectedBins, d_mapper.reads.seqs[readID + 3*number_of_reads], threshold);
+                    select(filter, selectedBins, d_mapper.reads.seqs[readID + 2*number_of_reads], threshold, d_options.penalty);
+                    select(filter, selectedBins, d_mapper.reads.seqs[readID + 3*number_of_reads], threshold, d_options.penalty);
                     // select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID + 2*number_of_reads], threshold);
                     // select<Offset<_FILTER_SKIP_KMER>>(filter, selectedBins, d_mapper.reads.seqs[readID + 3*number_of_reads], threshold);
                 }
