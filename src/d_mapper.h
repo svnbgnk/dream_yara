@@ -70,6 +70,8 @@ public:
     uint32_t                kmer_size = 20;
     uint32_t                number_of_bins = 64;
 
+    uint32_t                penalty = 0;
+
     uint32_t                cur_bin_number = 0;
     uint64_t                filtered_reads = 0;
     std::vector<uint32_t>   contig_offsets;

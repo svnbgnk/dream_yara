@@ -346,6 +346,8 @@ parseCommandLine(DisOptions & d_options, ArgumentParser & parser, int argc, char
     if (getOptionValue(errorRate, parser, "error-rate"))
         d_options.errorRate = errorRate / 100.0;
 
+    getOptionValue(d_options.penalty, parser, "penalty");
+
     unsigned strataRate;
     if (getOptionValue(strataRate, parser, "strata-rate"))
         d_options.strataRate = strataRate / 100.0;
