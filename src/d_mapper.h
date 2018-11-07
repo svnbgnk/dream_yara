@@ -395,7 +395,6 @@ inline void loadFilteredReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCo
 {
 
     start(mainMapper.timer);
-
     if(disOptions.filterType == NONE)
     {
         for (uint32_t i = 0; i< getReadSeqsCount(mainMapper.reads.seqs); ++i)
@@ -480,7 +479,6 @@ void spawnMapper(Options const & options,
                  TSequencing const & /*sequencing*/,
                  TSeedsDistance const & /*distance*/)
 {
-
     typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TConfig;
     Mapper<void, TConfig> mapper(options);
     runMapper(mapper, mainMapper, disOptions);
@@ -842,7 +840,6 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
 // ----------------------------------------------------------------------------
 std::vector<uint32_t> sortedBins(DisOptions const & disOptions)
 {
-
     std::vector<uint32_t> sortedBinIndex(disOptions.numberOfBins);
     iota(sortedBinIndex.begin(), sortedBinIndex.end(), 0);
 
@@ -870,17 +867,29 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
         if (mainMapper.options.verbose > 1) printRuler(std::cerr);
         loadReads(mainMapper);
         if (empty(mainMapper.reads.seqs)) break;
-
         prepairMainMapper(mainMapper, filter, disOptions);
 
-        for (auto i: sortedBins(disOptions))
+        if(disOptions.filterType == NONE){
+            for(uint32_t i = 0; i < disOptions.numberOfBins; ++i){
+                disOptions.currentBinNo = i;
+                Options options = mainMapper.options;
+                appendFileName(options.contigsIndexFile, disOptions.IndicesDirectory, i);
+                if (!openContigsLimits(options))
+                    throw RuntimeError("Error while opening reference file.");
+                configureMapper<TSpec, TMainConfig>(options, mainMapper, disOptions);
+            }
+        }
+        else
         {
-            disOptions.currentBinNo = i;
-            Options options = mainMapper.options;
-            appendFileName(options.contigsIndexFile, disOptions.IndicesDirectory, i);
-            if (!openContigsLimits(options))
-                throw RuntimeError("Error while opening reference file.");
-            configureMapper<TSpec, TMainConfig>(options, mainMapper, disOptions);
+            for (auto i: sortedBins(disOptions))
+            {
+                disOptions.currentBinNo = i;
+                Options options = mainMapper.options;
+                appendFileName(options.contigsIndexFile, disOptions.IndicesDirectory, i);
+                if (!openContigsLimits(options))
+                    throw RuntimeError("Error while opening reference file.");
+                configureMapper<TSpec, TMainConfig>(options, mainMapper, disOptions);
+            }
         }
 
         finalizeMainMapper(mainMapper, disOptions);

@@ -247,17 +247,15 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     // Setup Distributed mapper disOptions.
     addSection(parser, "Distributed mapper Options");
-//    addOption(parser, ArgParseOption("b", "number-of-bins", "The number of bins (indices) for distributed mapper",
-//                                     ArgParseOption::INTEGER));
-//    setMinValue(parser, "number-of-bins", "1");
-//    setMaxValue(parser, "number-of-bins", "1024");
-//    setDefaultValue(parser, "number-of-bins", disOptions.numberOfBins);
+    addOption(parser, ArgParseOption("b", "number-of-bins", "The number of bins (indices) for distributed mapper",
+                                     ArgParseOption::INTEGER));
+    setMinValue(parser, "number-of-bins", "1");
+    setMaxValue(parser, "number-of-bins", "1024");
 
     addOption(parser, ArgParseOption("ft", "filter-type", "type of filter to build",
                                      ArgParseOption::STRING));
     setValidValues(parser, "filter-type", disOptions.filterTypeList);
     setDefaultValue(parser, "filter-type",  disOptions.filterTypeList[disOptions.filterType]);
-
 
     addOption(parser, ArgParseOption("fi", "bloom-filter", "The path to a bloom filter. Default: will look for bloom.filter file inside the indices directory.", ArgParseOption::INPUT_FILE));
     setValidValues(parser, "bloom-filter", "filter");
@@ -362,10 +360,6 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     getOptionValue(disOptions.threadsCount, parser, "threads");
     getOptionValue(disOptions.readsCount, parser, "reads-batch");
 
-//    // Parse Distributed mapper options
-//    getOptionValue(disOptions.numberOfBins, parser, "number-of-bins");
-//    if (isSet(parser, "number-of-bins")) getOptionValue(disOptions.numberOfBins, parser, "number-of-bins");
-
     // Parse contigs index prefix.
     getOptionValue(disOptions.filterFile, parser, "bloom-filter");
     if (!isSet(parser, "bloom-filter"))
@@ -375,6 +369,19 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     }
 
     getOptionValue(disOptions.filterType, parser, "filter-type", disOptions.filterTypeList);
+
+    // Parse Distributed mapper options
+    uint32_t nob = 0;
+    getOptionValue(nob, parser, "number-of-bins");
+    if (!isSet(parser, "number-of-bins") && disOptions.filterType == NONE)
+    {
+        std::cerr << "Number of bins has to be set if no filter was selected" << "\n";
+        exit(1);
+    }
+    else
+    {
+        disOptions.numberOfBins = nob;
+    }
 
     if (isSet(parser, "verbose")) disOptions.verbose = 1;
     if (isSet(parser, "very-verbose")) disOptions.verbose = 2;
@@ -541,9 +548,9 @@ bool readFilterMetadata(DisOptions &  disOptions)
     in.read((char*)p, x * sizeof(uint64_t));
 
 //    std::cout << metadataVec << std::endl;
-    disOptions.numberOfBins = metadataVec[0];
+    if(!disOptions.filterType == NONE)
+        disOptions.numberOfBins = metadataVec[0];
     disOptions.kmerSize = metadataVec[2];
-
     return true;
 }
 
@@ -570,7 +577,6 @@ int main(int argc, char const ** argv)
 
     if (!checkReadFiles(disOptions))
         return 1;
-
     try
     {
         configureDisMapper(disOptions);
