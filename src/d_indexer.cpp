@@ -266,8 +266,12 @@ void saveContigs(YaraIndexer<TSpec, TConfig> & me)
         std::cerr <<"[bin " << me.options.currentBinNo << "] Saving reference ..." << std::endl;
         mtx.unlock();
     }
-
+    //save only forward text
+/*
     if (!saveContigsLimits(me.options) || !save(me.contigs, toCString(me.options.contigsIndexFile)))
+        throw RuntimeError("Error while saving the reference.");*/
+
+    if (!saveContigsLimits(me.options) || !saveBi(me.contigs, toCString(me.options.contigsIndexFile)))
         throw RuntimeError("Error while saving the reference.");
 }
 
@@ -280,7 +284,8 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
 {
     typedef YaraFMConfig<TContigsSize, TContigsLen, TContigsSum>    TIndexConfig;
     typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
-    typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
+    typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
+    typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TIndex;
 
     if (me.options.verbose)
     {
@@ -290,16 +295,23 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
     }
 
 
+// using TMyFastConfig = seqan::FastFMIndexConfig<void, uint32_t, 2, 1>;
+//     using TIndexConfig = seqan::BidirectionalIndex<seqan::FMIndex<void, TMyFastConfig> >;
+//     Index<StringSet<TString, Owner<ConcatDirect<> > >, TIndexConfig> index(chromosomesConcat);
+
     // Randomly replace Ns with A, C, G, T.
     randomizeNs(me.contigs);
 
     // IndexFM is built on the reversed contigs.
-    reverse(me.contigs);
+//     reverse(me.contigs);
 
-    TIndex index;
+    TIndex index; // (me.contigs.seqs)
 
+    //info when saving reverse text separately contigs where reversed!!
     // This assignment *copies* the contigs to the index as the types differ.
-    setValue(index.text, me.contigs.seqs);
+    setValue(index.rev.text, me.contigs.seqs);
+    reverse(me.contigs);
+    setValue(index.fwd.text, me.contigs.seqs);
 
     // Clear the contigs - the index now owns its own copy.
     clear(me.contigs);
@@ -311,12 +323,12 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
         typename Iterator<TIndex, TopDown<> >::Type it(index);
         ignoreUnusedVariableWarning(it);
     }
-    catch (BadAlloc const & /* e */)
+    catch (BadAlloc const &)
     {
         throw RuntimeError("Insufficient memory to index the reference.");
     }
-    catch (IOError const & /* e */)
-    //    catch (PageFrameError const & /* e */)
+    catch (IOError const &)
+    //    catch (PageFrameError const &)
     {
         throw RuntimeError("Insufficient disk space to index the reference. \
                            Specify a bigger temporary folder using the options --tmp-dir.");
@@ -328,6 +340,8 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
         std::cerr << "[bin " << me.options.currentBinNo << "] Saving reference index:\t\t\t" << std::endl;
         mtx.unlock();
     }
+
+
     if (!save(index, toCString(me.options.contigsIndexFile)))
         throw RuntimeError("Error while saving the reference index file.");
 }

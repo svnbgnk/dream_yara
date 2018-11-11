@@ -157,6 +157,28 @@ inline bool save(SeqStore<TSpec, TConfig> const & me, TFileName const & fileName
     return true;
 }
 
+template <typename TSpec, typename TConfig, typename TFileName>
+inline bool saveBi(SeqStore<TSpec, TConfig> const & me, TFileName const & fileName)
+{
+    CharString name;
+
+    name = fileName;    append(name, ".txt");
+    if (!save(me.seqs, toCString(name))) return false;
+
+    name = fileName;    append(name, ".rid");
+    if (!save(me.names, toCString(name))) return false;
+
+    reverse(me);
+
+    name = fileName;    append(name, ".rev.txt");
+    if (!save(me.seqs, toCString(name))) return false;
+
+    name = fileName;    append(name, ".rev.rid");
+    if (!save(me.names, toCString(name))) return false;
+
+    return true;
+}
+
 // --------------------------------------------------------------------------
 // Function swap()
 // --------------------------------------------------------------------------

@@ -301,7 +301,6 @@ bool saveContigsLimits(TOptions const & options)
 
     CharString contigsLimitFile(options.contigsIndexFile);
     append(contigsLimitFile, ".txt.size");
-
     return save(limits, toCString(contigsLimitFile));
 }
 

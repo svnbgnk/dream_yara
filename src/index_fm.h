@@ -80,6 +80,28 @@ inline bool save(Index<StringSet<TText, TSSetSpec>, FMIndex<TSpec, TConfig> > co
     return true;
 }
 
+template <typename TText, typename TSSetSpec, typename TSpec, typename TConfig>
+inline bool save(Index<StringSet<TText, TSSetSpec>, BidirectionalIndex<FMIndex<TSpec, TConfig> > > const & index,
+                 const char * fileName, int openMode)
+{
+    String<char> name;
+
+    name = fileName;    append(name, ".sa");
+    if (!save(getFibre(index.fwd, FibreSA()), toCString(name), openMode)) return false;
+
+    name = fileName;    append(name, ".lf");
+    if (!save(getFibre(index.fwd, FibreLF()), toCString(name), openMode)) return false;
+
+    name = fileName;    append(name, ".rev.sa");
+    if (!save(getFibre(index.rev, FibreSA()), toCString(name), openMode)) return false;
+
+    name = fileName;    append(name, ".rev.lf");
+    if (!save(getFibre(index.rev, FibreLF()), toCString(name), openMode)) return false;
+
+
+    return true;
+}
+
 // ----------------------------------------------------------------------------
 // Function open()
 // ----------------------------------------------------------------------------
@@ -101,6 +123,31 @@ inline bool open(Index<StringSet<TText, TSSetSpec>, FMIndex<TSpec, TConfig> > & 
 
     return true;
 }
+
+template <typename TText, typename TSSetSpec, typename TSpec, typename TConfig>
+inline bool open(Index<StringSet<TText, TSSetSpec>, BidirectionalIndex<FMIndex<TSpec, TConfig> > > & index,
+                 const char * fileName, int openMode)
+{
+    String<char> name;
+
+    name = fileName;    append(name, ".sa");
+    if (!open(getFibre(index.fwd, FibreSA()), toCString(name), openMode)) return false;
+
+    name = fileName;    append(name, ".lf");
+    if (!open(getFibre(index.fwd, FibreLF()), toCString(name), openMode)) return false;
+
+    name = fileName;    append(name, ".rev.sa");
+    if (!open(getFibre(index.rev, FibreSA()), toCString(name), openMode)) return false;
+
+    name = fileName;    append(name, ".rev.lf");
+    if (!open(getFibre(index.rev, FibreLF()), toCString(name), openMode)) return false;
+
+    setFibre(getFibre(index, FibreSA()), getFibre(index, FibreLF()), FibreLF());
+
+    return true;
+}
+
+//TODO open for BidirectionalIndex
 
 // ----------------------------------------------------------------------------
 // Function _getNodeByChar()
