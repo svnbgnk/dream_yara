@@ -25,7 +25,6 @@ endif ()
 # Begin of dependency detection
 # ----------------------------------------------------------------------------
 message ("\n${ColourBold}Dependency detection${ColourReset}")
-
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/seqan/include/seqan/version.h")
     set (CMAKE_INCLUDE_PATH
         ${CMAKE_CURRENT_SOURCE_DIR}/include/seqan/include

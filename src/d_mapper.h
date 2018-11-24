@@ -253,7 +253,11 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig
 {
     initReadsContext(me, readSeqs);
     initSeeds(me, readSeqs);
-
+/*
+    typedef MapperTraits<TSpec, TConfig>        TTraits;
+    typedef HitsExtender<TSpec, TTraits>        THitsExtender;
+    typedef typename TTraits::TMatchesAppender  TMatchesAppender;
+    TMatchesAppender appender(me.matchesByCoord);*/
     collectSeeds<0>(me, readSeqs);
     findSeeds<0>(me, 0);
     classifyReads(me);
@@ -300,6 +304,208 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig
     copyMatches(mainMapper, me, disOptions);
     copyCigars(mainMapper, me, disOptions);
     appendStats(mainMapper, me);
+}
+
+// this struct carries Traits of Mapper, the reference to matches, text, read context and will
+// contain conditions and parameters for OSS
+template <typename TTraits>
+struct OSSContext
+{
+    typedef typename TTraits::TReadsContext     TReadsContext;
+    typedef typename TTraits::TMatchesAppender  TMatches;
+    typedef typename TTraits::TContigSeqs       TContigSeqs;
+
+    // Shared-memory read-write data.
+    TReadsContext &     ctx;
+    TMatches &          matches;
+
+    // Shared-memory read-only data.
+    TContigSeqs const & contigSeqs;
+//     Options const &     options;
+
+    OSSContext(TReadsContext & ctx,
+                 TMatches & matches,
+                 TContigSeqs const & contigSeqs) :
+        ctx(ctx),
+        matches(matches),
+        contigSeqs(contigSeqs)
+    {
+        ;
+    }
+};
+
+template <typename TSpec, typename TConfig, typename TMainConfig, typename TIndex, typename TReadSeqs, typename TSeqsSpec>
+inline void _mapReadsImplOSS(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & mainMapper, TIndex & index,
+                             StringSet<TReadSeqs, TSeqsSpec> & readSeqs, DisOptions & disOptions)
+{
+	//disOptions.origReadIdMap[disOptions.currentBinNo][i] //get orginal id from ith-read is done in copy matches so dont need that
+    initReadsContext(me, readSeqs);
+
+
+    typedef MapperTraits<TSpec, TConfig>                    TTraits;
+    typedef typename TTraits::TReads::TSeq                      TRead;
+
+    typedef typename TTraits::TSA                               TSA;
+    typedef typename TTraits::TContigsPos                       TContigsPos;
+    typedef typename Size<TSA>::Type                            TSAPos;
+    typedef typename Value<TSA>::Type                           TSAValue;
+
+
+    typedef typename TTraits::TMatchesAppender                  TMatchesAppender;
+
+    typedef typename TTraits::TMatch                             TMatch;
+    typedef typename TTraits::TReadSeq                            TReadSeq;
+    typedef typename Size<TReadSeq>::Type                       TReadSeqSize;
+    typedef typename Size<TReadSeqs>::Type                      TReadId;
+
+    typedef TReadSeqSize                                         THitErrors;
+
+    typedef typename TTraits::TContigSeqs                        TContigSeqs;
+
+//     typedef typename TTraits::TBiIndex                          TBiIndex;
+//     typedef typename TTraits::TIndex                            TIndex;
+
+
+
+
+    typedef typename Iterator<StringSet<TReadSeqs, TSeqsSpec> const, Rooted>::Type TReadIt;
+    typedef typename Reference<TReadIt>::Type                                     TReadRef;
+
+    // Iterate over all reads.
+    int k = 0;
+    iterate(readSeqs, [&](TReadIt const & readIt)
+    {
+        k++;
+        TReadRef it = value(readIt);
+//         std::cout << "Test Iterate: " << k << "\n";
+//         std::cout << it << "\n";
+    }, Rooted(), typename TTraits::TThreading());
+
+
+
+    TRead read = readSeqs[0];
+
+    std::cout << "Test cout" << "\n";
+    std::cout << read << "\n";
+
+// //     Iterator<TIndex, TopDown<> >::Type it(index);
+//     Iter<Index<>, VSTree<TopDown<> > > it(index);
+//     Iter<TBiIndex, VSTree<TopDown<> > > iter(me.biIndex);
+
+
+    Iter<TIndex, VSTree<TopDown<> > > iter(index);
+
+
+    std::cout << iter.fwdIter.index->sa[0] << "\n";
+
+
+
+
+    for(TSAPos r = iter.fwdIter.vDesc.range.i1; r < iter.fwdIter.vDesc.range.i1 + 5; ++r){
+        TSAValue saPost = iter.fwdIter.index->sa[r];
+        std::cout << saPost << "\n";
+    }
+
+    iter.fwdIter.vDesc.range.i1 = 20;
+    iter.fwdIter.vDesc.range.i1 = 30;
+
+    iter.revIter.vDesc.range.i1 = 30;
+    iter.revIter.vDesc.range.i1 = 40;
+
+    TMatchesAppender appender(me.matchesByCoord);
+    TReadId readID = 7;
+    uint8_t cerrors = 1;
+    for (auto occ : getOccurrences(iter)){
+        TMatch prototype;
+        setReadId(prototype, readID);
+        TContigsPos start = occ;
+        TContigsPos end = posAdd(start, repLength(iter));
+        setContigPosition(prototype, start, end); //fix this
+        THitErrors errors = cerrors;
+        prototype.errors = errors;
+        setMapped(me.ctx, readID);
+	//appendValue(appender, prototype, Generous(), typename TTraits::TThreading());
+    }
+
+//     for(TSAPos r = getValueI1(range(iter.fwdIter)); r < getValueI1(range(iter.fwdIter)) + 5; ++r)
+//         std::cout << r << "\n";
+
+
+    TSAValue saPos = iter.fwdIter.index->sa[10];
+    TContigsPos start = saPos;
+//     setSeqOffset(saValue, suffixLength(saValue, me.contigSeqs) - seedLength); //for direct modification
+    TContigsPos end = posAdd(saPos, 100);
+
+    std::cout << "Value1: " << start << "\n";
+    std::cout << "Value: " << end << "\n";
+
+
+//     TMatchesAppender appender(me.matchesByCoord);
+    TMatch prototype;
+
+    //check if read is reverse!!
+//     TReadId readID = 7;
+    setReadId(prototype, readID);
+    setMapped(me.ctx, readID);
+    setContigPosition(prototype, start, end);
+    THitErrors errors = 2;
+    prototype.errors = errors;
+
+
+    std::cout << "Number of Matches: " << length(me.matchesByCoord) << "\n";
+    appendValue(appender, prototype, Generous(), typename TTraits::TThreading());
+
+    std::cout << length(me.matchesByCoord) << "\n";
+
+    TMatch myMatch = me.matchesByCoord[0];
+    std::cout << "Start Match: " << "\n";
+    std::cout << myMatch.contigBegin << "\n";
+    std::cout << myMatch.contigEnd << "\n";
+    std::cout << myMatch.contigId << "\n";
+    std::cout << myMatch.errors << "\n";
+    std::cout << myMatch.readId << "\n";
+
+    typedef typename Id<TContigSeqs>::Type                    TContigSeqsId;
+    typedef typename Value<TContigSeqs>::Type                 TContigSeqsString;
+    typedef typename Size<TContigSeqsString>::Type            TContigSeqsSize;
+    typedef typename TTraits::TContigsLen                     TContigsLen;
+    typedef typename InfixOnValue<TContigSeqs const>::Type    TContigSeqsInfix;
+//     typedef ModifiedString<THaystackInfix, ModReverse> THaystackInfixRev;
+
+
+
+    TContigSeqs & contigSeqs = me.contigs.seqs;
+    TContigSeqsId contigSeqsId = getSeqNo(start);
+    TContigsLen saLoc = getSeqOffset(start);
+    TContigSeqsSize contigSeqsLength = length(contigSeqs[contigSeqsId]);
+//     std::cout << "Test access to contigSeqs" << "\n";
+//     std::cout << "Contig ID: " << contigSeqsId << " saLoc: " << saLoc << "\n";
+//     std::cout << contigSeqs[contigSeqsId][saLoc] << "\n";
+//     std::cout << contigSeqs[contigSeqsId][saLoc + 1] << "\n";
+//     std::cout << contigSeqs[contigSeqsId][saLoc + 2] << "\n";
+//
+//     std::cout << "Test access infices of contigSeqs" << "\n";
+    TContigSeqsInfix myinfix = infix(contigSeqs, start, end);
+//     std::cout << myinfix << "\n";
+
+//     IsSameType<TDistance, HammingDistance>::VALUE
+    OSSContext<TTraits> myparams(me.ctx, appender, contigSeqs);
+
+
+/*
+    goDown(iter, Fwd());
+    bool delta = !ordEqual(parentEdgeLabel(iter, Fwd()), readSeqs[0][0]);
+    goRight(iter, Fwd());
+    delta = !ordEqual(parentEdgeLabel(iter, Fwd()), readSeqs[0][0]);*/
+/*
+    aggregateMatches(me, readSeqs);
+    rankMatches(me, me.reads.seqs);
+    if (me.options.verifyMatches)
+        verifyMatches(me);
+    alignMatches(me);
+    copyMatches(mainMapper, me, disOptions);
+    copyCigars(mainMapper, me, disOptions);
+    appendStats(mainMapper, me);*/
 }
 
 // ----------------------------------------------------------------------------
@@ -447,7 +653,8 @@ inline void loadFilteredReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCo
 template <typename TSpec, typename TConfig, typename TMainConfig>
 inline void mapReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & mainMapper, DisOptions & disOptions)
 {
-    _mapReadsImpl(me, mainMapper, me.reads.seqs, disOptions);
+//     _mapReadsImpl(me, mainMapper, me.reads.seqs, disOptions);
+    _mapReadsImplOSS(me, mainMapper, me.biIndex, me.reads.seqs, disOptions);
 }
 
 template <typename TSpec, typename TConfig, typename TMainConfig>
@@ -456,7 +663,8 @@ inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & 
     loadFilteredReads(me, mainMapper, disOptions);
     if (empty(me.reads.seqs)) return;
     loadContigs(me);
-    loadContigsIndex(me);
+//     loadContigsIndex(me);
+    loadContigsBiIndex(me);
     mapReads(me, mainMapper, disOptions);
 }
 

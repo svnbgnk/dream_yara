@@ -178,7 +178,9 @@ struct MapperTraits
 
     typedef YaraFMConfig<TContigsSize, TContigsLen, TContigsSum, TAlloc> TIndexConfig;
     typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
+    typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
     typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
+    typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TBiIndex;
     typedef typename Size<TIndex>::Type                             TIndexSize;
     typedef typename Fibre<TIndex, FibreSA>::Type                   TSA;
 
@@ -295,7 +297,9 @@ struct Mapper
     unsigned                            libraryDev;
 
     typename Traits::TContigs           contigs;
-    typename Traits::TIndex             index;
+//     typename Traits::TIndex             index;
+    typename Traits::TBiIndex           biIndex;
+    typename Traits::TIndex           & index = biIndex.fwd; //TODO check if this is ok
     typename Traits::TReads             reads;
 
     typename Traits::TReadsFile         readsFile;
@@ -388,13 +392,37 @@ inline void loadContigsIndex(Mapper<TSpec, TConfig> & me)
     start(me.timer);
     try
     {
-        if (!open(me.index, toCString(me.options.contigsIndexFile), OPEN_RDONLY))
+        if (!open(me.biIndex.fwd, toCString(me.options.contigsIndexFile), OPEN_RDONLY))
             throw RuntimeError("Error while opening reference index file.");
     }
     catch (BadAlloc const & /* e */)
     {
         throw RuntimeError("Insufficient memory to load the reference index.");
     }
+    stop(me.timer);
+    me.stats.loadContigs += getValue(me.timer);
+
+    if (me.options.verbose > 1)
+        std::cerr << "Loading reference index:\t\t" << me.timer << std::endl;
+}
+
+template <typename TSpec, typename TConfig>
+inline void loadContigsBiIndex(Mapper<TSpec, TConfig> & me)
+{
+    start(me.timer);
+    try
+    {
+        if (!open(me.biIndex, toCString(me.options.contigsIndexFile), OPEN_RDONLY))
+            throw RuntimeError("Error while opening reference index file.");
+    }
+    catch (BadAlloc const & /* e */)
+    {
+        throw RuntimeError("Insufficient memory to load the reference index.");
+    }
+
+    //TODO do not copy just give reference
+//     me.index = me.biIndex.rev;
+
     stop(me.timer);
     me.stats.loadContigs += getValue(me.timer);
 

@@ -130,11 +130,15 @@ inline bool open(Index<StringSet<TText, TSSetSpec>, BidirectionalIndex<FMIndex<T
 {
     String<char> name;
 
-    name = fileName;    append(name, ".sa");
-    if (!open(getFibre(index.fwd, FibreSA()), toCString(name), openMode)) return false;
+    {
+        name = fileName;    append(name, ".sa");
+        if (!open(getFibre(index.fwd, FibreSA()), toCString(name), openMode)) return false;
 
-    name = fileName;    append(name, ".lf");
-    if (!open(getFibre(index.fwd, FibreLF()), toCString(name), openMode)) return false;
+        name = fileName;    append(name, ".lf");
+        if (!open(getFibre(index.fwd, FibreLF()), toCString(name), openMode)) return false;
+
+        setFibre(getFibre(index.fwd, FibreSA()), getFibre(index.fwd, FibreLF()), FibreLF());
+    }
 
     name = fileName;    append(name, ".rev.sa");
     if (!open(getFibre(index.rev, FibreSA()), toCString(name), openMode)) return false;
@@ -142,7 +146,7 @@ inline bool open(Index<StringSet<TText, TSSetSpec>, BidirectionalIndex<FMIndex<T
     name = fileName;    append(name, ".rev.lf");
     if (!open(getFibre(index.rev, FibreLF()), toCString(name), openMode)) return false;
 
-    setFibre(getFibre(index, FibreSA()), getFibre(index, FibreLF()), FibreLF());
+    setFibre(getFibre(index.rev, FibreSA()), getFibre(index.rev, FibreLF()), FibreLF());
 
     return true;
 }
