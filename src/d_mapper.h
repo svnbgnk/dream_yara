@@ -570,7 +570,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     }
     std::cout << "End of Matches: " << "\n";
 
-/*
+
     Iter<TBiIndex, VSTree<TopDown<> > > iter(biindex);
     Iter<TIndex, VSTree<TopDown<> > > iterUni(index);
 
@@ -579,7 +579,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
 //                    1234567890123456
     DnaString test =    "GGGTCGCGGTGCGCGGCGACGAAGG";
-    DnaString testrev = "GGAAGCAGCGGCGCGTGGCGCTGGG";*/
+    DnaString testrev = "GGAAGCAGCGGCGCGTGGCGCTGGG";
 /*
     int k = 0;
     while(k < length(testrev)){
@@ -601,7 +601,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     std::cout << "BidirectionalIndex" << "\n";
     std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
     std::cout << goDown(iter, testrev, Rev()) << "\n";
-    std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
+    std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";*/
 
     std::cout << "Unidirectional Index" << "\n";
     std::cout << iterUni2.vDesc.range.i1 << ":" << iterUni2.vDesc.range.i2 << "\n";
@@ -610,8 +610,11 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     std::cout << "BidirectionalIndex" << "\n";
     std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";
-    std::cout << goDown(iter2, test, Fwd()) << "\n";
-    std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";*/
+    std::cout << iter2.revIter.vDesc.range.i1 << ":" << iter2.revIter.vDesc.range.i2 << "\n";
+    std::cout << goDown(iter2, test[0], Fwd()) << "\n";
+    std::cout << goDown(iter2, test[0], Rev()) << "\n";
+    std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";
+    std::cout << iter2.revIter.vDesc.range.i1 << ":" << iter2.revIter.vDesc.range.i2 << "\n";
 
 
 //     isMapped(me.ctx, readId)

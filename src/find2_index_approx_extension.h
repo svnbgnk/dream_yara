@@ -887,6 +887,7 @@ inline void _optimalSearchScheme(TContex & ossContext,
 {
 //     std::cout << "Start OSS" << "\n";
     std::cout << "Needle Id: " << (int)needleId << "  NPL: " << (int)needleLeftPos << "  NRP: " << (int)needleRightPos  << "  errors: " << (int) errors << "\n";
+
     std::cout << "Iter Range: " << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
     std::cout << "Iter rev Range: " << iter.revIter.vDesc.range.i1 << ":" << iter.revIter.vDesc.range.i2 << "\n";
 
