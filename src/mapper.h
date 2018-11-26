@@ -299,7 +299,7 @@ struct Mapper
     typename Traits::TContigs           contigs;
 //     typename Traits::TIndex             index;
     typename Traits::TBiIndex           biIndex;
-    typename Traits::TIndex           & index = biIndex.fwd; //TODO check if this is ok
+    typename Traits::TIndex           & index = biIndex.rev;
     typename Traits::TReads             reads;
 
     typename Traits::TReadsFile         readsFile;

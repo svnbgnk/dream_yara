@@ -102,6 +102,8 @@ struct Options;
 
 #include "d_mapper.h"
 
+#include "find2_index_approx_extension.h"
+
 using namespace seqan;
 
 // ============================================================================

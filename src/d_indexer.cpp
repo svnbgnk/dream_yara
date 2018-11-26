@@ -309,9 +309,9 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
 
     //info when saving reverse text separately contigs where reversed!!
     // This assignment *copies* the contigs to the index as the types differ.
-    setValue(index.rev.text, me.contigs.seqs);
-    reverse(me.contigs);
     setValue(index.fwd.text, me.contigs.seqs);
+    reverse(me.contigs);
+    setValue(index.rev.text, me.contigs.seqs);
 
     // Clear the contigs - the index now owns its own copy.
     clear(me.contigs);
