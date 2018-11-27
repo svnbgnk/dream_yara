@@ -147,7 +147,7 @@ struct SeqFileBuffer_<StringSet<TString, TSSetSpec>, TSpec>
 // ----------------------------------------------------------------------------
 // FMIndex Config
 // ----------------------------------------------------------------------------
-
+/*
 template <typename TSize, typename TLen, typename TSum, typename TAlloc = Alloc<> >
 struct YaraFMConfig
 {
@@ -174,6 +174,51 @@ struct YaraFMConfig
     static const unsigned SAMPLING =                    10;
     static const unsigned WORDS_PER_BLOCK =             0;
     static const unsigned LEVELS =                      1;
+};*/
+
+
+template <typename TSize, typename TLen, typename TSum, typename TAlloc = Alloc<> >
+struct YaraFMConfig2
+{
+    typedef TAlloc                                      Fibre;
+    typedef TSum                                        Size;
+
+    static const unsigned WORDS_PER_BLOCK =             1;
+    static const unsigned LEVELS =                      2;
+};
+
+template <typename TSize, typename TLen, typename TSum, typename TAlloc = Alloc<> >
+struct YaraFMConfig3
+{
+    typedef TAlloc                                      Fibre;
+    typedef TSum                                        Size;
+};
+
+template <typename TSize, typename TLen, typename TSum, typename TAlloc = Alloc<> >
+struct YaraFMConfig
+{
+    typedef YaraFMConfig2<TSize, TLen, TSum, TAlloc>     TMe;
+    typedef YaraFMConfig3<TSize, TLen, TSum, TAlloc>     TMeText;
+
+    // Text.
+    typedef Owner<ConcatDirect<TMeText> >               TSSetSpec_;
+    typedef StringSet<String<Dna, TAlloc>, TSSetSpec_>  Text;
+
+    // LF LengthSum.
+    typedef TSum                                        LengthSum;
+
+    // LF's RankDictionary Config.
+    typedef Levels<void, TMe>                           Bwt;
+    typedef Levels<void, TMe>                           Sentinels;
+
+    // RankDictionary Config.
+    typedef TAlloc                                      Fibre;
+    typedef TSum                                        Size;
+
+    // Sparse SA sampling rate.
+    static const unsigned SAMPLING =                    10;
+    static const unsigned WORDS_PER_BLOCK =             1;
+    static const unsigned LEVELS =                      2;
 };
 
 // ----------------------------------------------------------------------------

@@ -151,8 +151,6 @@ inline bool open(Index<StringSet<TText, TSSetSpec>, BidirectionalIndex<FMIndex<T
     return true;
 }
 
-//TODO open for BidirectionalIndex
-
 // ----------------------------------------------------------------------------
 // Function _getNodeByChar()
 // ----------------------------------------------------------------------------

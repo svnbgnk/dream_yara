@@ -525,7 +525,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           StringSet<TReadSeqs, TSeqsSpec> & readSeqs,
                           DisOptions & disOptions)
 {
-
+/*
     initReadsContext(me, readSeqs);
 
     typedef MapperTraits<TSpec, TConfig>                        TTraits;
@@ -551,11 +551,11 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
 //     myTfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
     myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
-/*
-    if(IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE)
-        myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
-    else
-        myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());*/
+
+//     if(IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE)
+//         myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+//     else
+//         myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
 
 
     std::cout << "Finished Searching: " << "\n";
@@ -580,19 +580,19 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //                    1234567890123456
     DnaString test =    "GGGTCGCGGTGCGCGGCGACGAAGG";
     DnaString testrev = "GGAAGCAGCGGCGCGTGGCGCTGGG";
-/*
-    int k = 0;
-    while(k < length(testrev)){
-        std::cout << "k: " << k << "\n";
-        std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
-        if (!goDown(iter, testrev[k], Fwd())){
-            std::cout << "Stop" << "\n";
-            std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
-            break;
-        }
-        ++k;
-    }*/
-/*
+
+//     int k = 0;
+//     while(k < length(testrev)){
+//         std::cout << "k: " << k << "\n";
+//         std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
+//         if (!goDown(iter, testrev[k], Fwd())){
+//             std::cout << "Stop" << "\n";
+//             std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
+//             break;
+//         }
+//         ++k;
+//     }
+//
     std::cout << "Unidirectional Index" << "\n";
     std::cout << iterUni.vDesc.range.i1 << ":" << iterUni.vDesc.range.i2 << "\n";
     std::cout << goDown(iterUni, testrev) << "\n";
@@ -601,7 +601,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     std::cout << "BidirectionalIndex" << "\n";
     std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
     std::cout << goDown(iter, testrev, Rev()) << "\n";
-    std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";*/
+    std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
 
     std::cout << "Unidirectional Index" << "\n";
     std::cout << iterUni2.vDesc.range.i1 << ":" << iterUni2.vDesc.range.i2 << "\n";
@@ -615,12 +615,12 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     std::cout << goDown(iter2, test[0], Rev()) << "\n";
     std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";
     std::cout << iter2.revIter.vDesc.range.i1 << ":" << iter2.revIter.vDesc.range.i2 << "\n";
-
+*/
 
 //     isMapped(me.ctx, readId)
 //     getMinErrors(me.ctx, readId) + strata <= error i am currently searching for
 
-/*
+
     initReadsContext(me, readSeqs);
     initSeeds(me, readSeqs);
 
@@ -669,7 +669,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     alignMatches(me);
     copyMatches(mainMapper, me, disOptions);
     copyCigars(mainMapper, me, disOptions);
-    appendStats(mainMapper, me);*/
+    appendStats(mainMapper, me);
 }
 
 

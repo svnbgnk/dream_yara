@@ -286,14 +286,13 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
     typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
     typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
     typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TIndex;
-
+//
     if (me.options.verbose)
     {
         mtx.lock();
         std::cerr << "[bin " << me.options.currentBinNo << "] Building reference index ..." << std::endl;
         mtx.unlock();
     }
-
 
 // using TMyFastConfig = seqan::FastFMIndexConfig<void, uint32_t, 2, 1>;
 //     using TIndexConfig = seqan::BidirectionalIndex<seqan::FMIndex<void, TMyFastConfig> >;
