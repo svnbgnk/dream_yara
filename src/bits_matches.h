@@ -278,6 +278,28 @@ struct MatchesCompactor
     }
 };
 
+template <typename TCounts, typename TPosition>
+struct MatchesCompactorOSS
+{
+    TCounts &    unique;
+
+    MatchesCompactorOSS(TCounts & unique) :
+        unique(unique)
+    {}
+
+    template <typename TIterator>
+    void operator() (TIterator & it)
+    {
+        typedef typename Value<TIterator>::Type     TMatches;
+        typedef typename Value<TMatches>::Type      TMatch;
+
+        TMatches const & matches = value(it);
+
+        sort(matches, MatchSorter<TMatch, TPosition>());
+        unique[position(it) + 1] = compactUniqueMatchesOSS(matches, TPosition());
+    }
+};
+
 // ============================================================================
 // Match Setters
 // ============================================================================
@@ -695,6 +717,50 @@ compactUniqueMatches(TMatches & matches, Tag<TPosition> const & posTag)
     return newIt - matchesBegin;
 }
 
+template <typename TMatches, typename TPosition>
+inline typename Size<TMatches>::Type
+compactUniqueMatchesOSS(TMatches & matches, Tag<TPosition> const & posTag)
+{
+    typedef typename Iterator<TMatches, Standard>::Type         TMatchesIterator;
+
+    TMatchesIterator matchesBegin = begin(matches, Standard());
+    TMatchesIterator matchesEnd = end(matches, Standard());
+    TMatchesIterator newIt = matchesBegin;
+    TMatchesIterator oldIt = matchesBegin;
+    std::cout << "Before: " << "\n";
+    while (newIt != matchesEnd){
+        std::cout << "Match: " << "\n";
+        std::cout << getMember(*newIt, ContigBegin()) << "\n";
+        std::cout << getMember(*newIt, ContigEnd()) << "\n";
+        std::cout << "Errors: " << getMember(*newIt, Errors()) << "\n";
+        std::cout << "ReadId: "<< getMember(*newIt, ReadId()) << "\n" << "\n";
+        ++newIt;
+    }
+    std::cout << "After: " << "\n";
+    newIt = oldIt;
+
+
+
+    while (oldIt != matchesEnd)
+    {
+        *newIt = *oldIt;
+        std::cout << "Match: " << "\n";
+        std::cout << getMember(*newIt, ContigBegin()) << "\n";
+        std::cout << getMember(*newIt, ContigEnd()) << "\n";
+        std::cout << "Errors: " << getMember(*newIt, Errors()) << "\n";
+        std::cout << "ReadId: "<< getMember(*newIt, ReadId()) << "\n" << "\n";
+
+        ++oldIt;
+
+        while (oldIt != matchesEnd && isDuplicate(*newIt, *oldIt, posTag)) ++oldIt;
+
+        ++newIt;
+    }
+
+
+    return newIt - matchesBegin;
+}
+
 // ----------------------------------------------------------------------------
 // Function removeDuplicates()
 // ----------------------------------------------------------------------------
@@ -718,6 +784,31 @@ inline void removeDuplicates(TMatchesSet & matchesSet, TThreading const & thread
 
     // Sort matches by begin position and move unique matches at the beginning.
     iterate(matchesSet, MatchesCompactor<TLimits, ContigBegin>(newLimits), Rooted(), threading);
+
+    // Exclude duplicate matches at the end.
+    assign(stringSetLimits(matchesSet), newLimits);
+    _refreshStringSetLimits(matchesSet, threading);
+}
+
+template <typename TMatchesSet, typename TThreading>
+inline void removeDuplicatesOSS(TMatchesSet & matchesSet, TThreading const & threading)
+{
+    typedef typename StringSetLimits<TMatchesSet>::Type         TLimits;
+
+    TLimits newLimits;
+    resize(newLimits, length(stringSetLimits(matchesSet)), Exact());
+    front(newLimits) = 0;
+
+    // Sort matches by end position and move unique matches at the beginning.
+    iterate(matchesSet, MatchesCompactorOSS<TLimits, ContigEnd>(newLimits), Rooted(), threading);
+
+    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << "\n";
+    // Exclude duplicate matches at the end.
+    assign(stringSetLimits(matchesSet), newLimits);
+    _refreshStringSetLimits(matchesSet, threading);
+
+    // Sort matches by begin position and move unique matches at the beginning.
+    iterate(matchesSet, MatchesCompactorOSS<TLimits, ContigBegin>(newLimits), Rooted(), threading);
 
     // Exclude duplicate matches at the end.
     assign(stringSetLimits(matchesSet), newLimits);

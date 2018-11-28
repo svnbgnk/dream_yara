@@ -723,7 +723,7 @@ inline void _optimalSearchSchemeChildren(TContex & ossContext,
         do
         {
             bool delta = !ordEqual(parentEdgeLabel(iter, TDir()), needle[goToRight ? needleRightPos - 1 : needleLeftPos - 1]);
-            std::cout << "_optimalSearchSchemeChildren: " << delta << "\n";
+//             std::cout << "_optimalSearchSchemeChildren: " << delta << "\n";
             if (!std::is_same<TDistanceTag, EditDistance>::value && minErrorsLeftInBlock > 0 && charsLeft + delta < minErrorsLeftInBlock + 1u)
             {
                 continue;
@@ -886,10 +886,10 @@ inline void _optimalSearchScheme(TContex & ossContext,
                                  TDistanceTag const &)
 {
 //     std::cout << "Start OSS" << "\n";
-    std::cout << "Needle Id: " << (int)needleId << "  NPL: " << (int)needleLeftPos << "  NRP: " << (int)needleRightPos  << "  errors: " << (int) errors << "\n";
+//     std::cout << "Needle Id: " << (int)needleId << "  NPL: " << (int)needleLeftPos << "  NRP: " << (int)needleRightPos  << "  errors: " << (int) errors << "\n";
 
-    std::cout << "Iter Range: " << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
-    std::cout << "Iter rev Range: " << iter.revIter.vDesc.range.i1 << ":" << iter.revIter.vDesc.range.i2 << "\n";
+//     std::cout << "Iter Range: " << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
+//     std::cout << "Iter rev Range: " << iter.revIter.vDesc.range.i1 << ":" << iter.revIter.vDesc.range.i2 << "\n";
 
     uint8_t const maxErrorsLeftInBlock = s.u[blockIndex] - errors;
     uint8_t const minErrorsLeftInBlock = (s.l[blockIndex] > errors) ? (s.l[blockIndex] - errors) : 0;
@@ -900,7 +900,7 @@ inline void _optimalSearchScheme(TContex & ossContext,
     // Done. (Last step)
     if (done)
     {
-        std::cout << "Done" << "\n";
+//         std::cout << "Done" << "\n";
         //last input only matters for unidirectional searches (has to be false in this case)
         if(/*!lastEdit*/true){
             if(checkMappa){
@@ -908,7 +908,7 @@ inline void _optimalSearchScheme(TContex & ossContext,
             }
             else
             {
-                std::cout << "Calling delegate" << "\n";
+//                 std::cout << "Calling delegate" << "\n";
                 delegate(ossContext, iter, needleId, errors, false);
             }
         }

@@ -302,6 +302,11 @@ struct Delegate
     typedef typename TTraits::TMatch                        TMatch;
     typedef typename TTraits::TMatchesAppender              TMatches;
     typedef typename TTraits::TContigsPos                   TContigsPos;
+//     typedef typename TTraits::TSA                           TSA;
+//     typedef typename Size<TSA>::Type                        TSAPos;
+//     typedef typename Value<TSA>::Type                       TSAValue;
+    typedef typename TTraits::TReadSeqs                     TReadSeqs;
+    typedef typename Size<TReadSeqs>::Type                  TReadId;
 
 
     TMatches &          matches;
@@ -310,23 +315,33 @@ struct Delegate
         matches(matches)
     {}
 
-    template <typename TContext, typename TReadId, typename TMatchErrors>
-    void operator() (TContext & ossContext, auto const & iter, TReadId const needleId, TMatchErrors errors, bool const rev)
+    template <typename TContext, typename TNeedleId, typename TMatchErrors>
+    void operator() (TContext & ossContext, auto const & iter, TNeedleId const needleId, TMatchErrors const errors, bool const rev)
     {
-        std::cout << "Trying to report occ" << "\n";
+        TReadId readId = getReadId(ossContext.readSeqs, needleId);
         uint32_t occLength = repLength(iter);
-        for (auto occ : getOccurrences(iter)){
+        for (TContigsPos occ : getOccurrences(iter)){
+//         for (TSAPos i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i){
+//             TSAValue saPos = iter.fwdIter.index->sa[i];
+//             std::cout << occ << "\n";
             TMatch hit;
             setContigPosition(hit, occ, posAdd(occ, occLength));
             hit.errors = errors;
-            setReadId(hit, ossContext.readSeqs, needleId);
-            setMapped(ossContext.ctx, needleId);
-//             setMinErrors(ossContext.ctx, needleId, errors);
-    //         hit.readId = needleId;
+//             std::cout << "isMapped: "<< isMapped(ossContext.ctx, readId) << "\n";
+//             std::cout << "MinErrors: "<< getMinErrors(ossContext.ctx, needleId) << "\n";
+
+            setReadId(hit, ossContext.readSeqs, needleId); // since reverse reads are at the end //TODO check this line (it determines if read is rev)
+            setMapped(ossContext.ctx, readId);
+            setMinErrors(ossContext.ctx, readId, errors);
+
+//             std::cout << "isMapped: "<< isMapped(ossContext.ctx, readId) << "\n";
+//             std::cout << "MinErrors: "<< (int)getMinErrors(ossContext.ctx, readId) << "\n";
+
+    //         hit.readId = readId;
 //TODO to du maybe use this form
     //         THit hit = { range(indexIt), (TSeedId)position(seedsIt), errors };
 
-            appendValue(matches, hit, Generous(), typename TTraits::TThreading());
+            appendValue(matches, hit, Generous(), typename TTraits::TThreading()); //does this make any sense (always single occ)
         }
     }
 };
@@ -525,7 +540,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           StringSet<TReadSeqs, TSeqsSpec> & readSeqs,
                           DisOptions & disOptions)
 {
-/*
+
     initReadsContext(me, readSeqs);
 
     typedef MapperTraits<TSpec, TConfig>                        TTraits;
@@ -550,36 +565,49 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     std::cout << "Using 0 and " << maxError << " Scheme" << "\n";
 
 //     myTfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
-    myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
+//     myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
 
-//     if(IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE)
-//         myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
-//     else
-//         myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
+    myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+/*
+    if(addMyOwnOption) //IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE
+        myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+    else
+        myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());*/
 
 
     std::cout << "Finished Searching: " << "\n";
     typedef typename TTraits::TMatch                             TMatch;
     for(int i = 0; i < length(me.matchesByCoord); ++i){
+        std::cout << "Match: " << "\n";
         TMatch myMatch = me.matchesByCoord[i];
         std::cout << myMatch.contigBegin << "\n";
         std::cout << myMatch.contigEnd << "\n";
-        std::cout << myMatch.contigId << "\n";
-        std::cout << myMatch.errors << "\n";
-        std::cout << myMatch.readId << "\n";
+        std::cout << "ContigId: " << myMatch.contigId << "\n";
+        std::cout << "Errors: " << myMatch.errors << "\n";
+        std::cout << "ReadId: "<< myMatch.readId << "\n" << "\n";
     }
-    std::cout << "End of Matches: " << "\n";
+    std::cout << "End of Matches ____________________________________________________________________________________________________ " << "\n";
+
+    aggregateMatchesOSS(me, readSeqs);
+
+    rankMatches(me, me.reads.seqs);
+    if (me.options.verifyMatches)
+        verifyMatches(me);
+    alignMatches(me);
+    copyMatches(mainMapper, me, disOptions);
+    copyCigars(mainMapper, me, disOptions);
+    appendStats(mainMapper, me);
 
 
-    Iter<TBiIndex, VSTree<TopDown<> > > iter(biindex);
-    Iter<TIndex, VSTree<TopDown<> > > iterUni(index);
-
-    Iter<TBiIndex, VSTree<TopDown<> > > iter2(biindex);
-    Iter<TIndex, VSTree<TopDown<> > > iterUni2(index);
-
-//                    1234567890123456
-    DnaString test =    "GGGTCGCGGTGCGCGGCGACGAAGG";
-    DnaString testrev = "GGAAGCAGCGGCGCGTGGCGCTGGG";
+//     Iter<TBiIndex, VSTree<TopDown<> > > iter(biindex);
+//     Iter<TIndex, VSTree<TopDown<> > > iterUni(index);
+//
+//     Iter<TBiIndex, VSTree<TopDown<> > > iter2(biindex);
+//     Iter<TIndex, VSTree<TopDown<> > > iterUni2(index);
+//
+// //                    1234567890123456
+//     DnaString test =    "GGGTCGCGGTGCGCGGCGACGAAGG";
+//     DnaString testrev = "GGAAGCAGCGGCGCGTGGCGCTGGG";
 
 //     int k = 0;
 //     while(k < length(testrev)){
@@ -593,34 +621,35 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //         ++k;
 //     }
 //
-    std::cout << "Unidirectional Index" << "\n";
-    std::cout << iterUni.vDesc.range.i1 << ":" << iterUni.vDesc.range.i2 << "\n";
-    std::cout << goDown(iterUni, testrev) << "\n";
-    std::cout << iterUni.vDesc.range.i1 << ":" << iterUni.vDesc.range.i2 << "\n";
 
-    std::cout << "BidirectionalIndex" << "\n";
-    std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
-    std::cout << goDown(iter, testrev, Rev()) << "\n";
-    std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
+//     std::cout << "Unidirectional Index" << "\n";
+//     std::cout << iterUni.vDesc.range.i1 << ":" << iterUni.vDesc.range.i2 << "\n";
+//     std::cout << goDown(iterUni, testrev) << "\n";
+//     std::cout << iterUni.vDesc.range.i1 << ":" << iterUni.vDesc.range.i2 << "\n";
+//
+//     std::cout << "BidirectionalIndex" << "\n";
+//     std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
+//     std::cout << goDown(iter, testrev, Rev()) << "\n";
+//     std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
+//
+//     std::cout << "Unidirectional Index" << "\n";
+//     std::cout << iterUni2.vDesc.range.i1 << ":" << iterUni2.vDesc.range.i2 << "\n";
+//     std::cout << goDown(iterUni2, test) << "\n";
+//     std::cout << iterUni2.vDesc.range.i1 << ":" << iterUni2.vDesc.range.i2 << "\n";
+//
+//     std::cout << "BidirectionalIndex" << "\n";
+//     std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";
+//     std::cout << iter2.revIter.vDesc.range.i1 << ":" << iter2.revIter.vDesc.range.i2 << "\n";
+//     std::cout << goDown(iter2, test[0], Fwd()) << "\n";
+//     std::cout << goDown(iter2, test[0], Rev()) << "\n";
+//     std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";
+//     std::cout << iter2.revIter.vDesc.range.i1 << ":" << iter2.revIter.vDesc.range.i2 << "\n";
 
-    std::cout << "Unidirectional Index" << "\n";
-    std::cout << iterUni2.vDesc.range.i1 << ":" << iterUni2.vDesc.range.i2 << "\n";
-    std::cout << goDown(iterUni2, test) << "\n";
-    std::cout << iterUni2.vDesc.range.i1 << ":" << iterUni2.vDesc.range.i2 << "\n";
-
-    std::cout << "BidirectionalIndex" << "\n";
-    std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";
-    std::cout << iter2.revIter.vDesc.range.i1 << ":" << iter2.revIter.vDesc.range.i2 << "\n";
-    std::cout << goDown(iter2, test[0], Fwd()) << "\n";
-    std::cout << goDown(iter2, test[0], Rev()) << "\n";
-    std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";
-    std::cout << iter2.revIter.vDesc.range.i1 << ":" << iter2.revIter.vDesc.range.i2 << "\n";
-*/
 
 //     isMapped(me.ctx, readId)
 //     getMinErrors(me.ctx, readId) + strata <= error i am currently searching for
 
-
+/*
     initReadsContext(me, readSeqs);
     initSeeds(me, readSeqs);
 
@@ -670,6 +699,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     copyMatches(mainMapper, me, disOptions);
     copyCigars(mainMapper, me, disOptions);
     appendStats(mainMapper, me);
+    */
 }
 
 
@@ -1452,7 +1482,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
         prepairMainMapper(mainMapper, filter, disOptions);
 
         if(disOptions.filterType == NONE){
-            for(uint32_t i = 0; i < 1/*disOptions.numberOfBins*/; ++i){
+            for(uint32_t i = 0; i < /*1*/disOptions.numberOfBins; ++i){
                 std::cout << "In bin Number: " << i << "\n";
                 disOptions.currentBinNo = i;
                 Options options = mainMapper.options;
