@@ -208,8 +208,13 @@ struct YaraFMConfig
     typedef TSum                                        LengthSum;
 
     // LF's RankDictionary Config.
-    typedef Levels<void, TMe>                           Bwt;
-    typedef Levels<void, TMe>                           Sentinels;
+//    typedef Levels<void, TMe>                           Bwt;
+    typedef Levels<void, LevelsPrefixRDConfig<LengthSum, TAlloc, 2, 1> > 		  Bwt;
+//    typedef Levels<void, TMe>                           Sentinels;
+    typedef Levels<void, LevelsRDConfig<LengthSum, TAlloc, 2, 1> >    Sentinels;
+//    typedef typename If<IsSameType<TSize, uint8_t>,
+//                        Naive<void, TMe>,
+//                        Levels<void, TMe> >::Type       Sentinels;
 
     // RankDictionary Config.
     typedef TAlloc                                      Fibre;

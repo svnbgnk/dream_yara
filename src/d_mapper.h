@@ -161,6 +161,11 @@ struct OSSContext
     bool filterDelegate = true;
     bool trackReadCount = false;
     bool itv = true;
+    bool bestXMapper = true; //still needed multiple searches
+    bool oneSBestXMapper = false;
+
+    uint8_t maxError;
+    uint8_t strata;
 
     typedef MapperTraits<TSpec, TConfig>        TTraits;
     typedef typename TTraits::TReadsContext     TReadsContext;
@@ -323,14 +328,14 @@ struct Delegate
         for (TContigsPos occ : getOccurrences(iter)){
 //         for (TSAPos i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i){
 //             TSAValue saPos = iter.fwdIter.index->sa[i];
-//             std::cout << occ << "\n";
+//              std::cout << occ << "\n";
             TMatch hit;
             setContigPosition(hit, occ, posAdd(occ, occLength));
             hit.errors = errors;
 //             std::cout << "isMapped: "<< isMapped(ossContext.ctx, readId) << "\n";
-//             std::cout << "MinErrors: "<< getMinErrors(ossContext.ctx, needleId) << "\n";
+//             std::cout << "MinErrors: "<< getMinErrors(ossContext.ctx, readId) << "\n";
 
-            setReadId(hit, ossContext.readSeqs, needleId); // since reverse reads are at the end //TODO check this line (it determines if read is rev)
+            setReadId(hit, ossContext.readSeqs, needleId); // since reverse reads are at the end //TODO check this line (it determines if read  is rev) // if would take the original id than it can no longer determine if it is reversed or not
             setMapped(ossContext.ctx, readId);
             setMinErrors(ossContext.ctx, readId, errors);
 
@@ -559,22 +564,25 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     TContigSeqs & contigSeqs = me.contigs.seqs;
 
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
-
-    uint16_t maxError = me.options.errorRate * length(readSeqs[0]);
+    uint16_t maxError = me.options.errorRate * length(readSeqs[0]); //maybe include read length as input parameter
     uint16_t strata = disOptions.strataRate * length(readSeqs[0]);
+
+    ossContext.maxError = maxError;
+    ossContext.strata = strata;
+
     std::cout << "Using 0 and " << maxError << " Scheme" << "\n";
 
 //     myTfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
 //     myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
 
-    myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+    find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+
+//     if(addMyOwnOption) //IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE
+//         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+//     else
+//         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
+
 /*
-    if(addMyOwnOption) //IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE
-        myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
-    else
-        myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());*/
-
-
     std::cout << "Finished Searching: " << "\n";
     typedef typename TTraits::TMatch                             TMatch;
     for(int i = 0; i < length(me.matchesByCoord); ++i){
@@ -586,7 +594,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         std::cout << "Errors: " << myMatch.errors << "\n";
         std::cout << "ReadId: "<< myMatch.readId << "\n" << "\n";
     }
-    std::cout << "End of Matches ____________________________________________________________________________________________________ " << "\n";
+    std::cout << "End of Matches ____________________________________________________________________________________________________ " << "\n";*/
 
     aggregateMatchesOSS(me, readSeqs);
 
@@ -698,8 +706,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     alignMatches(me);
     copyMatches(mainMapper, me, disOptions);
     copyCigars(mainMapper, me, disOptions);
-    appendStats(mainMapper, me);
-    */
+    appendStats(mainMapper, me);*/
+
 }
 
 
@@ -1482,7 +1490,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
         prepairMainMapper(mainMapper, filter, disOptions);
 
         if(disOptions.filterType == NONE){
-            for(uint32_t i = 0; i < /*1*/disOptions.numberOfBins; ++i){
+            for(uint32_t i = 0; i < disOptions.numberOfBins; ++i){
                 std::cout << "In bin Number: " << i << "\n";
                 disOptions.currentBinNo = i;
                 Options options = mainMapper.options;
