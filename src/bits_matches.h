@@ -727,16 +727,16 @@ compactUniqueMatchesOSS(TMatches & matches, Tag<TPosition> const & posTag)
     TMatchesIterator matchesEnd = end(matches, Standard());
     TMatchesIterator newIt = matchesBegin;
     TMatchesIterator oldIt = matchesBegin;
-    std::cout << "Before: " << "\n";
+//     std::cout << "Before: " << "\n";
     while (newIt != matchesEnd){
-        std::cout << "Match: " << "\n";
-        std::cout << getMember(*newIt, ContigBegin()) << "\n";
-        std::cout << getMember(*newIt, ContigEnd()) << "\n";
-        std::cout << "Errors: " << getMember(*newIt, Errors()) << "\n";
-        std::cout << "ReadId: "<< getMember(*newIt, ReadId()) << "\n" << "\n";
+//         std::cout << "Match: " << "\n";
+//         std::cout << getMember(*newIt, ContigBegin()) << "\n";
+//         std::cout << getMember(*newIt, ContigEnd()) << "\n";
+//         std::cout << "Errors: " << getMember(*newIt, Errors()) << "\n";
+//         std::cout << "ReadId: "<< getMember(*newIt, ReadId()) << "\n" << "\n";
         ++newIt;
     }
-    std::cout << "After: " << "\n";
+//     std::cout << "After: " << "\n";
     newIt = oldIt;
 
 
@@ -744,11 +744,11 @@ compactUniqueMatchesOSS(TMatches & matches, Tag<TPosition> const & posTag)
     while (oldIt != matchesEnd)
     {
         *newIt = *oldIt;
-        std::cout << "Match: " << "\n";
-        std::cout << getMember(*newIt, ContigBegin()) << "\n";
-        std::cout << getMember(*newIt, ContigEnd()) << "\n";
-        std::cout << "Errors: " << getMember(*newIt, Errors()) << "\n";
-        std::cout << "ReadId: "<< getMember(*newIt, ReadId()) << "\n" << "\n";
+//         std::cout << "Match: " << "\n";
+//         std::cout << getMember(*newIt, ContigBegin()) << "\n";
+//         std::cout << getMember(*newIt, ContigEnd()) << "\n";
+//         std::cout << "Errors: " << getMember(*newIt, Errors()) << "\n";
+//         std::cout << "ReadId: "<< getMember(*newIt, ReadId()) << "\n" << "\n";
 
         ++oldIt;
 
@@ -802,7 +802,7 @@ inline void removeDuplicatesOSS(TMatchesSet & matchesSet, TThreading const & thr
     // Sort matches by end position and move unique matches at the beginning.
     iterate(matchesSet, MatchesCompactorOSS<TLimits, ContigEnd>(newLimits), Rooted(), threading);
 
-    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << "\n";
+//     std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << "\n";
     // Exclude duplicate matches at the end.
     assign(stringSetLimits(matchesSet), newLimits);
     _refreshStringSetLimits(matchesSet, threading);
