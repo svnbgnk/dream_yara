@@ -858,7 +858,7 @@ inline void aggregateMatchesOSS(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeq
     // Remove duplicate matches (sorts the matches by genomic coordinate).
     start(me.timer);
 //     removeDuplicates(me.matchesSetByCoord, typename TConfig::TThreading());
-    removeDuplicatesOSS(me.matchesSetByCoord, typename TConfig::TThreading());
+    removeDuplicatesOSS(me.matchesSetByCoord, readSeqs, typename TConfig::TThreading());
     stop(me.timer);
     me.stats.compactMatches += getValue(me.timer);
 

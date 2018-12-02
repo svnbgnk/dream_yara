@@ -597,6 +597,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     std::cout << "End of Matches ____________________________________________________________________________________________________ " << "\n";*/
 
     aggregateMatchesOSS(me, readSeqs);
+//     aggregateMatches(me, readSeqs);
 
     rankMatches(me, me.reads.seqs);
     if (me.options.verifyMatches)

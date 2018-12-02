@@ -105,6 +105,13 @@ typedef Tag<Errors_> const Errors;
 typedef ContigSize      ContigBegin;
 typedef ReadSize        ContigEnd;
 
+
+struct ReadSizeAlt_;
+typedef Tag<ReadSizeAlt_> const ContigEndOSS;
+
+struct ContigSizeAlt_;
+typedef Tag<ContigSizeAlt_> const ContigBeginOSS;
+
 // ============================================================================
 // Classes
 // ============================================================================
@@ -252,6 +259,53 @@ struct MatchSorter<TMatch, ContigEnd>
     }
 };
 
+template <typename TMatch, typename TReadSeqs, typename TTag>
+struct MatchSorterOSS
+{
+    TReadSeqs & readSeqs;
+
+    MatchSorterOSS(TReadSeqs & readSeqs) :
+        readSeqs(readSeqs)
+    {}
+
+    inline bool operator()(TMatch const & a, TMatch const & b) const
+    {
+        return getMember(a, TTag()) < getMember(b, TTag());
+    }
+};
+
+
+template <typename TMatch, typename TReadSeqs>
+struct MatchSorterOSS<TMatch, TReadSeqs, ContigBeginOSS>
+{
+    TReadSeqs & readSeqs;
+
+    MatchSorterOSS (TReadSeqs & readSeqs) :
+        readSeqs(readSeqs)
+    {}
+
+    inline bool operator()(TMatch const & a, TMatch const & b) const
+    {
+        return getSortKey(a, readSeqs, ContigBeginOSS()) < getSortKey(b, readSeqs, ContigBeginOSS());
+    }
+};
+
+template <typename TMatch, typename TReadSeqs>
+struct MatchSorterOSS<TMatch, TReadSeqs, ContigEndOSS>
+{
+    TReadSeqs & readSeqs;
+
+    MatchSorterOSS (TReadSeqs & readSeqs) :
+        readSeqs(readSeqs)
+    {}
+
+    inline bool operator()(TMatch const & a, TMatch const & b) const
+    {
+        return getSortKey(a, readSeqs, ContigEndOSS()) < getSortKey(b, readSeqs, ContigEndOSS());
+    }
+};
+
+
 // ----------------------------------------------------------------------------
 // Class MatchesCompactor
 // ----------------------------------------------------------------------------
@@ -278,13 +332,15 @@ struct MatchesCompactor
     }
 };
 
-template <typename TCounts, typename TPosition>
+template <typename TCounts, typename TReadSeqs, typename TPosition>
 struct MatchesCompactorOSS
 {
-    TCounts &    unique;
+    TCounts &     unique;
+    TReadSeqs & readSeqs;
 
-    MatchesCompactorOSS(TCounts & unique) :
-        unique(unique)
+    MatchesCompactorOSS(TCounts & unique, TReadSeqs & readSeqs) :
+        unique(unique),
+        readSeqs(readSeqs)
     {}
 
     template <typename TIterator>
@@ -295,8 +351,8 @@ struct MatchesCompactorOSS
 
         TMatches const & matches = value(it);
 
-        sort(matches, MatchSorter<TMatch, TPosition>());
-        unique[position(it) + 1] = compactUniqueMatchesOSS(matches, TPosition());
+        sort(matches, MatchSorterOSS<TMatch, TReadSeqs, TPosition>(readSeqs));
+        unique[position(it) + 1] = compactUniqueMatches(matches, TPosition());
     }
 };
 
@@ -549,6 +605,48 @@ inline uint64_t getSortKey(Match<TSpec> const & me, ContigEnd)
            ((uint64_t)getMember(me, Errors()));
 }
 
+template <typename TSpec, typename TReadSeqs>
+inline uint8_t lower_bound_edit(Match<TSpec> const & me, TReadSeqs & readSeqs){
+//     std::cout << "ReadLength: " << getReadLength(me, readSeqs) << "\n";
+//     std::cout << "ContigBegin: " << (int32_t)getMember(me, ContigBegin()) << "\n";
+//     std::cout << "ContigEnd: " << (int32_t)getMember(me, ContigEnd()) << "\n";
+    int32_t editE = (int32_t) getReadLength(me, readSeqs) - ((int32_t)getMember(me, ContigEnd()) - (int32_t)getMember(me, ContigBegin()));
+//     std::cout << editE << "\t" << (int) abs(editE) << "\n";
+    return (((uint8_t)abs(editE)));
+}
+
+// ----------------------------------------------------------------------------
+// Function getSortKey(ContigBeginOSS)
+// ----------------------------------------------------------------------------
+
+template <typename TSpec, typename TReadSeqs>
+inline uint64_t getSortKey(Match<TSpec> const & me, TReadSeqs & readSeqs, ContigBeginOSS)
+{
+    typedef Match<TSpec>    TMatch;
+
+    return ((uint64_t)getMember(me, ContigId())      << (1 + MemberBits<TMatch, ContigSize>::VALUE + 2 * MemberBits<TMatch, Errors>::VALUE)) |
+           ((uint64_t)onReverseStrand(me)            << (MemberBits<TMatch, ContigSize>::VALUE + 2 * MemberBits<TMatch, Errors>::VALUE))     |
+           ((uint64_t)getMember(me, ContigBegin())   << (2 * MemberBits<TMatch, Errors>::VALUE))                                             |
+           ((uint64_t)getMember(me, Errors())        << (MemberBits<TMatch, Errors>::VALUE))                                                 |
+           ((uint64_t)lower_bound_edit(me, readSeqs));
+}
+
+// ----------------------------------------------------------------------------
+// Function getSortKey(ContigEndOSS)
+// ----------------------------------------------------------------------------
+
+template <typename TSpec, typename TReadSeqs>
+inline uint64_t getSortKey(Match<TSpec> const & me, TReadSeqs & readSeqs, ContigEndOSS)
+{
+    typedef Match<TSpec>    TMatch;
+
+    return ((uint64_t)getMember(me, ContigId())     << (1 + MemberBits<TMatch, ContigSize>::VALUE + 2 * MemberBits<TMatch, Errors>::VALUE)) |
+           ((uint64_t)onReverseStrand(me)           << (MemberBits<TMatch, ContigSize>::VALUE + 2 * MemberBits<TMatch, Errors>::VALUE))     |
+           ((uint64_t)getMember(me, ContigEnd())    <<  (2 * MemberBits<TMatch, Errors>::VALUE))                                            |
+           ((uint64_t)getMember(me, Errors())       << (MemberBits<TMatch, Errors>::VALUE))                                                 |
+           ((uint64_t)lower_bound_edit(me, readSeqs));
+}
+
 // ============================================================================
 // Match Pair Getters
 // ============================================================================
@@ -603,6 +701,27 @@ inline bool isDuplicate(Match<TSpec> const & a, Match<TSpec> const & b, ContigEn
 {
     return contigEqual(a, b) && strandEqual(a, b) && getMember(a, ContigEnd()) == getMember(b, ContigEnd());
 }
+
+// ----------------------------------------------------------------------------
+// Function isDuplicate(ContigBeginOSS)
+// ----------------------------------------------------------------------------
+
+template <typename TSpec>
+inline bool isDuplicate(Match<TSpec> const & a, Match<TSpec> const & b, ContigBeginOSS)
+{
+    return contigEqual(a, b) && strandEqual(a, b) && getMember(a, ContigBegin()) == getMember(b, ContigBegin());
+}
+
+// ----------------------------------------------------------------------------
+// Function isDuplicate(ContigEndOSS)
+// ----------------------------------------------------------------------------
+
+template <typename TSpec>
+inline bool isDuplicate(Match<TSpec> const & a, Match<TSpec> const & b, ContigEndOSS)
+{
+    return contigEqual(a, b) && strandEqual(a, b) && getMember(a, ContigEnd()) == getMember(b, ContigEnd());
+}
+
 
 // ----------------------------------------------------------------------------
 // Function isEqual()
@@ -716,7 +835,7 @@ compactUniqueMatches(TMatches & matches, Tag<TPosition> const & posTag)
 
     return newIt - matchesBegin;
 }
-
+/*
 template <typename TMatches, typename TPosition>
 inline typename Size<TMatches>::Type
 compactUniqueMatchesOSS(TMatches & matches, Tag<TPosition> const & posTag)
@@ -759,7 +878,7 @@ compactUniqueMatchesOSS(TMatches & matches, Tag<TPosition> const & posTag)
 
 
     return newIt - matchesBegin;
-}
+}*/
 
 // ----------------------------------------------------------------------------
 // Function removeDuplicates()
@@ -790,8 +909,8 @@ inline void removeDuplicates(TMatchesSet & matchesSet, TThreading const & thread
     _refreshStringSetLimits(matchesSet, threading);
 }
 
-template <typename TMatchesSet, typename TThreading>
-inline void removeDuplicatesOSS(TMatchesSet & matchesSet, TThreading const & threading)
+template <typename TMatchesSet, typename TReadSeqs, typename TThreading>
+inline void removeDuplicatesOSS(TMatchesSet & matchesSet, TReadSeqs & readSeqs, TThreading const & threading)
 {
     typedef typename StringSetLimits<TMatchesSet>::Type         TLimits;
 
@@ -800,7 +919,7 @@ inline void removeDuplicatesOSS(TMatchesSet & matchesSet, TThreading const & thr
     front(newLimits) = 0;
 
     // Sort matches by end position and move unique matches at the beginning.
-    iterate(matchesSet, MatchesCompactorOSS<TLimits, ContigEnd>(newLimits), Rooted(), threading);
+    iterate(matchesSet, MatchesCompactorOSS<TLimits, TReadSeqs, ContigEndOSS>(newLimits, readSeqs), Rooted(), threading);
 
 //     std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << "\n";
     // Exclude duplicate matches at the end.
@@ -808,7 +927,7 @@ inline void removeDuplicatesOSS(TMatchesSet & matchesSet, TThreading const & thr
     _refreshStringSetLimits(matchesSet, threading);
 
     // Sort matches by begin position and move unique matches at the beginning.
-    iterate(matchesSet, MatchesCompactorOSS<TLimits, ContigBegin>(newLimits), Rooted(), threading);
+    iterate(matchesSet, MatchesCompactorOSS<TLimits, TReadSeqs, ContigBeginOSS>(newLimits, readSeqs), Rooted(), threading);
 
     // Exclude duplicate matches at the end.
     assign(stringSetLimits(matchesSet), newLimits);
