@@ -105,7 +105,7 @@ typedef Tag<Errors_> const Errors;
 typedef ContigSize      ContigBegin;
 typedef ReadSize        ContigEnd;
 
-
+//INFO added additional types for new sorting behavior
 struct ReadSizeAlt_;
 typedef Tag<ReadSizeAlt_> const ContigEndOSS;
 
@@ -615,6 +615,7 @@ inline uint8_t lower_bound_edit(Match<TSpec> const & me, TReadSeqs & readSeqs){
     return (((uint8_t)abs(editE)));
 }
 
+//INFO new SortKeys for OSS
 // ----------------------------------------------------------------------------
 // Function getSortKey(ContigBeginOSS)
 // ----------------------------------------------------------------------------
@@ -835,50 +836,6 @@ compactUniqueMatches(TMatches & matches, Tag<TPosition> const & posTag)
 
     return newIt - matchesBegin;
 }
-/*
-template <typename TMatches, typename TPosition>
-inline typename Size<TMatches>::Type
-compactUniqueMatchesOSS(TMatches & matches, Tag<TPosition> const & posTag)
-{
-    typedef typename Iterator<TMatches, Standard>::Type         TMatchesIterator;
-
-    TMatchesIterator matchesBegin = begin(matches, Standard());
-    TMatchesIterator matchesEnd = end(matches, Standard());
-    TMatchesIterator newIt = matchesBegin;
-    TMatchesIterator oldIt = matchesBegin;
-//     std::cout << "Before: " << "\n";
-    while (newIt != matchesEnd){
-//         std::cout << "Match: " << "\n";
-//         std::cout << getMember(*newIt, ContigBegin()) << "\n";
-//         std::cout << getMember(*newIt, ContigEnd()) << "\n";
-//         std::cout << "Errors: " << getMember(*newIt, Errors()) << "\n";
-//         std::cout << "ReadId: "<< getMember(*newIt, ReadId()) << "\n" << "\n";
-        ++newIt;
-    }
-//     std::cout << "After: " << "\n";
-    newIt = oldIt;
-
-
-
-    while (oldIt != matchesEnd)
-    {
-        *newIt = *oldIt;
-//         std::cout << "Match: " << "\n";
-//         std::cout << getMember(*newIt, ContigBegin()) << "\n";
-//         std::cout << getMember(*newIt, ContigEnd()) << "\n";
-//         std::cout << "Errors: " << getMember(*newIt, Errors()) << "\n";
-//         std::cout << "ReadId: "<< getMember(*newIt, ReadId()) << "\n" << "\n";
-
-        ++oldIt;
-
-        while (oldIt != matchesEnd && isDuplicate(*newIt, *oldIt, posTag)) ++oldIt;
-
-        ++newIt;
-    }
-
-
-    return newIt - matchesBegin;
-}*/
 
 // ----------------------------------------------------------------------------
 // Function removeDuplicates()
