@@ -1252,7 +1252,7 @@ find(OSSContext<TSpec, TConfig> & ossContext,
             TReadId readId = getReadId(ossContext.readSeqs, k);
             bool skip = false;
             if(isMapped(ossContext.ctx, readId)){
-                if(getMinErrors(ossContext.ctx, readId) + ossContext.maxError > ossContext.strata){
+                if(getMinErrors(ossContext.ctx, readId) + ossContext.strata < minErrors){
                     skip = true;
                 }
             }
