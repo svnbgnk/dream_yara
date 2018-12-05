@@ -182,6 +182,7 @@ struct MapperTraits
     typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
     typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TBiIndex;
     typedef Iter<TBiIndex, VSTree<TopDown<> > >                     TBiIter;
+    typedef TBiIter                                                 TSparseIter;
 
     typedef typename Size<TIndex>::Type                             TIndexSize;
     typedef typename Fibre<TIndex, FibreSA>::Type                   TSA;

@@ -36,6 +36,8 @@
 #ifndef APP_YARA_DIS_MAPPER_H_
 #define APP_YARA_DIS_MAPPER_H_
 
+#include "oss_context.h"
+
 using namespace seqan;
 
 // ==========================================================================
@@ -93,304 +95,6 @@ public:
 
 };
 
-
-
-struct SparseVDesc{
-    seqan::Pair<uint32_t, uint32_t> range;
-    uint32_t smaller;
-    uint32_t repLen;
-    Dna lastChar;
-};
-
-
-struct SparseIter{
-    seqan::Pair<uint32_t, uint32_t> fwdRange;
-    uint32_t revRangeStart;
-    uint32_t repLen;
-    /*
-    SparseVDesc fwd;
-    SparseVDesc rev;
-    SparseVDesc fwdp;
-    SparseVDesc revp;*/
-};
-
-
-template<typename TIter2>
-struct State{
-    TIter2 it;
-    uint32_t nlp;
-    uint32_t nrp;
-    uint8_t sId;
-    uint8_t blockIndex;
-    bool fwdDirection;
-
-
-    //TODO use this only when TIter2 == MyIter
-    template<typename TIter>
-    State(TIter inIt,
-          uint32_t nlp,
-          uint32_t nrp,
-          uint8_t sId,
-          uint8_t blockIndex,
-          bool fwdDirection) :
-        it(inIt),
-        nlp(nlp),
-        nrp(nrp),
-        sId(sId),
-        blockIndex(blockIndex),
-        fwdDirection(fwdDirection)
-    {
-        ;
-    }
-    /*
-    State(TIter inIt,
-          uint32_t nlp,
-          uint32_t nrp,
-          uint8_t sId,
-          uint8_t blockIndex,
-          bool fwdDirection) :
-//         it(inIt),
-        nlp(nlp),
-        nrp(nrp),
-        sId(sId),
-        blockIndex(blockIndex),
-        fwdDirection(fwdDirection)
-    {
-
-
-
-        it.fwdRange = inIt.fwdIter.vDesc.range;
-        it.revRangeStart = inIt.revIter.vDesc.range.i1;
-        it.repLen = inIt.fwdIter.vDesc.repLen;
-    }*/
-};
-
-/*
-        it.fwd.range = inIt.fwdIter.vDesc.range;
-        it.fwd.smaller = inIt.fwdIter.vDesc.smaller;
-        it.fwd.repLen = inIt.fwdIter.vDesc.repLen;
-        it.fwd.lastChar = inIt.fwdIter.vDesc.lastChar;
-
-        it.rev.range = inIt.revIter.vDesc.range;
-        it.rev.smaller = inIt.revIter.vDesc.smaller;
-        it.rev.repLen = inIt.revIter.vDesc.repLen;
-        it.rev.lastChar = inIt.revIter.vDesc.lastChar;
-
-        it.fwdp.range = inIt.fwdIter._parentDesc.range;
-        it.fwdp.smaller = inIt.fwdIter._parentDesc.smaller;
-        it.fwdp.repLen = inIt.fwdIter._parentDesc.repLen;
-        it.fwdp.lastChar = inIt.fwdIter._parentDesc.lastChar;
-
-        it.revp.range = inIt.revIter._parentDesc.range;
-        it.revp.smaller = inIt.revIter._parentDesc.smaller;
-        it.revp.repLen = inIt.revIter._parentDesc.repLen;
-        it.revp.lastChar = inIt.revIter._parentDesc.lastChar;*/
-
-
-
-struct modusParameters{
-public:
-    bool nomappability;
-    bool directsearch;
-    bool compmappable;
-    bool suspectunidirectional;
-
-    bool testflipdensity;
-    uint32_t step;
-    uint32_t distancetoblockend;
-    uint32_t directsearch_th;
-    uint32_t directsearchblockoffset;
-    float filter_th;
-    float invflipdensity;
-    uint32_t intervalsize;
-
-    modusParameters(){
-        setdefault();
-    }
-
-    void setdefault(){
-        nomappability = true;
-        directsearch = true;
-        compmappable = true;
-        suspectunidirectional = true;
-
-        testflipdensity = true;
-        //binaryNumber //has to be 2^x - 1 for fast modulo calculation
-        step = 0b11;
-        distancetoblockend = 2;
-
-        directsearchblockoffset = 0;
-        directsearch_th = 2;
-        filter_th = 0.5;
-
-        invflipdensity = 0.5;
-
-        intervalsize = 3;
-    }
-
-    void print(){
-        std::cout << "Cases Enabled: " << "\n";
-        std::cout << nomappability << " " << directsearch << " " << compmappable << " " << suspectunidirectional << "\n";
-        std::cout << "Params: " << "\n";
-
-        std::cout << "step: " << step << "\n";
-        std::cout << "distancetoblockend: " << distancetoblockend << "\n";
-        std::cout << "directsearchblockoffset: " << directsearchblockoffset << "\n";
-        std::cout << "directsearch_th: " << directsearch_th << "\n";
-        std::cout << "filter_th: " << filter_th << "\n";
-        std::cout << "invflipdensity: " << invflipdensity << "\n";
-        std::cout << "intervalsize: " << intervalsize << "\n";
-    }
-};
-
-// this struct carries Traits of Mapper, the reference to matches, text, read context and will
-// contain conditions and parameters for OSS
-template <typename TSpec, typename TConfig>
-struct OSSContext
-{
-    //Parameters
-    modusParameters normal;
-    modusParameters comp;
-    modusParameters uni;
-
-    bool filterDelegate = true;
-    bool trackReadCount = false;
-    bool itv = true;
-    bool bestXMapper = false; //still needed multiple searches
-    bool oneSSBestXMapper = false;
-
-    uint8_t maxError;
-    uint8_t strata;
-
-    typedef MapperTraits<TSpec, TConfig>        TTraits;
-    typedef typename TTraits::TReadsContext     TReadsContext;
-    typedef typename TTraits::TMatchesAppender  TMatches;
-    typedef typename TTraits::TMatch            TMatch;
-    typedef typename TTraits::TContigSeqs       TContigSeqs;
-    typedef typename TTraits::TReadSeqs         TReadSeqs;
-    typedef typename TTraits::TBiIter           MySparseIter;
-    typedef State<MySparseIter>                 TTState;
-
-
-    // Shared-memory read-write data.
-    TReadsContext &     ctx;
-    TMatches &          matches;
-    ReadsContextOSS<TSpec, TConfig>     ctxOSS;
-    std::vector<std::vector<TTState> > states;
-
-    //track occ count per read
-    std::vector<uint32_t> /*&*/ readOccCount;
-
-    // Shared-memory read-only data.
-    TReadSeqs & readSeqs;
-    TContigSeqs const & contigSeqs;
-//     Options const &     options;
-
-    OSSContext(TReadsContext & ctx,
-                 TMatches & matches,
-                 TReadSeqs & readSeqs,
-                 TContigSeqs const & contigSeqs) :
-        ctx(ctx),
-        matches(matches),
-        readSeqs(readSeqs),
-        contigSeqs(contigSeqs)
-    {
-        ;
-    }
-
-    void setdefault(){
-        normal.setdefault();
-        comp.setdefault();
-        uni.setdefault();
-    }
-
-    void print(){
-        std::cout << "Normal: ";
-        normal.print();
-        std::cout << "Comp: ";
-        comp.print();
-        std::cout << "Uni: ";
-        uni.print();
-    }
-
-    void setReadContextOSS(uint8_t nerrors, uint8_t instrata, bool mScheme = false){
-        maxError = nerrors;
-        strata = instrata;
-
-//         initReadsContext(ctx, readCount);
-        clear(ctxOSS);
-        resize(ctxOSS, readSeqs);
-
-        if(!mScheme){
-            std::cout << "Using one Scheme" << "\n";
-            oneSSBestXMapper = true;
-
-            std::vector<TTState> v;
-            for(int i = 0; i < maxError + 1; ++i)
-                states.push_back(v);
-    //         states.reserve(maxError);
-        }else{
-            std::cout << "Using multiple Schemes" << "\n";
-            bestXMapper = true;
-        }
-    }
-
-    template <size_t nbrBlocks>
-    bool itvCondition(OptimalSearch<nbrBlocks> const & s,
-                      uint8_t const blockIndex,
-                      uint32_t ivalOne)
-    {
-        return(itv && ivalOne < (static_cast<int>(s.pi.size()) - blockIndex - 1 + normal.directsearchblockoffset) * normal.directsearch_th);
-    }
-
-
-    template <typename TText, typename TIndex, typename TIndexSpec,
-              size_t nbrBlocks>
-    bool itvConditionComp(Iter<Index<TText, BidirectionalIndex<TIndex> >, VSTree<TopDown<TIndexSpec> > > iter,
-                      uint32_t const needleLeftPos,
-                      uint32_t const needleRightPos,
-                      uint8_t const errors,
-                      OptimalSearch<nbrBlocks> const & s,
-                      uint8_t const blockIndex)
-    {
-        return(itv && iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 < (s.pi.size() - blockIndex - 1 + comp.directsearchblockoffset) * comp.directsearch_th);
-    }
-
-    template<size_t nbrBlocks>
-    bool inBlockCheckMappabilityCondition(uint32_t needleLeftPos,
-                                          uint32_t needleRightPos,
-                                           OptimalSearch<nbrBlocks> const & s,
-                                          uint8_t blockIndex)
-    {
-        uint32_t prevBlocklength = (blockIndex > 0) ? s.blocklength[blockIndex - 1] : 0;
-        uint32_t nextBlocklength = s.blocklength[blockIndex];
-        uint32_t step = (needleRightPos - needleLeftPos - 1);
-
-
-        bool enoughDistanceToBlockEnds = step + normal.distancetoblockend < nextBlocklength && step - normal.distancetoblockend > prevBlocklength;
-        return(((step & normal.step) == 0) && enoughDistanceToBlockEnds);
-    }
-
-    void delegate(auto const & iter, uint32_t const needleId, uint8_t errors, bool const rev){
-        std::cout << "Trying to report occ" << "\n";
-        uint32_t occLength = repLength(iter);
-        for (auto occ : getOccurrences(iter)){
-            TMatch hit;
-            setContigPosition(hit, occ, posAdd(occ, occLength));
-            hit.errors = errors;
-            setReadId(hit, readSeqs, needleId);
-            setMapped(ctx, needleId);
-//             setMinErrors(ctx, needleId, errors);
-    //         hit.readId = needleId;
-//TODO to du maybe use this form
-    //         THit hit = { range(indexIt), (TSeedId)position(seedsIt), errors };
-
-            appendValue(matches, hit, Generous(), typename TTraits::TThreading());
-        }
-    }
-};
-
-
 template <typename TSpec, typename TConfig>
 struct DelegateDirect
 {
@@ -413,6 +117,10 @@ struct DelegateDirect
         hit.errors = errors;
         setReadId(hit, ossContext.readSeqs, needleId);
         setMapped(ossContext.ctx, needleId);
+
+        TReadId readId = getReadId(ossContext.readSeqs, needleId);
+        setMapped(ossContext.ctx, readId);
+        setMinErrors(ossContext.ctx, readId, errors);
 //         setMinErrors(ossContext.ctx, needleId, errors);
 //         hit.readId = needleId;
 
@@ -454,18 +162,16 @@ struct Delegate
             TMatch hit;
             setContigPosition(hit, occ, posAdd(occ, occLength));
             hit.errors = errors;
-//             std::cout << "isMapped: "<< isMapped(ossContext.ctx, readId) << "\n";
-//             std::cout << "MinErrors: "<< getMinErrors(ossContext.ctx, readId) << "\n";
 
-            setReadId(hit, ossContext.readSeqs, needleId); // since reverse reads are at the end //TODO check this line (it determines if read  is rev) // if would take the original id than it can no longer determine if it is reversed or not
+            setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
             setMapped(ossContext.ctx, readId);
-            setMinErrors(ossContext.ctx, readId, errors);
+            setMinErrors(ossContext.ctx, readId, errors); //TODO move out of loop
 
 //             std::cout << "isMapped: "<< isMapped(ossContext.ctx, readId) << "\n";
 //             std::cout << "MinErrors: "<< (int)getMinErrors(ossContext.ctx, readId) << "\n";
 
     //         hit.readId = readId;
-//TODO to du maybe use this form
+//TODO maybe use this form
     //         THit hit = { range(indexIt), (TSeedId)position(seedsIt), errors };
 
             appendValue(matches, hit, Generous(), typename TTraits::TThreading()); //does this make any sense (always single occ)
@@ -699,7 +405,11 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     myTfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
 //     myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
 
-    find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+    if(mscheme){
+        find(0, maxError, strata, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+    }else{
+        find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+    }
 
 //     if(addMyOwnOption) //IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE
 //         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());

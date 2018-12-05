@@ -74,7 +74,10 @@ struct hit{
 template <size_t nbrBlocks, size_t N>
 inline void calcConstParameters(std::array<OptimalSearch<nbrBlocks>, N> & ss)
 {
+    uint8_t id = 0;
     for (OptimalSearch<nbrBlocks> & s : ss){
+        s.id = id;
+        ++id;
 //         int bsize = s.pi.size();
         uint8_t min = s.pi[0];
         uint8_t max = s.pi[0];
@@ -88,7 +91,7 @@ inline void calcConstParameters(std::array<OptimalSearch<nbrBlocks>, N> & ss)
             s.max[i] = max;
         }
         uint8_t lastValue = s.pi[nbrBlocks - 1];
-        int k = nbrBlocks - 2;
+        int k = (nbrBlocks > 1) ? nbrBlocks - 2 : 0;
         while(k >= 0){
             if(s.pi[k] == lastValue - 1 || s.pi[k] == lastValue + 1)
             {
