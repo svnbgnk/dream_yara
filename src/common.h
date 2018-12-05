@@ -148,9 +148,6 @@ inline void getConsOnes(std::vector<std::pair<TVector, TVSupport>> & bitvectors,
                  std::vector<std::pair<uint32_t, uint32_t>> & consOnesOutput);
 
 
-
-
-
 /*
 template <typename TText, typename TSpec, typename TConfig>
 inline bool open(Index<TText, BidirectionalIndex<FMIndex<TSpec, TConfig> > > & index, const char * fileName, int openMode)

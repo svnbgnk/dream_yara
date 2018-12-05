@@ -54,9 +54,42 @@ struct ReadsContext
     String<bool>                paired;
 };
 
+
+template <typename TSpec = void, typename TConfig = void>
+struct ReadsContextOSS
+{
+    String<unsigned char>       currentErrors;
+};
+
 // ============================================================================
 // Functions
 // ============================================================================
+
+template <typename TSpec, typename TConfig>
+inline void clear(ReadsContextOSS<TSpec, TConfig> & ctxOSS)
+{
+    clear(ctxOSS.currentErrors);
+    shrinkToFit(ctxOSS.currentErrors);
+}
+
+template <typename TSpec, typename TConfig, typename TReadSeqs>
+inline void resize(ReadsContextOSS<TSpec, TConfig> & ctxOSS, TReadSeqs const & readSeqs)
+{
+    resize(ctxOSS.currentErrors, getReadSeqsCount(readSeqs), std::numeric_limits<unsigned char>::min(), Exact());
+}
+
+template <typename TSpec, typename TConfig, typename TReadId>
+inline unsigned char getCurrentErrors(ReadsContextOSS<TSpec, TConfig> const & ctxOSS, TReadId readId)
+{
+    return ctxOSS.currentErrors[readId];
+}
+
+
+template <typename TSpec, typename TConfig, typename TReadId, typename TErrors>
+inline void setCurrentErrors(ReadsContextOSS<TSpec, TConfig> & ctxOSS, TReadId readId, TErrors errors)
+{
+    assignValue(ctxOSS.currentErrors, readId, errors);
+}
 
 // ----------------------------------------------------------------------------
 // Function clear()
