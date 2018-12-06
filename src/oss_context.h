@@ -337,7 +337,7 @@ struct OSSContext
 
     bool filterDelegate = true;
     bool trackReadCount = false;
-    bool itv = false;
+    bool itv = true;
     bool bestXMapper = false; //still needed multiple searches
     bool oneSSBestXMapper = false;
 

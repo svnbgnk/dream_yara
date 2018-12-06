@@ -121,7 +121,8 @@ struct DelegateDirect
         setMapped(ossContext.ctx, readId);
         setMinErrors(ossContext.ctx, readId, errors);
 
-//         std::cout << "Direct hit" << start << "end" << end << "\t" << needleId << "\terrors" << (int) errors << "\n";
+
+//         std::cout << "Direct hit" << start << "end" << end << " (" << (int)getSeqOffset(end) - getSeqOffset(start) << ")" << "\t" << needleId << "\terrors" << (int) errors << "\n";
 //         setMinErrors(ossContext.ctx, needleId, errors);
 //         hit.readId = needleId;
 
@@ -168,6 +169,7 @@ struct Delegate
             setMapped(ossContext.ctx, readId);
             setMinErrors(ossContext.ctx, readId, errors); //TODO move out of loop
 
+//             std::cout << "hit" << occ << "end" << posAdd(occ, occLength) << " (" << occLength << ")" << "\t" << needleId << "\terrors" << (int) errors << "\n";
 //             std::cout << "isMapped: "<< isMapped(ossContext.ctx, readId) << "\n";
 //             std::cout << "MinErrors: "<< (int)getMinErrors(ossContext.ctx, readId) << "\n";
 

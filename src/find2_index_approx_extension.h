@@ -158,7 +158,11 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                                     uint8_t intDel,
                                     bool usingReverseText)
 {
-
+/*
+    std::cout << needleId << "\t" << sa_info << "Needle: " << "\n";
+    std::cout << "   " << needle << "\n";
+    std::cout << "   " << n_infix << "\n";
+    std::cout << ex_infix << "\n\n";*/
 
     //TODO insert return after each delegate call for only best alignment
     uint32_t needleL = length(needle);
@@ -181,7 +185,6 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                 saPosOnFwd(sa_info_tmp, genomelength, needleL);
             }
             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, length(needle)), needleId, errors2);
-            return;
         }
 
         for(uint8_t e = 1; e <= max_e; ++e){
@@ -212,7 +215,6 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
                             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
-                            return;
                         }
                     }
                 }
@@ -231,7 +233,6 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
                             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
-                            return;
                         }
                     }
 
@@ -248,7 +249,6 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
                             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
-                            return;
                         }
                     }
                 }
@@ -313,10 +313,13 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         uint8_t overlap_l = max_e;
         uint8_t overlap_r = max_e;
         uint16_t ex_infixL = needleL + overlap_l + overlap_r;
+
+//         std::cout << "Checkpoint" << "NPL: " << needleLeftPos << "\tNRP: " << needleRightPos << "\n";
         for(uint32_t r = 0; r < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++r)
         {
-            if(iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 == 1)
+//             std::cout << "Checkpoint2" << "\n";
             if(checkSinglePos(bitvectors, brange, r)){
+//                 std::cout << "Checkpoint3" << "\n";
                 TSAValue sa_info;
                 TContigsLen seqOffset;
                 TContigsLen chromlength;
@@ -325,6 +328,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                     sa_info = iter.fwdIter.index->sa[iter.fwdIter.vDesc.range.i1 + r];
                     seqOffset = getSeqOffset(sa_info);
                     chromlength = length(genome[getSeqNo(sa_info)]);
+//                     std::cout << "checking forward: " << sa_info << "\t" << chromlength << "\n";
                     if(!(needleLeftPos + overlap_l <= seqOffset && chromlength - 1 >= seqOffset - needleLeftPos + needleL - 1 + overlap_r))
                         continue;
 //                     sa_info.i2 = sa_info.i2 - needleLeftPos;
@@ -335,7 +339,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                     sa_info = iter.revIter.index->sa[iter.revIter.vDesc.range.i1 + r];
                     seqOffset = getSeqOffset(sa_info);
                     chromlength = length(genome[getSeqNo(sa_info)]);
-                    //TODO move next 3 lines outside if
+//                     std::cout << "checking reverse: " << sa_info << "\t" << chromlength << "\n";
                     if(!(chromlength - 1 >= seqOffset + needleRightPos - 1 + overlap_r && seqOffset + needleRightPos - 1 - overlap_l >= length(needle) + 1))
                         continue;
 //                     sa_info.i2 = chromlength - sa_info.i2 - needleRightPos + 1;

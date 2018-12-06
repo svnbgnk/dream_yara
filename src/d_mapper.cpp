@@ -418,7 +418,8 @@ void configureDisMapper(DisOptions & disOptions,
     }
     else
     {
-        spawnDisMapper<TContigsSize, TContigsLen, uint64_t>(disOptions, threading, sequencing, distance);
+        throw RuntimeError("Maximum contig3 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+//         spawnDisMapper<TContigsSize, TContigsLen, uint64_t>(disOptions, threading, sequencing, distance);
     }
 }
 
@@ -472,11 +473,13 @@ void configureDisMapper(DisOptions & disOptions,
     }
     else if (disOptions.contigsSize <= MaxValue<uint16_t>::VALUE)
     {
-        configureDisMapper<uint16_t>(disOptions, threading, sequencing, distance);
+//         configureDisMapper<uint16_t>(disOptions, threading, sequencing, distance);
+         throw RuntimeError("Maximum contig4 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
     }
     else
     {
-        configureDisMapper<uint32_t>(disOptions, threading, sequencing, distance);
+        throw RuntimeError("Maximum contig2 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+//         configureDisMapper<uint32_t>(disOptions, threading, sequencing, distance);
     }
 }
 
@@ -495,10 +498,12 @@ template <typename TThreading>
 void configureDisMapper(DisOptions & disOptions,
                         TThreading const & threading)
 {
-    if (disOptions.singleEnd)
+    if (disOptions.singleEnd){
         configureDisMapper(disOptions, threading, SingleEnd());
-    else
-        configureDisMapper(disOptions, threading, PairedEnd());
+    }else{
+        throw RuntimeError("Enable PairedEnd() L504");
+//         configureDisMapper(disOptions, threading, PairedEnd());
+    }
 }
 
 void configureDisMapper(DisOptions & disOptions)
