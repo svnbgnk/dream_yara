@@ -109,18 +109,19 @@ struct DelegateDirect
         matches(matches)
     {}
 
-    template <typename TContext, typename TContigsPos, typename TMatchErrors, typename TReadId>
-    void operator() (TContext & ossContext, TContigsPos const & start, TContigsPos const & end, TMatchErrors errors, TReadId const needleId)
+    template <typename TContext, typename TContigsPos, typename TReadId, typename TMatchErrors>
+    void operator() (TContext & ossContext, TContigsPos const & start, TContigsPos const & end, TReadId const needleId, TMatchErrors errors)
     {
         TMatch hit;
         setContigPosition(hit, start, end);
         hit.errors = errors;
         setReadId(hit, ossContext.readSeqs, needleId);
-        setMapped(ossContext.ctx, needleId);
 
         TReadId readId = getReadId(ossContext.readSeqs, needleId);
         setMapped(ossContext.ctx, readId);
         setMinErrors(ossContext.ctx, readId, errors);
+
+//         std::cout << "Direct hit" << start << "end" << end << "\t" << needleId << "\terrors" << (int) errors << "\n";
 //         setMinErrors(ossContext.ctx, needleId, errors);
 //         hit.readId = needleId;
 
@@ -162,8 +163,8 @@ struct Delegate
             TMatch hit;
             setContigPosition(hit, occ, posAdd(occ, occLength));
             hit.errors = errors;
-
             setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
+
             setMapped(ossContext.ctx, readId);
             setMinErrors(ossContext.ctx, readId, errors); //TODO move out of loop
 
@@ -331,37 +332,6 @@ inline void transferCigars(Mapper<TSpec, TMainConfig> & mainMapper, DisOptions &
 }
 
 
-template <typename TSpec, typename TConfig,
-          typename TDelegatee, typename TDelegateDe,
-          typename TIndex,
-          typename TNeedle, typename TStringSetSpec,
-          typename TDistanceTag>
-inline void myTfind(const int minErrors,
-                    const int maxErrors,
-                    OSSContext<TSpec, TConfig> & ossContext,
-                    TDelegatee & delegate,
-                    TDelegateDe & delegateDirect,
-                    TIndex & index,
-                    StringSet<TNeedle, TStringSetSpec> const & needles,
-                    TDistanceTag const &)
-{
-    //TODO find out why i cant use lambda functions
-
-//     switch (maxErrors)
-//     {
-//         case 1: find<0, 1>(ossContext, delegate, delegateDirect, index, needles, TDistanceTag());
-//                 break;
-//         case 2: find<0, 2>(ossContext, delegate, delegateDirect, index, needles, TDistanceTag());
-//                 break;
-//         case 3: find<0, 3>(ossContext, delegate, delegateDirect, index, needles, TDistanceTag());
-//                 break;
-//         case 4: find<0, 4>(ossContext, delegate, delegateDirect, index, needles, TDistanceTag());
-//                 break;
-//         default: std::cerr << "E = " << maxErrors << " not yet supported.\n";
-//                 exit(1);
-//     }
-}
-
 // ----------------------------------------------------------------------------
 // Function _mapReadsImpl()
 // ----------------------------------------------------------------------------
@@ -398,7 +368,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     ossContext.strata = strata;
 
     bool mscheme = false;
-    ossContext.setReadContextOSS(maxError, strata, mscheme);
+    ossContext.setReadContextOSS(maxError, strata, mscheme); //TODO reverse
 
     std::cout << "Using 0 and " << maxError << " Scheme" << "\n";
 
@@ -407,8 +377,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     if(mscheme){
         find(0, maxError, strata, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+//         find(0, maxError, strata, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
     }else{
         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+//         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
     }
 
 //     if(addMyOwnOption) //IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE
@@ -720,6 +692,7 @@ inline void _mapReadsImplOSS(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCon
     TContigSeqsId contigSeqsId = getSeqNo(start);
     TContigsLen saLoc = getSeqOffset(start);
     TContigSeqsSize contigSeqsLength = length(contigSeqs[contigSeqsId]);
+//     setSeqOffset(saValue, suffixLength(saValue, me.contigSeqs) - seedLength);
 //     std::cout << "Test access to contigSeqs" << "\n";
 //     std::cout << "Contig ID: " << contigSeqsId << " saLoc: " << saLoc << "\n";
 //     std::cout << contigSeqs[contigSeqsId][saLoc] << "\n";

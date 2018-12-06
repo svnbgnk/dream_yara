@@ -82,26 +82,31 @@ inline void filter_interval(TContex & ossContext,
     }
 }
 
-template <typename TContex,
+template <typename TSpec, typename TConfig,
           typename TDelegateD,
           typename TNeedle,
+          typename TContigSeqs,
+          typename TSAValue,
           size_t nbrBlocks>
-inline void genomeSearch(TContex & ossContext,
+inline void genomeSearch(OSSContext<TSpec, TConfig> & ossContext,
                          TDelegateD & delegateDirect,
                          TNeedle const & needle,
                          uint32_t needleId,
                          uint8_t errors,
                          OptimalSearch<nbrBlocks> const & s,
                          uint8_t const blockIndex,
-                         auto const & genome,
-                         Pair<uint16_t, uint32_t> const & sa_info,
+                         TContigSeqs const & genome,
+                         TSAValue const & sa_info,
                          std::array<uint32_t, nbrBlocks> & blockStarts,
                          std::array<uint32_t, nbrBlocks> & blockEnds)
 {
+    typedef typename TConfig::TContigsLen                    TContigsLen;
+    TContigsLen seqOffset = getSeqOffset(sa_info);
     for(uint32_t j = 0; j < nbrBlocks - blockIndex; ++j){
         // compare bases to needle
+
         for(uint32_t k = blockStarts[j]; k <  blockEnds[j]; ++k){
-            if(needle[k] != genome[sa_info.i1][sa_info.i2 + k]){
+            if(needle[k] != genome[getSeqNo(sa_info)][seqOffset + k]){
                 ++errors;
             }
         }
@@ -109,8 +114,7 @@ inline void genomeSearch(TContex & ossContext,
             return;
         }
     }
-    delegateDirect(sa_info, posAdd(sa_info, length(needle)), needle, needleId, errors);
-
+    delegateDirect(ossContext, sa_info, posAdd(sa_info, length(needle)), errors, needleId);
 }
 
 template<typename TVector, typename TVSupport>
@@ -124,16 +128,21 @@ inline bool checkSinglePos(std::vector<std::pair<TVector, TVSupport>> & bitvecto
         return (bitvectors[brange.i1].first[brange.i2.i1 + offset] == 1);
 }
 
-inline void saPosOnFwd(Pair<uint16_t, uint32_t> & sa_info,
-                       uint32_t const genomelength,
+template<typename TSAValue, typename TContigsLen>
+inline void saPosOnFwd(TSAValue & sa_info,
+                       TContigsLen const genomelength,
                        uint32_t const occLength)
 {
-    sa_info.i2 = genomelength - sa_info.i2 - occLength;
+
+    setSeqOffset(sa_info, genomelength - getSeqOffset(sa_info) - occLength);
+//     sa_info.i2 = genomelength - sa_info.i2 - occLength;
 }
 
 template <typename TContex,
           typename TDelegateD,
           typename TString,
+          typename TContigsLen,
+          typename TSAValue2,
           typename TNeedle>
 inline void alignmentMyersBitvector(TContex & ossContext,
                                     TDelegateD & delegateDirect,
@@ -141,37 +150,38 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                                     uint32_t needleId,
                                     TString const & n_infix,
                                     TString const & ex_infix,
-                                    uint32_t const genomelength,
-                                    Pair<uint16_t, uint32_t> const & sa_info,
+                                    TContigsLen const genomelength,
+                                    TSAValue2 const & sa_info,
                                     uint8_t max_e,
                                     uint8_t overlap_l,
                                     uint8_t overlap_r,
                                     uint8_t intDel,
                                     bool usingReverseText)
 {
-//     bool usingReverseText = true;
+
+
     //TODO insert return after each delegate call for only best alignment
-    uint16_t needleL = length(needle);
-    uint16_t ex_infixL = needleL + overlap_l + overlap_r;
+    uint32_t needleL = length(needle);
+    uint32_t ex_infixL = needleL + overlap_l + overlap_r;
 
-
-    int initialScore = globalAlignmentScore(ex_infix, needle, MyersBitVector());
+    int32_t initialScore = globalAlignmentScore(ex_infix, needle, MyersBitVector());
 
  //assume more Insertions (in the read) than deletions
-    int ins_initialScore = globalAlignmentScore(n_infix, needle, MyersBitVector());
+    int32_t ins_initialScore = globalAlignmentScore(n_infix, needle, MyersBitVector());
 
     if(ins_initialScore >= 0 - 2 * max_e || initialScore >= 0 - overlap_l - overlap_r - max_e + intDel) //MM creates one error D creates one error since now it also align to overlap
     {
-        auto sa_info_tmp = sa_info;
+        TSAValue2 sa_info_tmp = sa_info;
         //No Insertions or Deletions
 //         cout << "E: " << (int)0 << endl;
         TString const & tmp0 = infix(ex_infix, overlap_l, ex_infixL - overlap_r);
-        int errors2 = 0 - globalAlignmentScore(tmp0, needle, MyersBitVector()); //
+        int32_t errors2 = 0 - globalAlignmentScore(tmp0, needle, MyersBitVector());
         if(errors2 <= max_e){
             if(usingReverseText){
                 saPosOnFwd(sa_info_tmp, genomelength, needleL);
             }
-            delegateDirect(sa_info_tmp, posAdd(sa_info_tmp, length(needle)) , needle, needleId, errors2);
+            delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, length(needle)), needleId, errors2);
+            return;
         }
 
         for(uint8_t e = 1; e <= max_e; ++e){
@@ -180,6 +190,7 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                 //del is number of deletions
                 uint8_t ins = e - del; //number of insertions
                 sa_info_tmp = sa_info;
+                int32_t occLength;
 
                 if(del > 1 && ins == 0 || ins > 1 && del == 0){
                 //only insertion or deletions
@@ -190,33 +201,37 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                         if(!(0 <= overlap_l + (pos * k) && overlap_r >= 0 - (pos * (m - k))))
                             continue;
                         sa_info_tmp = sa_info;
-                        sa_info_tmp.i2 = sa_info_tmp.i2 + (pos * k);
-                        TString const & tmp2 = infix(ex_infix, overlap_l + (pos * k), ex_infixL - overlap_r - (pos * (m - k)));
+//                         sa_info_tmp.i2 = sa_info_tmp.i2 + (pos * k);
+                        setSeqOffset(sa_info_tmp, getSeqOffset(sa_info_tmp) + (pos * k));
+
+                        TString const & tmp2 = infix(ex_infix, (pos * k) + overlap_l, ex_infixL - overlap_r - (pos * (m - k)));
                         errors2 = 0 - globalAlignmentScore(tmp2, needle, MyersBitVector());
                         if(errors2 <= max_e){
-                            uint32_t occLength = length(needle) - (pos * m);
+                            occLength = length(needle) - (pos * m);
                             if(usingReverseText){
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
-                            delegateDirect(sa_info_tmp, posAdd(sa_info_tmp, occLength) , needle, needleId, errors2);
+                            delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
+                            return;
                         }
                     }
                 }
                 else
                 {
-//                     uint32_t occLength = length(needle) - ins + del;
                     //insertions left and deletion right
                     if(overlap_l >= del){
                         TString const & tmp = infix(ex_infix, overlap_l - del, ex_infixL - overlap_r - ins);
                         sa_info_tmp = sa_info;
-                        sa_info_tmp.i2 = sa_info_tmp.i2 - del;
+//                         sa_info_tmp.i2 = sa_info_tmp.i2 - del;
+                        setSeqOffset(sa_info_tmp, getSeqOffset(sa_info_tmp) - del);
                         errors2 = 0 - globalAlignmentScore(tmp, needle, MyersBitVector());
                         if(errors2 <= max_e){
-                            uint32_t occLength = length(needle) - ins + del;
+                            occLength = length(needle) - ins + del;
                             if(usingReverseText){
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
-                            delegateDirect(sa_info_tmp, posAdd(sa_info_tmp, occLength) , needle, needleId, errors2);
+                            delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
+                            return;
                         }
                     }
 
@@ -225,13 +240,15 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                         sa_info_tmp = sa_info; //just include del from before into the calculation and delete this
                         TString const & tmp1 = infix(ex_infix, overlap_l + ins, ex_infixL - overlap_r + del);
                         errors2 = 0 - globalAlignmentScore(tmp1, needle, MyersBitVector());
-                        sa_info_tmp.i2 = sa_info_tmp.i2 + ins;
+//                         sa_info_tmp.i2 = sa_info_tmp.i2 + ins;
+                        setSeqOffset(sa_info_tmp, getSeqOffset(sa_info_tmp) + ins);
                         if(errors2 <= max_e){
-                            uint32_t occLength = length(needle) - ins + del;
+                            occLength = length(needle) - ins + del;
                             if(usingReverseText){
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
-                            delegateDirect(sa_info_tmp, posAdd(sa_info_tmp, occLength) , needle, needleId, errors2);
+                            delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
+                            return;
                         }
                     }
                 }
@@ -240,8 +257,7 @@ inline void alignmentMyersBitvector(TContex & ossContext,
     }
 }
 
-
-template <typename TContex,
+template <typename TSpec, typename TConfig,
           typename TDelegateD,
           typename TIndex,
           typename TNeedle,
@@ -249,7 +265,7 @@ template <typename TContex,
           size_t nbrBlocks,
           typename TDir,
           typename TDistanceTag>
-inline void directSearch(TContex & ossContext,
+inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                          TDelegateD & delegateDirect,
                          Iter<TIndex, VSTree<TopDown<> > > iter,
                          TNeedle const & needle,
@@ -264,12 +280,27 @@ inline void directSearch(TContex & ossContext,
                          TDir const & ,
                          TDistanceTag const &)
 {
-    auto const & genome = indexText(*iter.fwdIter.index);
+    typedef MapperTraits<TSpec, TConfig>                     TTraits;
+    typedef typename TTraits::TSA                            TSA;
+    typedef typename Size<TSA>::Type                         TSAPos;
+    typedef typename Value<TSA>::Type                        TSAValue;
+    typedef typename TConfig::TContigsLen                    TContigsLen; //sa.i2
+    typedef typename TConfig::TContigsSize                   TContigsSize; //sa.i1
+//     typedef typename TConfig::TAlloc                         TAlloc;
+//     typedef SeqStore<void, YaraContigsConfig<TAlloc> >       TContigs;
+//     typedef typename TContigs::TSeqs                         TContigSeqs;
+    typedef typename TTraits::TContigSeqs                    TContigSeqs;
+    typedef typename InfixOnValue<TContigSeqs const>::Type   TContigSeqsInfix;
+
+
+    TContigSeqs const & genome = ossContext.contigSeqs;
+
+//     auto const & genome = indexText(*iter.fwdIter.index);
 
     if (std::is_same<TDistanceTag, EditDistance>::value){
         //TODO put this into a function
         //TODO if we are only interested in the best hit call return after delegate calls
-        uint16_t needleL = length(needle);
+        uint32_t needleL = length(needle);
         uint8_t max_e = s.u[s.u.size() - 1];
         int intIns = 0;
         int intDel = 0;
@@ -281,37 +312,44 @@ inline void directSearch(TContex & ossContext,
             intDel = repLength(iter) - (needleRightPos - needleLeftPos - 1);
         uint8_t overlap_l = max_e;
         uint8_t overlap_r = max_e;
-//         if(needleLeftPos == 0)
-//             overlap_l = intIns;
-//         if(needleRightPos == needleL + 1)
-//             overlap_r = intIns;
         uint16_t ex_infixL = needleL + overlap_l + overlap_r;
         for(uint32_t r = 0; r < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++r)
         {
-    //         if(bitvectors[brange.i1].first[brange.i2.i1 + r] == 1){
+            if(iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 == 1)
             if(checkSinglePos(bitvectors, brange, r)){
-                Pair<uint16_t, uint32_t> sa_info;
-                uint32_t chromlength;
+                TSAValue sa_info;
+                TContigsLen seqOffset;
+                TContigsLen chromlength;
+
                 if(std::is_same<TDir, Rev>::value){
                     sa_info = iter.fwdIter.index->sa[iter.fwdIter.vDesc.range.i1 + r];
-                    chromlength = length(genome[sa_info.i1]);
-                    if(!(needleLeftPos + overlap_l <= sa_info.i2  && chromlength - 1 >= sa_info.i2 - needleLeftPos + needleL - 1 + overlap_r))
+                    seqOffset = getSeqOffset(sa_info);
+                    chromlength = length(genome[getSeqNo(sa_info)]);
+                    if(!(needleLeftPos + overlap_l <= seqOffset && chromlength - 1 >= seqOffset - needleLeftPos + needleL - 1 + overlap_r))
                         continue;
-                    sa_info.i2 = sa_info.i2 - needleLeftPos;
+//                     sa_info.i2 = sa_info.i2 - needleLeftPos;
+                    setSeqOffset(sa_info, seqOffset - needleLeftPos);
                 }
                 else
                 {
                     sa_info = iter.revIter.index->sa[iter.revIter.vDesc.range.i1 + r];
-                    chromlength = length(genome[sa_info.i1]);
-                    if(!(chromlength - 1 >= sa_info.i2 + needleRightPos - 1 + overlap_r && sa_info.i2 + needleRightPos - 1 - overlap_l >= length(needle) + 1))
+                    seqOffset = getSeqOffset(sa_info);
+                    chromlength = length(genome[getSeqNo(sa_info)]);
+                    //TODO move next 3 lines outside if
+                    if(!(chromlength - 1 >= seqOffset + needleRightPos - 1 + overlap_r && seqOffset + needleRightPos - 1 - overlap_l >= length(needle) + 1))
                         continue;
-                    sa_info.i2 = chromlength - sa_info.i2 - needleRightPos + 1;
+//                     sa_info.i2 = chromlength - sa_info.i2 - needleRightPos + 1;
+                    setSeqOffset(sa_info, chromlength - seqOffset - needleRightPos + 1);
                 }
+                //update seqOffset
+                seqOffset = getSeqOffset(sa_info);
 
-                DnaString const & ex_infix = infix(genome[sa_info.i1], sa_info.i2 - overlap_l, sa_info.i2 + needleL + overlap_r);
-                DnaString const & n_infix = infix(genome[sa_info.i1], sa_info.i2, sa_info.i2 + needleL);
+                //types for globalAlignmentScore
+                Dna5String const & ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
+                Dna5String const & n_infix = infix(genome[getSeqNo(sa_info)], seqOffset, seqOffset + needleL);
+                Dna5String const & needleRef = needle;
 
-                alignmentMyersBitvector(ossContext, delegateDirect, needle, needleId, n_infix, ex_infix, chromlength, sa_info, max_e, overlap_l, overlap_r, intDel, false);
+                alignmentMyersBitvector(ossContext, delegateDirect, needleRef, needleId, n_infix, ex_infix, chromlength, sa_info, max_e, overlap_l, overlap_r, intDel, false);
             }
         }
     }
@@ -327,18 +365,20 @@ inline void directSearch(TContex & ossContext,
             if(needleRightPos - 1 > blockStarts[0] && needleRightPos - 1 < blockEnds[0])
                 blockStarts[0] = needleRightPos - 1;
 
-            for(uint32_t i = 0; i < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++i){
+            for(TSAPos i = 0; i < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++i){
 //                 if(bitvectors[brange.i1].first[brange.i2.i1 + i] == 1){
                 if(checkSinglePos(bitvectors, brange, i)){
                     // mappability information is in reverse index order if we use the forward index
-                    Pair<uint16_t, uint32_t> sa_info = iter.fwdIter.index->sa[iter.fwdIter.vDesc.range.i1 + i];
-                    uint32_t const chromlength = length(genome[sa_info.i1]);
+                    TSAValue sa_info = iter.fwdIter.index->sa[iter.fwdIter.vDesc.range.i1 + i];
+                    TContigsLen seqOffset = getSeqOffset(sa_info);
+                    TSAPos chromlength = length(genome[getSeqNo(sa_info)]);
                     //Info make sure we dont DS search something going over the chromosom edge
                     //check left chromosom boundry && check right chromosom boundry
-                    if(!(needleLeftPos <= sa_info.i2 && chromlength - 1 >= sa_info.i2 - needleLeftPos + length(needle) - 1))
+                    if(!(needleLeftPos <= seqOffset && chromlength - 1 >= seqOffset - needleLeftPos + length(needle) - 1))
                         continue;
 
-                    sa_info.i2 = sa_info.i2 - needleLeftPos;
+//                     sa_info.i2 = sa_info.i2 - needleLeftPos;
+                    setSeqOffset(sa_info, seqOffset - needleLeftPos);
 
                     //search remaining blocks
                     genomeSearch(ossContext, delegateDirect, needle, needleId, errors, s, blockIndex, genome, sa_info, blockStarts, blockEnds);
@@ -351,16 +391,18 @@ inline void directSearch(TContex & ossContext,
             if(needleLeftPos > blockStarts[0] && needleLeftPos < blockEnds[0])
                 blockEnds[0] = needleLeftPos;
 
-            for(uint32_t i = 0; i < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++i){
+            for(TSAPos i = 0; i < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++i){
 //                 if(bitvectors[brange.i1].first[brange.i2.i1 + i] == 1){
                 if(checkSinglePos(bitvectors, brange, i)){
-                    Pair<uint16_t, uint32_t> sa_info = iter.revIter.index->sa[iter.revIter.vDesc.range.i1 + i];
-                    uint32_t const chromlength = length(genome[sa_info.i1]);
+                    TSAValue sa_info = iter.revIter.index->sa[iter.revIter.vDesc.range.i1 + i];
+                    TContigsLen seqOffset = getSeqOffset(sa_info);
+                    TSAPos chromlength = length(genome[getSeqNo(sa_info)]);
                     //check left chromosom boundry && check right chromosom boundry
-                    if(!(chromlength - 1 >= sa_info.i2 + needleRightPos - 1 && sa_info.i2 + needleRightPos - 1 >= length(needle) + 1))
+                    if(!(chromlength - 1 >= seqOffset + needleRightPos - 1 && seqOffset + needleRightPos - 1 >= length(needle) + 1))
                         continue;
                     //calculate correct starting position of the needle  on the forward index
-                    sa_info.i2 = chromlength - sa_info.i2 - needleRightPos + 1;
+//                     sa_info.i2 = chromlength - sa_info.i2 - needleRightPos + 1;
+                    setSeqOffset(sa_info, chromlength - seqOffset - needleRightPos + 1);
 
                     //search remaining blocks
                     genomeSearch(ossContext, delegateDirect, needle, needleId , errors, s, blockIndex, genome, sa_info, blockStarts, blockEnds);
@@ -944,13 +986,13 @@ inline void _optimalSearchScheme(TContex & ossContext,
     if (maxErrorsLeftInBlock == 0)
     {
         _optimalSearchSchemeExact(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, TDir(), TDistanceTag());
-    }/*
+    }
     else if(!checkMappa && ossContext.itvConditionComp(iter, needleLeftPos, needleRightPos, errors, s, blockIndex))
     {
         //give emtpy bitvector and bitvector range sine we will not check mappability
         Pair<uint8_t, Pair<uint32_t, uint32_t>> dummy_bit_interval;
          directSearch(ossContext, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, dummy_bit_interval, TDir(), TDistanceTag());
-    }*/
+    }
 
     // Approximate search in current block.
     else
@@ -1069,7 +1111,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
         for(uint8_t e = 1; e < ossContext.states.size() && e <= getMinErrors(ossContext.ctx, readId) + ossContext.strata; ++e){
 
             setCurrentErrors(ossContext.ctxOSS, readId, e);
-            std::cout << "Read: " << readId << "\n";
+//             std::cout << "Read: " << readId << "\n";
 
             for(int j = 0; j < ossContext.states[e].size(); ++j){
                 State<TSparseIter> & state = ossContext.states[e][j];
@@ -1084,8 +1126,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                 }
     //             std::cout << "Finished OSS: " << j << "\n";
             }
-
-
+/*
             for(int i = e; i < ossContext.states.size(); ++i){
                 std::cout << "Errors: " << i << "\t times \t" << ossContext.states[i].size();
                 if(i == e)
@@ -1096,13 +1137,13 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             if((getMinErrors(ossContext.ctx, readId) == e) || (e == 1 && getMinErrors(ossContext.ctx, readId) == 0)){
                 std::cout << "Found with read with " << (int)getMinErrors(ossContext.ctx, readId) << " errors" << "\n";
             }
-            std::cout << "\n";
+            std::cout << "\n";*/
 
             ossContext.states[e].clear();
 
         }
 
-        std::cout << "\n\n\n";
+//         std::cout << "\n\n\n";
 
         for(int i = 0; i < ossContext.states.size(); ++i){
             ossContext.states[i].clear();
