@@ -5,11 +5,7 @@
 #include <vector>
 #include <cstdint>
 #include <limits>
-#include <sys/stat.h>
 
-// #include <seqan/arg_parse.h>
-// #include <seqan/seq_io.h>
-// #include <seqan/index.h>
 
 using namespace std;
 using namespace seqan;
@@ -20,9 +16,6 @@ using namespace seqan;
 // #include "algo2.hpp"
 // #include "algo3.hpp"
 // #include "algo4.hpp"
-
-// #include "common_auxiliary.h"
-// #include "find2_index_approx_extension.h"
 
 
 // ----------------------------------------------------------------------------
@@ -40,19 +33,17 @@ struct OptionsM
     unsigned        strata;
     unsigned        k_length;
     unsigned        threshold;
-    unsigned        overlap;
+    unsigned        overlap = 0;
 
     bool            indels;
     bool            high;
-    bool            mmap;
-
 
     unsigned        currentBinNo;
     unsigned        threads;
     bool            verbose;
 
     //Parameters for single index
-    CharString      contigsIndexFile;
+    CharString          contigsIndexFile;
     uint64_t            contigsSize;
     uint64_t            contigsMaxLength;
     uint64_t            contigsSum;

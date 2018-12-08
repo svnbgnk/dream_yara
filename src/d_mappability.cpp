@@ -64,6 +64,7 @@
 #include "index_fm.h"
 
 #include "mappability.h"
+#include "createBit.h"
 
 using namespace seqan;
 
@@ -120,12 +121,7 @@ void setupArgumentParser(ArgumentParser & parser, OptionsM const & options)
     addOption(parser, ArgParseOption("hi", "high", "Stores the mappability vector in 16 bit unsigned integers instead of 8 bit (max. value 65535 instead of 255)"));
 
     addOption(parser, ArgParseOption("o", "overlap", "Number of overlapping reads (o + 1 Strings will be searched at once beginning with their overlap region)", ArgParseArgument::INTEGER, "INT"));
-    setRequired(parser, "overlap");
-
-    addOption(parser, ArgParseOption("m", "mmap",
-        "Turns memory-mapping on, i.e. the index is not loaded into RAM but accessed directly in secondary-memory. "
-        "This makes the algorithm only slightly slower but the index does not have to be loaded into main memory "
-        "(which takes some time)."));
+//     setRequired(parser, "overlap");
 
     addOption(parser, ArgParseOption("t", "threads", "Number of threads", ArgParseArgument::INTEGER, "INT"));
     setDefaultValue(parser, "threads", omp_get_max_threads());
@@ -135,6 +131,8 @@ void setupArgumentParser(ArgumentParser & parser, OptionsM const & options)
     addOption(parser, ArgParseOption("T", "threshold", "Number of times a k-mer can occure and still be accepted as mappable", ArgParseArgument::INTEGER, "INT"));
 
     addOption(parser, ArgParseOption("s", "strata", "Max errors allowed during mapping", ArgParseArgument::INTEGER, "INT"));
+
+    addOption(parser, ArgParseOption("v", "verbose", "Verbose"));
 
 }
 
@@ -177,12 +175,16 @@ parseCommandLine(OptionsM & options, ArgumentParser & parser, int argc, char con
 
     getOptionValue(options.threshold, parser, "threshold");
 
-    getOptionValue(options.strata, parser, "strata");
+    if(isSet(parser, "strata"))
+        getOptionValue(options.strata, parser, "strata");
+    else
+        getOptionValue(options.strata, parser, "errors");
 
 
-    options.mmap = isSet(parser, "mmap");
     options.indels = isSet(parser, "indels");
     options.high = isSet(parser, "high");
+    options.verbose = isSet(parser, "verbose");
+
 
 
 
@@ -194,13 +196,13 @@ parseCommandLine(OptionsM & options, ArgumentParser & parser, int argc, char con
 template <typename TContigsSize,
           typename TContigsLen,
           typename TContigsSum>
-inline void runMapper(OptionsM const & options,
+inline void runMappability(OptionsM const & options,
                       OptionsM & disOptions)
 {
 
+    //load Text
     typedef SeqStore<void, YaraContigsConfig<Alloc<> > >              TContigs;
     TContigs text;
-
     try
     {
         if (!open(text, toCString(options.contigsIndexFile), OPEN_RDONLY))
@@ -212,8 +214,8 @@ inline void runMapper(OptionsM const & options,
     }
 
 
-    // add load bitvectors here also add info to disoption about them
-//     loadContigsIndex(me);
+
+    //load BidirectionalIndex
     typedef YaraFMConfig<TContigsSize, TContigsLen, TContigsSum, Alloc<> > TIndexConfig;
     typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
     typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
@@ -231,65 +233,97 @@ inline void runMapper(OptionsM const & options,
         throw RuntimeError("Insufficient memory to load the reference index.");
     }
 
-    calcMappa(biIndex, text.seqs, options);
+    std::string mappability_path = toCString(options.output);
+    mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length);
+    mappability_path += ".gmapp" + string(options.high ? "16" : "8");
 
+    //calculate mappability
+    if(!file_exists(mappability_path))
+    {
+        calcMappa(biIndex, text.seqs, options);
+    }
 
+    if(!file_exists(mappability_path))
+    {
+        std::cerr << "Cannot find mappability file" << "\n";
+        exit(0);
+    }
 
-//     uint32_t indexSize = seqan::length(biIndex.fwd.sa);
-//     std::cout << "Loaded Index. Size:" << indexSize << "\n";
+    std::string bitvectors_dir = toCString(options.output);
+    bitvectors_dir += "/";
+
+    //load mappability file
+    if(options.verbose)
+        std::cout << "Errors:" << options.errors << "\tStrata: " << options.strata << "\n"; //TODO comment
+    vector<uint8_t> mappability = read(mappability_path);
+
+    if(options.verbose)
+        std::cout << "Loaded Mappability vector. Size: " << mappability.size() << "\n";
+    bitvectors result = create_all_bit_vectors(mappability, options.k_length, options.threshold, options.errors, options.strata, options.threads, options.verbose);
+    if(options.verbose)
+        std::cout << "Finished bit vectors." << "\n";
+
+    order_bit_vector<TContigsSize, TContigsLen, TContigsSum>(biIndex, text.seqs, result, options.threads, options.verbose);
+
+    //save Bitvectors
+    if(options.verbose)
+        std::cout << "Finished sorting" << "\n";
+    for(uint32_t i = 0; i < result.bv.size(); ++i){
+        sdsl::store_to_file(result.bv[i], toCString(bitvectors_dir)  + result.names[i]);
+    }
 
 }
 
 template <typename TContigsSize,
           typename TContigsLen>
-void configureMapper(OptionsM const & options,
+void configureMappability(OptionsM const & options,
                      OptionsM & disOptions)
 {
     if (options.contigsSum <= MaxValue<uint32_t>::VALUE)
     {
-        runMapper<TContigsSize, TContigsLen, uint32_t>(options, disOptions);
+        runMappability<TContigsSize, TContigsLen, uint32_t>(options, disOptions);
     }
     else
     {
-        runMapper<TContigsSize, TContigsLen, uint64_t>(options, disOptions);
+        runMappability<TContigsSize, TContigsLen, uint64_t>(options, disOptions);
     }
 }
 
 
 
 template <typename TContigsSize>
-void configureMapper(OptionsM const & options,
+void configureMappability(OptionsM const & options,
                      OptionsM & disOptions)
 {
     if (options.contigsMaxLength <= MaxValue<uint32_t>::VALUE)
     {
-        configureMapper<TContigsSize, uint32_t>(options, disOptions);
+        configureMappability<TContigsSize, uint32_t>(options, disOptions);
     }
     else
     {
 #ifdef DR_YARA_LARGE_CONTIGS
-        configureMapper<TContigsSize, uint64_t>(options, disOptions);
+        configureMappability<TContigsSize, uint64_t>(options, disOptions);
 #else
         throw RuntimeError("Maximum contig length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
 #endif
     }
 }
 
-void configureMapper(OptionsM const & options,
+void configureMappability(OptionsM const & options,
                      OptionsM & disOptions)
 {
     if (options.contigsSize <= MaxValue<uint8_t>::VALUE)
     {
-        configureMapper<uint8_t>(options, disOptions);
+        configureMappability<uint8_t>(options, disOptions);
     }
     else if (options.contigsSize <= MaxValue<uint16_t>::VALUE)
     {
-        configureMapper<uint16_t>(options, disOptions);
+        configureMappability<uint16_t>(options, disOptions);
     }
     else
     {
 #ifdef DR_YARA_LARGE_CONTIGS
-        configureMapper<uint32_t>(options, disOptions);
+        configureMappability<uint32_t>(options, disOptions);
 #else
         throw RuntimeError("Maximum number of contigs exceeded. Recompile with -DYARA_LARGE_CONTIGS=ON.");
 #endif
@@ -301,7 +335,7 @@ void configureMapper(OptionsM const & options,
 // ----------------------------------------------------------------------------
 // Function runDisMapper()
 // ----------------------------------------------------------------------------
-inline void runDisMapper(OptionsM & options)
+inline void runDisMappability(OptionsM & options)
 {
     for(uint32_t i = 0; i < options.numberOfBins; ++i){
         std::cout << "In bin Number: " << i << "\n";
@@ -314,11 +348,7 @@ inline void runDisMapper(OptionsM & options)
 
         const int dir_test = mkdir(path_dir.data(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         if (-1 == dir_test)
-        {
-            printf("Error creating directory!n");
-        }else{
-            std::cout << "Dir: "<< path_dir << " created\n";
-        }
+            std::cout << "Error creating directory!\n";
 
         options.currentBinNo = i;
         OptionsM binOption = options;
@@ -326,37 +356,9 @@ inline void runDisMapper(OptionsM & options)
         appendFileName(binOption.contigsIndexFile, options.IndicesDirectory, i);
         if (!openContigsLimits(binOption))
             throw RuntimeError("Error while opening reference file.");
-        configureMapper(binOption, options);
+        configureMappability(binOption, options);
     }
 }
-
-
-
-/*
-void configureDisMapper(OptionsM & options)
-{
-
-    options.contigsMaxLength = 0;
-    options.contigsSize = 0;
-    options.contigsSum = 0;
-    options.contigOffsets.resize(options.numberOfBins, 0);
-    // We aggregate individual limit here to configure the dis_mapper limits
-    for (uint32_t i = 0; i < options.numberOfBins; ++i)
-    {
-        options.contigOffsets[i] = options.contigsSize;
-        OptionsM binOption = options;
-        appendFileName(binOption.contigsIndexFile, options.IndicesDirectory, i);
-        if (!openContigsLimits(binOption))
-            throw RuntimeError("Error while opening contig limits file.");
-
-    //not needed
-       options.contigsMaxLength   = std::max(binOption.contigsMaxLength, options.contigsMaxLength);
-       options.contigsSize       += binOption.contigsSize;
-       options.contigsSum        += binOption.contigsSum;
-    }
-
-    runDisMapper(options);
-}*/
 
 // ----------------------------------------------------------------------------
 // Function main()
@@ -394,11 +396,7 @@ int main(int argc, char const ** argv)
 
     const int dir_test = mkdir(path_dir.data(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (-1 == dir_test)
-    {
-        printf("Dir already exist\n");
-    }else{
-        std::cout << "Dir: "<< path_dir << " created\n";
-    }
+        std::cerr << "Dir already exist\n";
 
 //    std::string comExt = commonExtension(options.contigsDir, options.numberOfBins);
 //     typedef std::map<uint32_t,CharString>::iterator mapIter;
@@ -406,17 +404,12 @@ int main(int argc, char const ** argv)
 
     try
     {
-
-//         Semaphore thread_limiter(options.threadsCount);
-        std::vector<std::future<void>> tasks;
-
 //         Timer<double>       timer;
         Timer<double>       globalTimer;
 //         start (timer);
         start (globalTimer);
 
-
-        runDisMapper(options);
+        runDisMappability(options);
 
 /*
         stop(timer);

@@ -189,6 +189,8 @@ endif (MSVC)
 # ----------------------------------------------------------------------------
 # Enable global exception handler for all seqan apps.
 set (SEQAN_DEFINITIONS ${SEQAN_DEFINITIONS} -DSEQAN_GLOBAL_EXCEPTION_HANDLER=1)
+#Load OpenMP module
+find_package (OpenMP)
 
 # Add include directories.
 include_directories (${SDSL_INCLUDE_DIRS})
@@ -207,7 +209,7 @@ add_definitions (-DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}")
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
 # Add CXX flags found by find_package (SeqAn).
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS}")
+set (CMAKE_CXX_FLAGS "-fopenmp ${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS}")
 
 # Update the list of file names below if you add source files to your application.
 add_executable(dream_yara_indexer d_indexer.cpp
