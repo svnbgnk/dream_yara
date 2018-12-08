@@ -157,9 +157,13 @@ parseCommandLine(OptionsM & options, ArgumentParser & parser, int argc, char con
     // Append trailing slash if it doesn't exist.
     appendTrailingSlash(options.IndicesDirectory);
 
-//     isSet(parser, "output")
-
-    getOptionValue(options.output, parser, "output");
+    if(isSet(parser, "output")){
+        getOptionValue(options.output, parser, "output");
+    }else{
+        CharString path = options.IndicesDirectory;
+        path += "mappability";
+        options.output = path;
+    }
 
     getOptionValue(options.numberOfBins, parser, "number-of-bins");
 
@@ -328,10 +332,10 @@ inline void runDisMapper(OptionsM & options)
 
 
 
-
+/*
 void configureDisMapper(OptionsM & options)
 {
-/*
+
     options.contigsMaxLength = 0;
     options.contigsSize = 0;
     options.contigsSum = 0;
@@ -349,10 +353,10 @@ void configureDisMapper(OptionsM & options)
        options.contigsMaxLength   = std::max(binOption.contigsMaxLength, options.contigsMaxLength);
        options.contigsSize       += binOption.contigsSize;
        options.contigsSum        += binOption.contigsSum;
-    }*/
+    }
 
     runDisMapper(options);
-}
+}*/
 
 // ----------------------------------------------------------------------------
 // Function main()
@@ -386,10 +390,7 @@ int main(int argc, char const ** argv)
 
 
     //create_dir
-    CharString path = options.IndicesDirectory;
-    path += "mappability";
-    options.output = path;
-    std::string path_dir = toCString(path);
+    std::string path_dir = toCString(options.output);
 
     const int dir_test = mkdir(path_dir.data(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (-1 == dir_test)
@@ -415,7 +416,7 @@ int main(int argc, char const ** argv)
         start (globalTimer);
 
 
-        configureDisMapper(options);
+        runDisMapper(options);
 
 /*
         stop(timer);
