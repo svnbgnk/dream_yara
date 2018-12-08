@@ -220,6 +220,16 @@ add_executable(dream_yara_indexer d_indexer.cpp
                                   bits_matches.h
                                   index_fm.h)
 
+add_executable(dream_yara_mappability d_mappability.cpp
+                                  misc_tags.h
+                                  misc_timer.h
+                                  misc_options.h
+                                  d_misc_options.h
+                                  misc_types.h
+                                  store_seqs.h
+                                  bits_matches.h
+                                  index_fm.h)
+
 add_executable(dream_yara_build_filter d_build_filter.cpp
                                        misc_timer.h
                                        misc_options.h
@@ -274,6 +284,7 @@ add_executable(dream_yara_mapper  d_mapper.cpp
 
 # Add dependencies found by find_package (SeqAn).
 target_link_libraries (dream_yara_indexer ${SEQAN_LIBRARIES})
+target_link_libraries (dream_yara_mappability ${SEQAN_LIBRARIES})
 target_link_libraries (dream_yara_build_filter ${SEQAN_LIBRARIES})
 target_link_libraries (dream_yara_update_filter ${SEQAN_LIBRARIES})
 target_link_libraries (dream_yara_mapper ${SEQAN_LIBRARIES})
@@ -284,6 +295,7 @@ target_link_libraries (dream_yara_mapper ${SEQAN_LIBRARIES})
 # ----------------------------------------------------------------------------
 # Install dream_yara in ${PREFIX}/bin directory
 install (TARGETS  dream_yara_indexer
+		  dream_yara_mappability
                   dream_yara_build_filter
                   dream_yara_update_filter
                   dream_yara_mapper
@@ -303,6 +315,7 @@ install (FILES LICENSE README.rst
 set (SEQAN_CTD_EXECUTABLES
                   ${SEQAN_CTD_EXECUTABLES}
                   dream_yara_indexer
+		  dream_yara_mappability
                   dream_yara_build_filter
                   dream_yara_update_filter
                   dream_yara_mapper

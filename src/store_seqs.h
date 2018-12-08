@@ -139,6 +139,20 @@ inline bool open(SeqStore<TSpec, TConfig> & me, TFileName const & fileName, int 
     return true;
 }
 
+template <typename TSpec, typename TConfig, typename TFileName>
+inline bool openRev(SeqStore<TSpec, TConfig> & me, TFileName const & fileName, int openMode)
+{
+    CharString name;
+
+    name = fileName;    append(name, "rev.txt");
+    if (!open(me.seqs, toCString(name), openMode)) return false;
+
+    name = fileName;    append(name, "rev.rid");
+    if (!open(me.names, toCString(name), openMode)) return false;
+
+    return true;
+}
+
 // ----------------------------------------------------------------------------
 // Function save()
 // ----------------------------------------------------------------------------

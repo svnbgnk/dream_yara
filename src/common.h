@@ -240,7 +240,7 @@ std::string mytime()
 }
 
 
-
+*/
 
 template <typename TChar, typename TConfig, typename TMappVector>
 void resetLimits(seqan::String<TChar, TConfig> const &, TMappVector const &, unsigned const)
@@ -295,7 +295,7 @@ inline void initProgress<true>(uint64_t & progress_count, uint64_t & progress_st
     while (progress_step < progress_step_tmp)
         progress_step <<= 1;
     --progress_step;
-}*/
+}
 
 
 // template <typename TString, typename TPos, typename TLength>
