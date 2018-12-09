@@ -297,7 +297,8 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
 //     using TIndexConfig = seqan::BidirectionalIndex<seqan::FMIndex<void, TMyFastConfig> >;
 //     Index<StringSet<TString, Owner<ConcatDirect<> > >, TIndexConfig> index(chromosomesConcat);
 
-    // Randomly replace Ns with A, C, G, T.
+    // Randomly replace Expanded Letter Code with with A, C, G, T.
+//     randomizeELCs(me.contigs);
     randomizeNs(me.contigs);
 
     // IndexFM is built on the reversed contigs.

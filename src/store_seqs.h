@@ -275,6 +275,29 @@ inline void randomizeNs(TString && str, TRng & rng)
     }
 }
 
+
+template <typename TString, typename TRng>
+inline void randomizeELCs(TString && str, TRng & rng)
+{
+    typedef typename Value<TString>::Type               TAlphabet;
+    typedef typename Iterator<TString, Standard>::Type  TIter;
+
+    TIter it = begin(str, Standard());
+    TIter itEnd = end(str, Standard());
+
+    while (it != itEnd)
+    {
+        for (; it != itEnd && (value(it) == TAlphabet('A') || value(it) == TAlphabet('C') || value(it) == TAlphabet('G') || value(it) == TAlphabet('T')); ++it) ;
+
+        if (it == itEnd) break;
+
+        for (; it != itEnd && (value(it) != TAlphabet('A') && value(it) != TAlphabet('C') && value(it) != TAlphabet('G') && value(it) != TAlphabet('T')); ++it)
+            value(it) = rng() % ValueSize<Dna>::VALUE;
+    }
+}
+
+
+
 // ----------------------------------------------------------------------------
 // Function randomizeNs()
 // ----------------------------------------------------------------------------
@@ -286,6 +309,16 @@ inline void randomizeNs(SeqStore<TSpec, TConfig> & me)
 
     for (unsigned seqId = 0; seqId < length(me.seqs); ++seqId)
         randomizeNs(me.seqs[seqId], rng);
+}
+
+
+template <typename TSpec, typename TConfig>
+inline void randomizeELCs(SeqStore<TSpec, TConfig> & me)
+{
+    std::mt19937 rng(0xDEADBEEF);
+
+    for (unsigned seqId = 0; seqId < length(me.seqs); ++seqId)
+        randomizeELCs(me.seqs[seqId], rng);
 }
 
 // ----------------------------------------------------------------------------
