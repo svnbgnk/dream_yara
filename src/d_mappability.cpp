@@ -185,9 +185,6 @@ parseCommandLine(OptionsM & options, ArgumentParser & parser, int argc, char con
     options.high = isSet(parser, "high");
     options.verbose = isSet(parser, "verbose");
 
-
-
-
     return ArgumentParser::PARSE_OK;
 }
 
@@ -241,6 +238,8 @@ inline void runMappability(OptionsM const & options,
     if(!file_exists(mappability_path))
     {
         calcMappa(biIndex, text.seqs, options);
+    }else{
+        std::cout << "Skip mappability Calculation" << "\n";
     }
 
     if(!file_exists(mappability_path))

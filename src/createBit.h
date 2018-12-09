@@ -22,11 +22,6 @@ struct bitvectors
     vector<sdsl::bit_vector> bv;
 };
 
-inline bool file_exists(const std::string& name) {
-  struct stat buffer;
-  return (stat (name.c_str(), &buffer) == 0);
-}
-
 std::vector<int> getInt(std::string const& mappability_str)
 {
   std::istringstream iss(mappability_str);

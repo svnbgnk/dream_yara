@@ -59,8 +59,6 @@ typedef sdsl::bit_vector TBitvector;
 typedef sdsl::rank_support_v<> TSupport;
 // typedef sdsl::rank_support_v5<> TSupport;
 
-
-
 struct hit{
     bool rev;
     Pair <uint32_t, uint32_t> occ;
@@ -234,11 +232,11 @@ inline auto loadBlockLimits(std::array<OptimalSearch<nbrBlocks>, N> const & ss)
 
 template<typename TContext,
          size_t nbrBlocks, size_t N,
-         typename TBitvector>
+         typename TBitvectorPair>
 inline void linkBitvectors(TContext & ossContext,
                     std::array<OptimalSearch<nbrBlocks>, N> const ss,
-                    std::vector<TBitvector > & bitvectors,
-                    std::vector<TBitvector * > & bit_filtered)
+                    std::vector<TBitvectorPair > & bitvectors,
+                    std::vector<TBitvectorPair * > & bit_filtered)
 {
     if(bitvectors.empty())
         return;

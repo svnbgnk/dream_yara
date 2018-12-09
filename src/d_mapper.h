@@ -55,6 +55,10 @@ public:
     CharString              filterFile;
     CharString              superOutputFile;
 
+    CharString              MappabilityDirectory;
+    bool                    ossOff = false;
+    uint32_t                readLength = 0;
+
     double                  loadFilter      = 0.0;
     double                  filterReads     = 0.0;
     double                  copyReads       = 0.0;
@@ -346,6 +350,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           DisOptions & disOptions)
 {
 
+    if(!disOptions.ossOff){
+
     initReadsContext(me, readSeqs);
 
     typedef MapperTraits<TSpec, TConfig>                        TTraits;
@@ -363,11 +369,27 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     TContigSeqs & contigSeqs = me.contigs.seqs;
 
+
+    uint32_t len;
+    if(disOptions.readLength != 0)
+        len = disOptions.readLength;
+    else
+        len = length(readSeqs[0]);
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
-    uint16_t maxError = me.options.errorRate * length(readSeqs[0]); //maybe include read length as input parameter
-    uint16_t strata = disOptions.strataRate * length(readSeqs[0]);
+    uint16_t maxError = me.options.errorRate * len;
+    uint16_t strata = disOptions.strataRate * len;
 //     ossContext.maxError = maxError;
 //     ossContext.strata = strata;
+
+    CharString bPath = me.options.mappabilitySubDirectory;
+    if(length(bPath) != 0){
+        bPath += "/";
+        std::cout << "Loading Bitvectors: " << bPath << "\n";
+        loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, len);
+        std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << " Length: " << me.bitvectors[0].first.size() << "\n";
+    }else{
+        std::cout << "No bitvectors loaded" << "\n";
+    }
 
     bool mscheme = false;
     ossContext.setReadContextOSS(maxError, strata, mscheme); //TODO reverse
@@ -390,19 +412,19 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     else
 //         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
 
-/*
-    std::cout << "Finished Searching: " << "\n";
-    typedef typename TTraits::TMatch                             TMatch;
-    for(int i = 0; i < length(me.matchesByCoord); ++i){
-        std::cout << "Match: " << "\n";
-        TMatch myMatch = me.matchesByCoord[i];
-        std::cout << myMatch.contigBegin << "\n";
-        std::cout << myMatch.contigEnd << "\n";
-        std::cout << "ContigId: " << myMatch.contigId << "\n";
-        std::cout << "Errors: " << myMatch.errors << "\n";
-        std::cout << "ReadId: "<< myMatch.readId << "\n" << "\n";
-    }
-    std::cout << "End of Matches ____________________________________________________________________________________________________ " << "\n";*/
+
+//     std::cout << "Finished Searching: " << "\n";
+//     typedef typename TTraits::TMatch                             TMatch;
+//     for(int i = 0; i < length(me.matchesByCoord); ++i){
+//         std::cout << "Match: " << "\n";
+//         TMatch myMatch = me.matchesByCoord[i];
+//         std::cout << myMatch.contigBegin << "\n";
+//         std::cout << myMatch.contigEnd << "\n";
+//         std::cout << "ContigId: " << myMatch.contigId << "\n";
+//         std::cout << "Errors: " << myMatch.errors << "\n";
+//         std::cout << "ReadId: "<< myMatch.readId << "\n" << "\n";
+//     }
+//     std::cout << "End of Matches ____________________________________________________________________________________________________ " << "\n";
 
     aggregateMatchesOSS(me, readSeqs);
 //     aggregateMatches(me, readSeqs);
@@ -466,7 +488,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     isMapped(me.ctx, readId)
 //     getMinErrors(me.ctx, readId) + strata <= error i am currently searching for
 
-/*
+    }
+    else
+    {
+
     initReadsContext(me, readSeqs);
     initSeeds(me, readSeqs);
 
@@ -515,7 +540,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     alignMatches(me);
     copyMatches(mainMapper, me, disOptions);
     copyCigars(mainMapper, me, disOptions);
-    appendStats(mainMapper, me);*/
+    appendStats(mainMapper, me);
+    }
 
 }
 
@@ -877,6 +903,9 @@ inline void mapReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & 
 
 //     _mapReadsImplOSS(me, mainMapper, me.biIndex, me.reads.seqs, disOptions);
 }
+
+
+
 
 template <typename TSpec, typename TConfig, typename TMainConfig>
 inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & mainMapper, DisOptions & disOptions)
@@ -1300,11 +1329,12 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
         prepairMainMapper(mainMapper, filter, disOptions);
 
         if(disOptions.filterType == NONE){
-            for(uint32_t i = 0; i < disOptions.numberOfBins; ++i){
+            for(uint32_t i = 0; i < disOptions.numberOfBins; ++i){ //wird interaction with InTextVerification
                 std::cout << "In bin Number: " << i << "\n";
                 disOptions.currentBinNo = i;
                 Options options = mainMapper.options;
                 appendFileName(options.contigsIndexFile, disOptions.IndicesDirectory, i);
+                appendFileName(options.mappabilitySubDirectory, disOptions.MappabilityDirectory, i);
                 if (!openContigsLimits(options))
                     throw RuntimeError("Error while opening reference file.");
                 configureMapper<TSpec, TMainConfig>(options, mainMapper, disOptions);
@@ -1317,6 +1347,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
                 disOptions.currentBinNo = i;
                 Options options = mainMapper.options;
                 appendFileName(options.contigsIndexFile, disOptions.IndicesDirectory, i);
+                appendFileName(options.mappabilitySubDirectory, disOptions.MappabilityDirectory, i);
                 if (!openContigsLimits(options))
                     throw RuntimeError("Error while opening reference file.");
                 configureMapper<TSpec, TMainConfig>(options, mainMapper, disOptions);

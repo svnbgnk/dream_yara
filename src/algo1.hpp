@@ -37,7 +37,9 @@ inline void runAlgoTrivial(TIndex & index, TText const & text, TContainer & c, T
 
     uint64_t textLength = seqan::length(text);
 
-    #pragma omp parallel for schedule(dynamic, 1000000) num_threads(opt.threads)
+//1000000
+    //textLength/(opt.threads*1000)
+    #pragma omp parallel for schedule(dynamic, 500) num_threads(opt.threads)
     for (uint64_t i = 0; i < textLength - opt.k_length + 1; ++i)
     {
         value_type hits = 0;
@@ -62,7 +64,11 @@ inline void runAlgoTrivial(TIndex & index, TText const & text, TContainer & c, T
 
         auto const & needle = infix(text, i, i + opt.k_length);
         Iter<TIndex, VSTree<TopDown<> > > it(index);
-        _optimalSearchScheme(delegate, it, needle, scheme, EditDistance());
+
+        if(opt.indels)
+            _optimalSearchScheme(delegate, it, needle, scheme, EditDistance());
+        else
+            _optimalSearchScheme(delegate, it, needle, scheme, HammingDistance());
 
         std::sort(myhits.begin(), myhits.end(), occ_s);
         myhits.erase(std::unique(myhits.begin(), myhits.end(), occ_sim<15>), myhits.end());

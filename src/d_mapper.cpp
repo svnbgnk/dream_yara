@@ -101,6 +101,7 @@ struct Options;
 #include "mapper.h"
 
 #include "d_mapper.h"
+#include "common.h"
 
 #include "find2_index_approx_extension.h"
 
@@ -132,6 +133,12 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     addArgument(parser, ArgParseArgument(ArgParseArgument::INPUT_FILE, "READS FILE", true));
     setValidValues(parser, 1, SeqFileIn::getFileExtensions());
     setHelpText(parser, 1, "Either one single-end or two paired-end / mate-pair read files.");
+
+    addOption(parser, ArgParseOption("m", "mappability", "Path to mappability directory", ArgParseArgument::INPUT_FILE, "IN"));
+
+    addOption(parser, ArgParseOption("of", "ossOff", "Turn Optimal Search Schemes off."));
+
+    addOption(parser, ArgParseOption("l", "length", "Read length (max)", ArgParseOption::INTEGER));
 
     addOption(parser, ArgParseOption("v", "verbose", "Displays global statistics."));
     addOption(parser, ArgParseOption("vv", "very-verbose", "Displays extensive statistics for each batch of reads."));
@@ -298,6 +305,11 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
             return ArgumentParser::PARSE_ERROR;
     }
 
+    getOptionValue(disOptions.MappabilityDirectory, parser, "mappability");
+    if (isSet(parser, "ossOff")) disOptions.ossOff = true;
+
+    getOptionValue(disOptions.readLength, parser, "length");
+
     // Parse output file.
     getOptionValue(disOptions.superOutputFile, parser, "output-file");
 
@@ -387,6 +399,8 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     if (isSet(parser, "verbose")) disOptions.verbose = 1;
     if (isSet(parser, "very-verbose")) disOptions.verbose = 2;
+
+
 
     // Get version.
     disOptions.version = getVersion(parser);

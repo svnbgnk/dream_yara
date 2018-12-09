@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <sdsl/bit_vectors.hpp>
-#include "common.h"
 // #include "find2_index_approx_unidirectional.h"
 
 
@@ -321,23 +320,22 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
             if(checkSinglePos(bitvectors, brange, r)){
 //                 std::cout << "Checkpoint3" << "\n";
                 TSAValue sa_info;
-                TContigsLen seqOffset;
                 TContigsLen chromlength;
 
                 if(std::is_same<TDir, Rev>::value){
                     sa_info = iter.fwdIter.index->sa[iter.fwdIter.vDesc.range.i1 + r];
-                    seqOffset = getSeqOffset(sa_info);
+                    TContigsLen seqOffset = getSeqOffset(sa_info);
                     chromlength = length(genome[getSeqNo(sa_info)]);
 //                     std::cout << "checking forward: " << sa_info << "\t" << chromlength << "\n";
                     if(!(needleLeftPos + overlap_l <= seqOffset && chromlength - 1 >= seqOffset - needleLeftPos + needleL - 1 + overlap_r))
                         continue;
 //                     sa_info.i2 = sa_info.i2 - needleLeftPos;
-                    setSeqOffset(sa_info, seqOffset - needleLeftPos);
+                    setSeqOffset(sa_info, seqOffset - needleLeftPos); //maybe -1
                 }
                 else
                 {
                     sa_info = iter.revIter.index->sa[iter.revIter.vDesc.range.i1 + r];
-                    seqOffset = getSeqOffset(sa_info);
+                    TContigsLen seqOffset = getSeqOffset(sa_info);
                     chromlength = length(genome[getSeqNo(sa_info)]);
 //                     std::cout << "checking reverse: " << sa_info << "\t" << chromlength << "\n";
                     if(!(chromlength - 1 >= seqOffset + needleRightPos - 1 + overlap_r && seqOffset + needleRightPos - 1 - overlap_l >= length(needle) + 1))
@@ -346,7 +344,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                     setSeqOffset(sa_info, chromlength - seqOffset - needleRightPos + 1);
                 }
                 //update seqOffset
-                seqOffset = getSeqOffset(sa_info);
+                TContigsLen seqOffset = getSeqOffset(sa_info);
 
                 //types for globalAlignmentScore
                 Dna5String const & ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);

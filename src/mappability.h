@@ -69,11 +69,12 @@ string get_output_path(OptionsM const & opt)
 template <typename T>
 inline void save(vector<T> const & c, string const & output_path, OptionsM const & opt)
 {
-
-/*
-    for(int i = 0; i < c.size(); ++i)
-        std::cout << (int)c[i] << " ";
-    std::cout << "\n";*/
+    if(opt.verbose && c.size() < 10000)
+    {
+        for(int i = 0; i < c.size(); ++i)
+            std::cout << (int)c[i] << " ";
+        std::cout << "\n";
+    }
 
     ofstream outfile(output_path, ios::out | ios::binary);
     outfile.write((const char*) &c[0], c.size() * sizeof(T));

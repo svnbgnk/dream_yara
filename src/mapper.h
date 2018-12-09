@@ -57,6 +57,7 @@ struct Options
     uint64_t            contigsSum;
 
     CharString          contigsIndexFile;
+    CharString          mappabilitySubDirectory;
     Pair<CharString>    readsFile;
     CharString          outputFile;
     TOutputFormat       outputFormat;
@@ -184,6 +185,10 @@ struct MapperTraits
     typedef Iter<TBiIndex, VSTree<TopDown<> > >                     TBiIter;
     typedef TBiIter                                                 TSparseIter;
 
+    typedef typename std::vector<std::pair<sdsl::bit_vector, sdsl::rank_support_v<>>>    TBitvectors;
+    typedef typename std::vector<std::pair<int, bool> >                              TBitvectorsMeta;
+
+
     typedef typename Size<TIndex>::Type                             TIndexSize;
     typedef typename Fibre<TIndex, FibreSA>::Type                   TSA;
 
@@ -304,6 +309,9 @@ struct Mapper
     typename Traits::TBiIndex           biIndex;
     typename Traits::TIndex           & index = biIndex.rev;
     typename Traits::TReads             reads;
+
+    typename Traits::TBitvectors        bitvectors;
+    typename Traits::TBitvectorsMeta    bitvectorsMeta;
 
     typename Traits::TReadsFile         readsFile;
     typename Traits::TOutputFile        outputFile;
