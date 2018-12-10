@@ -165,14 +165,14 @@ inline void loadAllBitvectors(CharString const bitvectorpath,
         std::cerr << tmp_file_name << " not found" <<  "\n";
     }
 }
-
+/*
 template <typename TVector, typename TVSupport>
-inline void loadAllBitvectors(CharString const bitvectorpath,
+inline void loadBitvectors(CharString const bitvectorpath,
                               std::vector<std::pair<TVector, TVSupport>> & bitvectorsOutput,
                               std::vector<std::pair<int, bool> > & metaOutput,
                               uint32_t const K){
 
-}
+}*/
 
 
 // ----------------------------------------------------------------------------

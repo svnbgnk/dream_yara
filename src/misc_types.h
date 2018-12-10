@@ -176,7 +176,7 @@ struct YaraFMConfig
     static const unsigned LEVELS =                      1;
 };*/
 
-
+/*
 template <typename TSize, typename TLen, typename TSum, typename TAlloc = Alloc<> >
 struct YaraFMConfig2
 {
@@ -185,7 +185,7 @@ struct YaraFMConfig2
 
     static const unsigned WORDS_PER_BLOCK =             1;
     static const unsigned LEVELS =                      2;
-};
+};*/
 
 template <typename TSize, typename TLen, typename TSum, typename TAlloc = Alloc<> >
 struct YaraFMConfig3
@@ -197,7 +197,7 @@ struct YaraFMConfig3
 template <typename TSize, typename TLen, typename TSum, typename TAlloc = Alloc<> >
 struct YaraFMConfig
 {
-    typedef YaraFMConfig2<TSize, TLen, TSum, TAlloc>     TMe;
+//     typedef YaraFMConfig2<TSize, TLen, TSum, TAlloc>     TMe;
     typedef YaraFMConfig3<TSize, TLen, TSum, TAlloc>     TMeText;
 
     // Text.
@@ -221,9 +221,9 @@ struct YaraFMConfig
     typedef TSum                                        Size;
 
     // Sparse SA sampling rate.
-    static const unsigned SAMPLING =                    10;
-    static const unsigned WORDS_PER_BLOCK =             1;
-    static const unsigned LEVELS =                      2;
+    static constexpr unsigned SAMPLING =                    10;
+    static constexpr unsigned WORDS_PER_BLOCK =             1;
+    static constexpr unsigned LEVELS =                      2;
 };
 
 // ----------------------------------------------------------------------------
