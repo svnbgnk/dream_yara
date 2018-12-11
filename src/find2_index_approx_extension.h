@@ -1289,8 +1289,8 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     calcConstParameters(scheme);
     uint32_t readLength = ossContext.readLength;
 
-    optimalSearchSchemeComputeFixedBlocklength(scheme, readLength);
-    optimalSearchSchemeComputeChronBlocklength(scheme);
+    _optimalSearchSchemeComputeFixedBlocklength(scheme, readLength);
+    _optimalSearchSchemeComputeChronBlocklength(scheme);
 
     //load Bitvectors needed for scheme (Blocklength and chronblockLengths have to be calculated therefore I need to assume needle length)
     std::vector<TBitvectorPair * > lbitvectors;
