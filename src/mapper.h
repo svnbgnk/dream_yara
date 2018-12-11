@@ -186,7 +186,7 @@ struct MapperTraits
     typedef TBiIter                                                 TSparseIter;
 
     typedef typename std::vector<std::pair<sdsl::bit_vector, sdsl::rank_support_v<>>>    TBitvectors;
-    typedef typename std::vector<std::pair<int, bool> >                              TBitvectorsMeta;
+    typedef typename std::vector<std::pair<uint32_t, bool> >                         TBitvectorsMeta;
 
 
     typedef typename Size<TIndex>::Type                             TIndexSize;

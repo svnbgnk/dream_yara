@@ -1,7 +1,7 @@
 using namespace seqan;
 
 struct smallHit{
-    Pair <uint32_t, uint32_t> occ;
+    Pair <uint64_t, uint64_t> occ;
     uint8_t errors;
 //     DnaString read;
 };

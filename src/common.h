@@ -58,7 +58,7 @@ typedef Index<TText, TIndexConfig> MyIndex;*/
 typedef sdsl::bit_vector TBitvector;
 typedef sdsl::rank_support_v<> TSupport;
 // typedef sdsl::rank_support_v5<> TSupport;
-
+/*
 struct hit{
     bool rev;
     Pair <uint32_t, uint32_t> occ;
@@ -67,7 +67,7 @@ struct hit{
     uint32_t readId;
     DnaString read;
 };
-
+*/
 
 template <size_t nbrBlocks, size_t N>
 inline void calcConstParameters(std::array<OptimalSearch<nbrBlocks>, N> & ss)
@@ -138,8 +138,8 @@ template <size_t nbrBlocks, size_t N>
 
 auto loadBlockLimits(uint8_t se, uint32_t const len)
 {
-    std::vector<int> r(1, 0);
-    std::vector<int> l;
+    std::vector<uint32_t> r(1, 0);
+    std::vector<uint32_t> l;
     switch (se)
     {
         case 0:
@@ -148,7 +148,7 @@ auto loadBlockLimits(uint8_t se, uint32_t const len)
             _optimalSearchSchemeComputeFixedBlocklength(scheme, len);
             _optimalSearchSchemeComputeChronBlocklength(scheme);
             auto s = scheme[0];
-            for(int i = 0; i < s.pi.size() - 1; ++i)
+            for(uint16_t i = 0; i < s.pi.size() - 1; ++i)
             {
                 r.push_back(s.chronBL[i]);
                 l.push_back(s.revChronBL[i + 1]);
@@ -161,7 +161,7 @@ auto loadBlockLimits(uint8_t se, uint32_t const len)
             _optimalSearchSchemeComputeFixedBlocklength(scheme, len);
             _optimalSearchSchemeComputeChronBlocklength(scheme);
             auto s = scheme[0];
-            for(int i = 0; i < s.pi.size() - 1; ++i)
+            for(uint16_t i = 0; i < s.pi.size() - 1; ++i)
             {
                 r.push_back(s.chronBL[i]);
                 l.push_back(s.revChronBL[i + 1]);
@@ -174,7 +174,7 @@ auto loadBlockLimits(uint8_t se, uint32_t const len)
             _optimalSearchSchemeComputeFixedBlocklength(scheme, len);
             _optimalSearchSchemeComputeChronBlocklength(scheme);
             auto s = scheme[0];
-            for(int i = 0; i < s.pi.size() - 1; ++i)
+            for(uint16_t i = 0; i < s.pi.size() - 1; ++i)
             {
                 r.push_back(s.chronBL[i]);
                 l.push_back(s.revChronBL[i + 1]);
@@ -187,7 +187,7 @@ auto loadBlockLimits(uint8_t se, uint32_t const len)
             _optimalSearchSchemeComputeFixedBlocklength(scheme, len);
             _optimalSearchSchemeComputeChronBlocklength(scheme);
             auto s = scheme[0];
-            for(int i = 0; i < s.pi.size() - 1; ++i)
+            for(uint16_t i = 0; i < s.pi.size() - 1; ++i)
             {
                 r.push_back(s.chronBL[i]);
                 l.push_back(s.revChronBL[i + 1]);
@@ -200,7 +200,7 @@ auto loadBlockLimits(uint8_t se, uint32_t const len)
             _optimalSearchSchemeComputeFixedBlocklength(scheme, len);
             _optimalSearchSchemeComputeChronBlocklength(scheme);
             auto s = scheme[0];
-            for(int i = 0; i < s.pi.size() - 1; ++i)
+            for(uint16_t i = 0; i < s.pi.size() - 1; ++i)
             {
                 r.push_back(s.chronBL[i]);
                 l.push_back(s.revChronBL[i + 1]);
@@ -217,10 +217,10 @@ auto loadBlockLimits(uint8_t se, uint32_t const len)
 template<size_t nbrBlocks, size_t N>
 inline auto loadBlockLimits(std::array<OptimalSearch<nbrBlocks>, N> const & ss)
 {
-    std::vector<int> r(1, 0);
-    std::vector<int> l;
+    std::vector<uint32_t> r(1, 0);
+    std::vector<uint32_t> l;
     auto s = ss[0];
-    for(int i = 0; i < s.pi.size() - 1; ++i)
+    for(uint32_t i = 0; i < s.pi.size() - 1; ++i)
     {
         r.push_back(s.chronBL[i]);
         l.push_back(s.revChronBL[i + 1]);
@@ -241,21 +241,21 @@ inline void linkBitvectors(TContext & ossContext,
     if(bitvectors.empty())
         return;
     auto blocklengths = loadBlockLimits(ss);
-    std::vector<int> shift_r = blocklengths.first;
-    std::vector<int> shift_l = blocklengths.second;
+    std::vector<uint32_t> shift_r = blocklengths.first;
+    std::vector<uint32_t> shift_l = blocklengths.second;
 
-    std::vector<std::pair<int, bool> > & meta = ossContext.bitvectorsMeta;
+    std::vector<std::pair<uint32_t, bool> > & meta = ossContext.bitvectorsMeta;
     std::cout << "SearchScheme has: " << ss[0].pi.size() << " parts" << "\n";
 
     //test blocklengths of search scheme
-    for(int i = 0; i < shift_r.size() - 1; ++i){
+    for(uint16_t i = 0; i < shift_r.size() - 1; ++i){
         if(shift_r[i] > shift_r[i + 1] || shift_l[i] > shift_l[i]){
             std::cerr << "blocklengths not in the right order" << "\n";
             exit(0);
         }
     }
-    for(int i = 0; i < shift_r.size(); ++i){
-        for(int j = 0; j < meta.size(); ++j){
+    for(uint16_t i = 0; i < shift_r.size(); ++i){
+        for(uint16_t j = 0; j < meta.size(); ++j){
             if(shift_r[i] == meta[j].first && meta[j].second)
             {
                 std::cout << "left anchored with shift: " << meta[j].first << "\n";
@@ -265,8 +265,8 @@ inline void linkBitvectors(TContext & ossContext,
         }
     }
 
-    for(int i = shift_l.size() - 1; i >= 0; --i){
-        for(int j = 0; j < meta.size(); ++j){
+    for(uint16_t i = shift_l.size() - 1; i >= 0; --i){
+        for(uint16_t j = 0; j < meta.size(); ++j){
             if(shift_l[i] == meta[j].first && !meta[j].second)
             {
                 std::cout << "right anchored with shift: " << meta[j].first << "\n";
@@ -282,12 +282,12 @@ inline void linkBitvectors(TContext & ossContext,
     }
 }
 
-template <typename TText>
+template <typename TContigsSize, typename TContigsLen, typename TText>
 auto getSeqLengths(TText & text){
 
-    std::vector<uint32_t> sl;
+    std::vector<TContigsLen> sl;
     sl.push_back(0);
-    for(uint32_t i = 0; i < length(text); ++i){
+    for(TContigsSize i = 0; i < length(text); ++i){
         sl.push_back(seqan::length(text[i]) + sl.back());
     }
     return sl;
@@ -297,12 +297,13 @@ auto getSeqLengths(TText & text){
 enum class ReturnCode {
 	NOMAPPABILITY, DIRECTSEARCH, COMPMAPPABLE, ONEDIRECTION, MAPPABLE, FINISHED, UNIDIRECTIONAL, SUSPECTUNIDIRECTIONAL, FILTER, ERROR
 };
-
+/*
+ * wrong type !!!! neede TSALength
 template <typename TVector, typename TVSupport>
 inline void getConsOnes(std::vector<std::pair<TVector, TVSupport>> & bitvectors,
                  Pair<uint8_t, Pair<uint32_t, uint32_t>> & inside_bit_interval,
                  int const intervalsize,
-                 std::vector<std::pair<uint32_t, uint32_t>> & consOnesOutput);
+                 std::vector<std::pair<uint32_t, uint32_t>> & consOnesOutput);*/
 
 
 /*

@@ -51,22 +51,23 @@ vector<uint8_t> read(const string mappability_path){
 template<typename TVector, typename TElem>
 bool checkForElem(TVector const & v, TElem const & e)
 {
-   for(int i = 0; i < v.size(); ++i){
+   for(uint16_t i = 0; i < v.size(); ++i){
        if(v[i].compare(e) == 0)
            return true;
    }
    return false;
 }
 
+template <typename TContigsSum>
 bitvectors create_all_bit_vectors(const vector <uint8_t> & mappability,
                                   uint32_t const len, uint32_t const threshold, uint8_t const errors, uint8_t const strata,  uint32_t const mythreads, bool const verbose){
+
     //TODO switch left and right in the moment they discribe in which direction the k-mere is
     bitvectors b;
-    int e = errors;
     sdsl::bit_vector righti (mappability.size() + len - 1, 0);
     sdsl::bit_vector lefti (mappability.size() + len - 1, 0);
     #pragma omp parallel for schedule(static) //num_threads(mythreads)
-    for(uint32_t i = 0; i < mappability.size(); ++i){
+    for(TContigsSum i = 0; i < mappability.size(); ++i){
         lefti[i + len - 1] = (mappability[i] <= threshold);
         righti[i] = (mappability[i] <= threshold);
     }
@@ -84,18 +85,18 @@ bitvectors create_all_bit_vectors(const vector <uint8_t> & mappability,
     if(verbose)
         std::cout << "\nAdditonal bitvectors besides left_anchored and right_anchored bitvector: \n";
 
-    vector<int> shift_r;
-    vector<int> shift_l;
+    vector<uint32_t> shift_r;
+    vector<uint32_t> shift_l;
 
-    for(int s = 0; s <= e - strata; ++s){
-        int se = e - s;
+    for(uint8_t s = 0; s <= errors - strata; ++s){
+        uint8_t se = errors - s;
         if(verbose)
-            std::cout << "Bitvectors for Scheme <" << 0 << ", " << se << ">: \n";
+            std::cout << "Bitvectors for Scheme <" << 0 << ", " << (int)se << ">: \n";
         auto blocklengths = loadBlockLimits(se, len);
         shift_r = blocklengths.first;
         shift_l = blocklengths.second;
 
-        for(int i = 0; i < shift_r.size(); ++i){
+        for(uint16_t i = 0; i < shift_r.size(); ++i){
             uint32_t shift = shift_r[i];
             bool skip = checkForElem(b.names, ("left_anchored_bvector_" + to_string(len) + "_shift_" + to_string(shift)));
             if(skip){
@@ -110,7 +111,7 @@ bitvectors create_all_bit_vectors(const vector <uint8_t> & mappability,
 
             sdsl::bit_vector newright(mappability.size() + len - 1, 0);
             #pragma omp parallel for schedule(static) //num_threads(mythreads)
-            for(uint32_t j = 0; j < righti.size(); ++j){
+            for(TContigsSum j = 0; j < righti.size(); ++j){
                 if(j >= shift)
                     newright[j] = righti[j - shift];
             }
@@ -118,7 +119,7 @@ bitvectors create_all_bit_vectors(const vector <uint8_t> & mappability,
             b.fwdd.push_back(true);
         }
 
-        for(int i = 0; i < shift_l.size(); ++i){
+        for(uint16_t i = 0; i < shift_l.size(); ++i){
             uint32_t shift = shift_l[i];
             bool skip = checkForElem(b.names, ("right_anchored_bvector_" + to_string(len) + "_shift_" + to_string(shift)));
             if(skip){
@@ -133,7 +134,7 @@ bitvectors create_all_bit_vectors(const vector <uint8_t> & mappability,
 
             sdsl::bit_vector newleft(mappability.size() + len - 1, 0);
             #pragma omp parallel for schedule(static) //num_threads(mythreads)
-            for(uint32_t j = 0; j < righti.size(); ++j){
+            for(TContigsSum j = 0; j < righti.size(); ++j){
                 if(j + shift < lefti.size() - 1)
                     newleft[j] = lefti[j + shift];
             }
@@ -150,16 +151,17 @@ bitvectors create_all_bit_vectors(const vector <uint8_t> & mappability,
 template <typename TContigsSize, typename TContigsLen, typename TContigsSum, typename TIndex, typename TText>
 void order_bit_vector(TIndex & index, TText const & text, bitvectors & b, uint32_t const mythreads, bool const verbose)
 {
-    uint32_t indexSize = seqan::length(index.fwd.sa);
+    TContigsSum indexSize = seqan::length(index.fwd.sa);
     if(verbose)
         cout << "Loaded Index. Size:" << indexSize << endl;
     vector<sdsl::bit_vector> bit_vectors_ordered (b.bv);
 
 //     uint32_t number_of_indeces = countSequences(index);
-    uint32_t number_of_indeces = length(text);
+    TContigsSize number_of_indeces = length(text);
 
-    std::vector<uint32_t> sequenceLengths = getSeqLengths(text);
+    std::vector<TContigsLen> sequenceLengths = getSeqLengths<TContigsSize, TContigsLen>(text);
     if(verbose){
+        std::cout << "Number of Sequences: " << number_of_indeces << "\n";
         std::cout << "cumSequenceLengths: \n";
         /*
         auto cumSequenceLengths = stringSetLimits(text);
@@ -185,11 +187,11 @@ void order_bit_vector(TIndex & index, TText const & text, bitvectors & b, uint32
     }
 
     //dynamic since tasks can take different amount of time (SA Sampling) critical to guarantee thread safety
-    uint8_t bsize = b.bv.size();
+    uint16_t bsize = b.bv.size();
 
 //     #pragma omp parallel for schedule(dynamic) num_threads(mythreads)
     #pragma omp parallel for schedule(static, (indexSize/(mythreads*100))) num_threads(mythreads)
-    for (unsigned j = 0; j < indexSize - number_of_indeces; ++j)
+    for (TContigsSum j = 0; j < indexSize - number_of_indeces; ++j)
     {
         // skip sentinels
         Pair<TContigsSize, TContigsLen> sa_f = index.fwd.sa[j + number_of_indeces];
@@ -201,7 +203,7 @@ void order_bit_vector(TIndex & index, TText const & text, bitvectors & b, uint32
         TContigsSum rpos = sequenceLengths[getSeqNo(sa_r) + 1] - getSeqOffset(sa_r) - 1;
         vector<bool> values(bsize);
 
-        for(uint32_t i = 0; i < bsize; ++i){
+        for(uint16_t i = 0; i < bsize; ++i){
             if(b.fwdd[i]){
                 values[i] = b.bv[i][fpos];
             }
@@ -212,7 +214,7 @@ void order_bit_vector(TIndex & index, TText const & text, bitvectors & b, uint32
         }
         #pragma omp critical
         {
-        for(uint32_t i = 0; i < bsize; ++i)
+        for(uint16_t i = 0; i < bsize; ++i)
             bit_vectors_ordered[i][j] = values[i];
         }
     }

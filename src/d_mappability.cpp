@@ -258,7 +258,7 @@ inline void runMappability(OptionsM const & options,
 
     if(options.verbose)
         std::cout << "Loaded Mappability vector. Size: " << mappability.size() << "\n";
-    bitvectors result = create_all_bit_vectors(mappability, options.k_length, options.threshold, options.errors, options.strata, options.threads, options.verbose);
+    bitvectors result = create_all_bit_vectors<TContigsSum>(mappability, options.k_length, options.threshold, options.errors, options.strata, options.threads, options.verbose);
     if(options.verbose)
         std::cout << "Finished bit vectors." << "\n";
 
@@ -384,6 +384,11 @@ int main(int argc, char const ** argv)
     if (!(options.k_length - options.overlap >= options.errors + 2))
     {
         cerr << "ERROR: overlap should be at least K - E - 2. (K - O >= E + 2 must hold since common overlap has length K - O and will be split into E + 2 parts).\n";
+        exit(1);
+    }
+
+    if(options.strata > options.errors){
+        cerr << "ERROR: strata should be smaller than maximum allowed Error.\n";
         exit(1);
     }
 
