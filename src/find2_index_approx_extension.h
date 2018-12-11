@@ -608,10 +608,10 @@ inline ReturnCode checkInterval(TContex & ossContext,
 
     if(ossContext.normal.compmappable && ivalOne == (brange.i2.i2 - brange.i2.i1)) //TODO maybe allow some zeroes
         return ReturnCode::COMPMAPPABLE;
-
+/*
     //equal or more than half zeroes
     if(ossContext.normal.suspectunidirectional && s.startUniDir <= blockIndex && static_cast<float>(ivalOne) / static_cast<float>(ivalSize) <= ossContext.normal.filter_th)
-        return ReturnCode::SUSPECTUNIDIRECTIONAL;
+        return ReturnCode::SUSPECTUNIDIRECTIONAL;*/
 
     return ReturnCode::MAPPABLE;
 }
@@ -716,7 +716,7 @@ inline ReturnCode checkMappability(OSSContext<TSpec, TConfig> & ossContext,
             _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, empty_bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
             return ReturnCode::FINISHED;
         }
-
+/*
         case ReturnCode::SUSPECTUNIDIRECTIONAL:
         {
             //test unidirectional changes iter range if true
@@ -727,7 +727,7 @@ inline ReturnCode checkMappability(OSSContext<TSpec, TConfig> & ossContext,
                 filter_interval(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
                 return ReturnCode::FINISHED;
             }
-        }
+        }*/
         default:
             return ReturnCode::MAPPABLE;
     }
@@ -988,12 +988,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                 return;
         }
         if(save){
-//             std::cout << "saving state: " << (int)errors << "\n";
-//             std::cout << iter.fwdIter.vDesc.range << "\t" << needleLeftPos << "\t" << needleRightPos << "\t" << (int)s.id << "\t" << (int)blockIndex << "\n";
             bool right = std::is_same<TDir, Rev>::value;
-
-//             std::cout << (int)needleId << "\t" << (int)errors << "\t" << (int)s.pi[0] << "\t" << right << "\n";
-
             ossContext.saveState(iter, needleLeftPos, needleRightPos, s.id, blockIndex, right, errors);
             return;
         }
@@ -1012,7 +1007,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
         //last input only matters for unidirectional searches (has to be false in this case)
         if(/*!lastEdit*/true){
             if(checkMappa){
-//                 filteredDelegate(ossContext, delegate, iter, needle, needleId, bitvectors, errors);
+                filteredDelegate(ossContext, delegate, iter, needle, needleId, bitvectors, errors);
             }
             else
             {
@@ -1022,25 +1017,25 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
         }
         return;
     }
-/*
+
     if(atBlockEnd && checkMappa){
         ReturnCode rcode = checkMappability(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
         if(rcode == ReturnCode::FINISHED)
             return;
-    }*/
+    }
 
     // Exact search in current block.
     if (maxErrorsLeftInBlock == 0)
     {
         _optimalSearchSchemeExact(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, TDir(), TDistanceTag());
-    }
+    }/*
     else if(!checkMappa && ossContext.itvConditionComp(iter, needleLeftPos, needleRightPos, errors, s, blockIndex))
     {
         typedef typename TConfig::TContigsSum   TContigsSum;
         //give emtpy bitvector and bitvector range sine we will not check mappability
         Pair<uint8_t, Pair<TContigsSum, TContigsSum>> dummy_bit_interval;
          directSearch(ossContext, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, dummy_bit_interval, TDir(), TDistanceTag());
-    }
+    }*/
 
     // Approximate search in current block.
     else
@@ -1073,7 +1068,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                 _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + 1, s, blockIndex, true, TDir(), TDistanceTag());
             }
         }
-        /*
         //checkCurrentMappability (inside a Block)
         uint32_t pblocklength = (blockIndex > 0) ? s.blocklength[blockIndex - 1] : 0;
         uint32_t step = (needleRightPos - needleLeftPos - 1);
@@ -1082,7 +1076,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             ReturnCode rcode = checkCurrentMappability(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
             if(rcode == ReturnCode::FINISHED)
                 return;
-        }*/
+        }
         _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
     }
 }
@@ -1326,6 +1320,7 @@ find(OSSContext<TSpec, TConfig> & ossContext,
         k++;
     }, Rooted(), typename TTraits::TThreading());
 /*
+ * not needed for Yara??
     if(ossContext.itv && ossContext.oneSSBestXMapper){
         removeBadHits(ossContext, ossContext.dhits);
     }*/
