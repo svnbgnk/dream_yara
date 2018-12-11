@@ -244,7 +244,7 @@ inline void linkBitvectors(TContext & ossContext,
     std::vector<int> shift_r = blocklengths.first;
     std::vector<int> shift_l = blocklengths.second;
 
-    std::vector<std::pair<int, bool> > & meta = ossContext.bitvector_meta;
+    std::vector<std::pair<int, bool> > & meta = ossContext.bitvectorsMeta;
     std::cout << "SearchScheme has: " << ss[0].pi.size() << " parts" << "\n";
 
     //test blocklengths of search scheme

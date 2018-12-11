@@ -439,14 +439,14 @@ struct OSSContext
     }
 
 
-    template <typename TText, typename TIndex, typename TIndexSpec,
+    template <typename TIter,
               size_t nbrBlocks>
-    bool itvConditionComp(Iter<Index<TText, BidirectionalIndex<TIndex> >, VSTree<TopDown<TIndexSpec> > > iter,
-                      uint32_t const needleLeftPos,
-                      uint32_t const needleRightPos,
-                      uint8_t const errors,
-                      OptimalSearch<nbrBlocks> const & s,
-                      uint8_t const blockIndex)
+    bool itvConditionComp(TIter iter,
+                          uint32_t const needleLeftPos,
+                          uint32_t const needleRightPos,
+                          uint8_t const errors,
+                          OptimalSearch<nbrBlocks> const & s,
+                          uint8_t const blockIndex)
     {
         return(itv && iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 < (s.pi.size() - blockIndex - 1 + comp.directsearchblockoffset) * comp.directsearch_th);
     }

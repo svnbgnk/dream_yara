@@ -12,48 +12,49 @@
 namespace seqan{
 
 template<typename TVector, typename TVSupport,
-         typename TSAValue>
+         typename TSALength>
 inline TVector & getTVector(std::vector<std::pair<TVector, TVSupport> > & bitvectors,
-           Pair<uint8_t, Pair<TSAValue, TSAValue>> & brange)
+           Pair<uint8_t, Pair<TSALength, TSALength>> const & brange)
 {
     return bitvectors[brange.i1].first;
 }
 
 template<typename TVector, typename TVSupport,
-         typename TSAValue>
+         typename TSALength>
 inline TVSupport & getTVSupport(std::vector<std::pair<TVector, TVSupport> > & bitvectors,
-           Pair<uint8_t, Pair<TSAValue, TSAValue>> & brange)
+           Pair<uint8_t, Pair<TSALength, TSALength>> const & brange)
 {
     return bitvectors[brange.i1].second;
 }
 
 template<typename TVector, typename TVSupport,
-         typename TSAValue>
+         typename TSALength>
 inline TVector & getTVector(std::vector<std::pair<TVector, TVSupport>* > & bitvectors,
-           Pair<uint8_t, Pair<TSAValue, TSAValue>> & brange)
+           Pair<uint8_t, Pair<TSALength, TSALength>> const & brange)
 {
     return bitvectors[brange.i1]->first;
 }
 
 template<typename TVector, typename TVSupport,
-         typename TSAValue>
+         typename TSALength>
 inline TVSupport & getTVSupport(std::vector<std::pair<TVector, TVSupport>* > & bitvectors,
-           Pair<uint8_t, Pair<TSAValue, TSAValue>> & brange)
+           Pair<uint8_t, Pair<TSALength, TSALength>> const & brange)
 {
     return bitvectors[brange.i1]->second;
 }
 
-template <typename TBitvectorPair>
+template <typename TBitvectorPair,
+          typename TSALength>
 inline void getConsOnes(std::vector<TBitvectorPair > & bitvectors,
-                Pair<uint8_t, Pair<uint32_t, uint32_t>> & inside_bit_interval,
+                Pair<uint8_t, Pair<TSALength, TSALength> > & inside_bit_interval,
                 uint32_t const intervalsize,
-                std::vector<std::pair<uint32_t, uint32_t>> & consOnesOutput)
+                std::vector<std::pair<TSALength, TSALength>> & consOnesOutput)
 {
     auto & b = getTVector(bitvectors, inside_bit_interval);
-    uint32_t k = inside_bit_interval.i2.i1;
-    uint32_t startOneInterval = inside_bit_interval.i2.i1;
+    TSALength k = inside_bit_interval.i2.i1;
+    TSALength startOneInterval = inside_bit_interval.i2.i1;
     while(k < inside_bit_interval.i2.i2){
-        uint32_t interval = 0;
+        TSALength interval = 0;
         //TODO delete second condition it should end with 1
         while(b[k + interval] == 0 && (k + interval) < inside_bit_interval.i2.i2){
             ++interval;
@@ -69,15 +70,16 @@ inline void getConsOnes(std::vector<TBitvectorPair > & bitvectors,
     consOnesOutput.push_back(std::make_pair(startOneInterval, k));
 }
 
-template <typename TContex,
+template <typename TSpec, typename TConfig,
           typename TDelegate, typename TDelegateD,
           typename TIndex,
           typename TNeedle,
           typename TBitvectorPair,
           size_t nbrBlocks,
+          typename TSALength,
           typename TDir,
           typename TDistanceTag>
-inline void filter_interval(TContex & ossContext,
+inline void filter_interval(OSSContext<TSpec, TConfig> & ossContext,
                             TDelegate & delegate,
                             TDelegateD & delegateDirect,
                             Iter<TIndex, VSTree<TopDown<> > > iter,
@@ -89,15 +91,15 @@ inline void filter_interval(TContex & ossContext,
                             uint8_t const errors,
                             OptimalSearch<nbrBlocks> const & s,
                             uint8_t const blockIndex,
-                            Pair<uint8_t, Pair<uint32_t, uint32_t>> & inside_bit_interval,
+                            Pair<uint8_t, Pair<TSALength, TSALength>> & inside_bit_interval,
                             TDir const & ,
                             TDistanceTag const &)
 {
-    std::vector<std::pair<uint32_t, uint32_t>> consOnes;
+    typedef typename TConfig::TContigsSum       TContigsSum; //SAVALUE
+    std::vector<std::pair<TContigsSum, TContigsSum> > consOnes;
     getConsOnes(bitvectors, inside_bit_interval, ossContext.normal.intervalsize, consOnes);
     uint32_t noi = countSequences(*iter.fwdIter.index);
 
-    //TODO shorten this
     for(uint32_t i = 0; i < consOnes.size(); ++i){
         if (std::is_same<TDir, Rev>::value){
             iter.revIter.vDesc.range.i1 = consOnes[i].first + noi;
@@ -148,9 +150,10 @@ inline void genomeSearch(OSSContext<TSpec, TConfig> & ossContext,
     delegateDirect(ossContext, sa_info, posAdd(sa_info, length(needle)), errors, needleId);
 }
 
-template<typename TBitvectorPair>
+template<typename TBitvectorPair,
+         typename TSALength>
 inline bool checkSinglePos(std::vector<TBitvectorPair > & bitvectors,
-                           Pair<uint8_t, Pair<uint32_t, uint32_t>> const & brange,
+                           Pair<uint8_t, Pair<TSALength, TSALength> > const & brange,
                            uint32_t offset)
 {
     if(bitvectors.empty()){
@@ -177,7 +180,7 @@ template <typename TContex,
           typename TDelegateD,
           typename TString,
           typename TContigsLen,
-          typename TSAValue2,
+          typename TSAValue,
           typename TNeedle>
 inline void alignmentMyersBitvector(TContex & ossContext,
                                     TDelegateD & delegateDirect,
@@ -186,7 +189,7 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                                     TString const & n_infix,
                                     TString const & ex_infix,
                                     TContigsLen const genomelength,
-                                    TSAValue2 const & sa_info,
+                                    TSAValue const & sa_info,
                                     uint8_t max_e,
                                     uint8_t overlap_l,
                                     uint8_t overlap_r,
@@ -210,7 +213,7 @@ inline void alignmentMyersBitvector(TContex & ossContext,
 
     if(ins_initialScore >= 0 - 2 * max_e || initialScore >= 0 - overlap_l - overlap_r - max_e + intDel) //MM creates one error D creates one error since now it also align to overlap
     {
-        TSAValue2 sa_info_tmp = sa_info;
+        TSAValue sa_info_tmp = sa_info;
         //No Insertions or Deletions
 //         cout << "E: " << (int)0 << endl;
         TString const & tmp0 = infix(ex_infix, overlap_l, ex_infixL - overlap_r);
@@ -298,6 +301,7 @@ template <typename TSpec, typename TConfig,
           typename TNeedle,
           typename TBitvectorPair,
           size_t nbrBlocks,
+          typename TSALength,
           typename TDir,
           typename TDistanceTag>
 inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
@@ -311,7 +315,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                          uint8_t const errors,
                          OptimalSearch<nbrBlocks> const & s,
                          uint8_t const blockIndex,
-                         Pair<uint8_t, Pair<uint32_t, uint32_t>> const & brange,
+                         Pair<uint8_t, Pair<TSALength, TSALength>> const & brange,
                          TDir const & ,
                          TDistanceTag const &)
 {
@@ -321,6 +325,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
     typedef typename Value<TSA>::Type                        TSAValue;
     typedef typename TConfig::TContigsLen                    TContigsLen; //sa.i2
     typedef typename TConfig::TContigsSize                   TContigsSize; //sa.i1
+    typedef typename TConfig::TContigsSum                    TContigsSum; //SAVALUE
 //     typedef typename TConfig::TAlloc                         TAlloc;
 //     typedef SeqStore<void, YaraContigsConfig<TAlloc> >       TContigs;
 //     typedef typename TContigs::TSeqs                         TContigSeqs;
@@ -336,9 +341,9 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         //TODO put this into a function
         //TODO if we are only interested in the best hit call return after delegate calls
         uint32_t needleL = length(needle);
-        uint8_t max_e = s.u[s.u.size() - 1];
-        int intIns = 0;
-        int intDel = 0;
+        uint32_t max_e = s.u[s.u.size() - 1];
+        uint8_t intIns = 0;
+        uint8_t intDel = 0;
         //calculate net sum of internal Insertions - Deletions
 
         if(repLength(iter) < needleRightPos - needleLeftPos - 1)
@@ -347,14 +352,11 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
             intDel = repLength(iter) - (needleRightPos - needleLeftPos - 1);
         uint8_t overlap_l = max_e;
         uint8_t overlap_r = max_e;
-        uint16_t ex_infixL = needleL + overlap_l + overlap_r;
 
 //         std::cout << "Checkpoint" << "NPL: " << needleLeftPos << "\tNRP: " << needleRightPos << "\n";
-        for(uint32_t r = 0; r < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++r)
+        for(TContigsSum r = 0; r < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++r)
         {
-//             std::cout << "Checkpoint2" << "\n";
             if(checkSinglePos(bitvectors, brange, r)){
-//                 std::cout << "Checkpoint3" << "\n";
                 TSAValue sa_info;
                 TContigsLen chromlength;
 
@@ -451,13 +453,14 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 }
 
 template <typename TIndex,
+          typename TSALength,
           typename TDir>
 inline void request_bitvector_interval(Iter<TIndex, VSTree<TopDown<> > > iter,
                                        uint8_t needed_bitvector,
-                                       Pair<uint8_t, Pair<uint32_t, uint32_t>> & brangeOutput,
+                                       Pair<uint8_t, Pair<TSALength, TSALength>> & brangeOutput,
                                        TDir const & )
 {
-    Pair<uint32_t, uint32_t> dirrange = (std::is_same<TDir, Rev>::value) ? range(iter.fwdIter) : range(iter.revIter);
+    Pair<TSALength, TSALength> dirrange = (std::is_same<TDir, Rev>::value) ? range(iter.fwdIter) : range(iter.revIter);
     uint32_t nseq = countSequences(*iter.fwdIter.index);
     dirrange.i1 = dirrange.i1 - nseq;
     dirrange.i2 = dirrange.i2 - nseq;
@@ -466,20 +469,19 @@ inline void request_bitvector_interval(Iter<TIndex, VSTree<TopDown<> > > iter,
     brangeOutput.i2 = dirrange;
 }
 
-//TODO load bitvectors inside a struct to make accessing the correct bitvector easier
 template <typename TIndex,
           typename TBitvectorPair,
-          size_t nbrBlocks>
+          size_t nbrBlocks,
+          typename TSALength>
 inline void get_bitvector_interval_inside(Iter<TIndex, VSTree<TopDown<> > > iter,
                                           std::vector<TBitvectorPair > & bitvectors,
                                           OptimalSearch<nbrBlocks> const & s,
                                           uint8_t const blockIndex,
-                                          Pair<uint8_t, Pair<uint32_t, uint32_t>> & brangeOutput,
+                                          Pair<uint8_t, Pair<TSALength, TSALength>> & brangeOutput,
                                           bool const goToRight2)
 {
-    Pair<uint32_t, uint32_t> dirrange = (goToRight2) ? range(iter.revIter) : range(iter.fwdIter);
+    Pair<TSALength, TSALength> dirrange = (goToRight2) ? range(iter.revIter) : range(iter.fwdIter);
     uint8_t needed_bitvector;
-    uint8_t size = s.pi.size();
     uint8_t bitvsize = bitvectors.size();
     if (goToRight2)
         needed_bitvector = bitvsize - s.max[blockIndex - 1];
@@ -498,12 +500,13 @@ inline void get_bitvector_interval_inside(Iter<TIndex, VSTree<TopDown<> > > iter
 template <typename TIndex,
           typename TBitvectorPair,
           size_t nbrBlocks,
+          typename TSALength,
           typename TDir>
 inline void get_bitvector_interval(Iter<TIndex, VSTree<TopDown<> > > iter,
                        std::vector<TBitvectorPair > & bitvectors,
                        OptimalSearch<nbrBlocks> const & s,
                        uint8_t const blockIndex,
-                       Pair<uint8_t, Pair<uint32_t, uint32_t>> & brangeOutput,
+                       Pair<uint8_t, Pair<TSALength, TSALength>> & brangeOutput,
                        TDir const & )
 {
     uint8_t needed_bitvector;
@@ -518,25 +521,26 @@ inline void get_bitvector_interval(Iter<TIndex, VSTree<TopDown<> > > iter,
 template<typename TContex,
          typename TIndex,
          typename TBitvectorPair,
+         typename TSALength,
          size_t nbrBlocks>
 inline bool testUnidirectionalFilter(TContex & ossContext,
                                      Iter<TIndex, VSTree<TopDown<> > > iter,
                                      std::vector<TBitvectorPair > & bitvectors,
-                                     Pair<uint8_t, Pair<uint32_t, uint32_t>> & brange,
+                                     Pair<uint8_t, Pair<TSALength, TSALength>> & brange,
                                      OptimalSearch<nbrBlocks> const & s,
                                      uint8_t const blockIndex,
                                      bool const goToRight2)
 {
     // need bitinterval from inside the pattern to filter according to the mappability form
     //therefore i also need to acces the block before because of that block i got mappability of both sides
-    Pair<uint8_t, Pair<uint32_t, uint32_t>> bit_interval;
+    Pair<uint8_t, Pair<TSALength, TSALength>> bit_interval;
     get_bitvector_interval_inside(iter, bitvectors, s, blockIndex, bit_interval, goToRight2);
     auto & b2 = getTVector(bitvectors, bit_interval);
 
     //squash interval
-    uint32_t startPos = bit_interval.i2.i1, endPos = bit_interval.i2.i2;
-    uint32_t startPos2 = startPos;
-    uint32_t endPos2 = endPos;
+    TSALength startPos = bit_interval.i2.i1, endPos = bit_interval.i2.i2;
+    TSALength startPos2 = startPos;
+    TSALength endPos2 = endPos;
 
     while(b2[startPos] == 0 && startPos < endPos)
         ++startPos;
@@ -549,13 +553,13 @@ inline bool testUnidirectionalFilter(TContex & ossContext,
         exit(0);
     }
 
-    float ivalSize = brange.i2.i2 - brange.i2.i1;
-    uint32_t count = 0;
+    TSALength ivalSize = brange.i2.i2 - brange.i2.i1;
+    TSALength count = 0;
 
     if(ossContext.normal.testflipdensity){
         // order of bits
         bool last = b2[startPos];
-        uint32_t pos = startPos;
+        TSALength pos = startPos;
         while(pos < endPos){
             if(b2[pos] != last){
                 ++count;
@@ -569,7 +573,7 @@ inline bool testUnidirectionalFilter(TContex & ossContext,
 
     // only interested in changes inside the supinterval (startPos - endPos)
     // allowed flips per intervalSize
-    if(!ossContext.normal.testflipdensity || ivalSize * ossContext.normal.invflipdensity - 1 > static_cast<float>(count)){
+    if(!ossContext.normal.testflipdensity || static_cast<float>(ivalSize) * ossContext.normal.invflipdensity - 1 > static_cast<float>(count)){
         brange.i1 = bit_interval.i1;
         brange.i2.i1 = startPos;
         brange.i2.i2 = endPos;
@@ -580,10 +584,11 @@ inline bool testUnidirectionalFilter(TContex & ossContext,
 
 template<typename TContex,
          typename TBitvectorPair,
+         typename TSALength,
          size_t nbrBlocks>
 inline ReturnCode checkInterval(TContex & ossContext,
                                 std::vector<TBitvectorPair > & bitvectors,
-                                Pair<uint8_t, Pair<uint32_t, uint32_t>> & brange,
+                                Pair<uint8_t, Pair<TSALength, TSALength>> & brange,
                                 OptimalSearch<nbrBlocks> const & s,
                                 uint8_t const blockIndex)
 {
@@ -591,8 +596,8 @@ inline ReturnCode checkInterval(TContex & ossContext,
     auto & rb = getTVSupport(bitvectors, brange);
     rb.set_vector(&b);
 
-    uint32_t ivalOne = rb(brange.i2.i2) - rb(brange.i2.i1);
-    uint32_t ivalSize = brange.i2.i2 - brange.i2.i1;
+    TSALength ivalOne = rb(brange.i2.i2) - rb(brange.i2.i1);
+    TSALength ivalSize = brange.i2.i2 - brange.i2.i1;
 
     if(ossContext.normal.nomappability && ivalOne == 0)
         return ReturnCode::NOMAPPABILITY;
@@ -611,7 +616,7 @@ inline ReturnCode checkInterval(TContex & ossContext,
     return ReturnCode::MAPPABLE;
 }
 
-template <typename TContex,
+template <typename TSpec, typename TConfig,
           typename TDelegate, typename TDelegateD,
           typename TIndex,
           typename TNeedle,
@@ -619,7 +624,7 @@ template <typename TContex,
           size_t nbrBlocks,
           typename TDir,
           typename TDistanceTag>
-inline ReturnCode checkCurrentMappability(TContex & ossContext,
+inline ReturnCode checkCurrentMappability(OSSContext<TSpec, TConfig> & ossContext,
                                           TDelegate & delegate,
                                           TDelegateD & delegateDirect,
                                           Iter<TIndex, VSTree<TopDown<> > > iter,
@@ -635,7 +640,8 @@ inline ReturnCode checkCurrentMappability(TContex & ossContext,
                                           TDir const & ,
                                           TDistanceTag const &)
 {
-    Pair<uint8_t, Pair<uint32_t, uint32_t>> bit_interval;
+    typedef typename TConfig::TContigsSum   TContigsSum; //SAVALUE
+    Pair<uint8_t, Pair<TContigsSum, TContigsSum>> bit_interval;
     get_bitvector_interval(iter, bitvectors, s, blockIndex, bit_interval, TDir());
 
     ReturnCode rcode = checkInterval(ossContext, bitvectors, bit_interval, s, blockIndex);
@@ -663,7 +669,7 @@ inline ReturnCode checkCurrentMappability(TContex & ossContext,
 }
 
 
-template <typename TContex,
+template <typename TSpec, typename TConfig,
           typename TDelegate, typename TDelegateD,
           typename TIndex,
           typename TNeedle,
@@ -671,7 +677,7 @@ template <typename TContex,
           size_t nbrBlocks,
           typename TDir,
           typename TDistanceTag>
-inline ReturnCode checkMappability(TContex & ossContext,
+inline ReturnCode checkMappability(OSSContext<TSpec, TConfig> & ossContext,
                                    TDelegate & delegate,
                                    TDelegateD & delegateDirect,
                                    Iter<TIndex, VSTree<TopDown<> > > iter,
@@ -687,7 +693,8 @@ inline ReturnCode checkMappability(TContex & ossContext,
                                    TDir const & ,
                                    TDistanceTag const &)
 {
-    Pair<uint8_t, Pair<uint32_t, uint32_t>> bit_interval;
+    typedef typename TConfig::TContigsSum       TContigsSum; //SAVALUE
+    Pair<uint8_t, Pair<TContigsSum, TContigsSum>> bit_interval;
     get_bitvector_interval(iter, bitvectors, s, blockIndex, bit_interval, TDir());
 
     ReturnCode rcode = checkInterval(ossContext, bitvectors, bit_interval, s, blockIndex);
@@ -906,12 +913,12 @@ inline void _optimalSearchSchemeExact(TContex & ossContext,
     }
 }
 
-template <typename TContex,
+template <typename TSpec, typename TConfig,
           typename TDelegate,
           typename TIndex,
           typename TNeedle,
           typename TBitvectorPair>
-inline void filteredDelegate(TContex & ossContext,
+inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
                              TDelegate & delegate,
                              Iter<TIndex, VSTree<TopDown<> > > iter,
                              TNeedle const & needle,
@@ -919,13 +926,14 @@ inline void filteredDelegate(TContex & ossContext,
                              std::vector<TBitvectorPair > & bitvectors,
                              uint8_t const errors)
 {
-    Pair<uint8_t, Pair<uint32_t, uint32_t>> left_bit_interval;
+    typedef typename TConfig::TContigsSum       TContigsSum; //SAVALUE
+    Pair<uint8_t, Pair<TContigsSum, TContigsSum>> left_bit_interval;
     request_bitvector_interval(iter, 0, left_bit_interval, Rev());
 
-    uint32_t rangeStart = iter.fwdIter.vDesc.range.i1;
-    uint32_t rangeEnd = iter.fwdIter.vDesc.range.i2;
-    uint32_t lastStart = 0;
-    for(uint32_t i = 0; i < rangeEnd - rangeStart; ++i)
+    TContigsSum rangeStart = iter.fwdIter.vDesc.range.i1;
+    TContigsSum rangeEnd = iter.fwdIter.vDesc.range.i2;
+    TContigsSum lastStart = 0;
+    for(TContigsSum i = 0; i < rangeEnd - rangeStart; ++i)
     {
         auto & b = getTVector(bitvectors, left_bit_interval);
         if(b[left_bit_interval.i2.i1 + i] == 0 )
@@ -945,7 +953,7 @@ inline void filteredDelegate(TContex & ossContext,
     }
 }
 
-template <typename TContex,
+template <typename TSpec, typename TConfig,
           typename TDelegate, typename TDelegateD,
           typename TIndex,
           typename TNeedle,
@@ -953,7 +961,7 @@ template <typename TContex,
           size_t nbrBlocks,
           typename TDir,
           typename TDistanceTag>
-inline void _optimalSearchScheme(TContex & ossContext,
+inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                  TDelegate & delegate,
                                  TDelegateD & delegateDirect,
                                  Iter<TIndex, VSTree<TopDown<> > > iter,
@@ -995,7 +1003,7 @@ inline void _optimalSearchScheme(TContex & ossContext,
     uint8_t const minErrorsLeftInBlock = (s.l[blockIndex] > errors) ? (s.l[blockIndex] - errors) : 0;
     bool const done = minErrorsLeftInBlock == 0 && needleLeftPos == 0 && needleRightPos == length(needle) + 1;
     bool const atBlockEnd = (blockIndex > 0) ? needleRightPos - needleLeftPos - 1 == s.blocklength[blockIndex - 1] : false;        //is not true if we finished needle
-    bool const checkMappa = bitvectors.size() != 0;
+    bool const checkMappa = !bitvectors.empty();
 
     // Done. (Last step)
     if (done)
@@ -1028,8 +1036,9 @@ inline void _optimalSearchScheme(TContex & ossContext,
     }
     else if(!checkMappa && ossContext.itvConditionComp(iter, needleLeftPos, needleRightPos, errors, s, blockIndex))
     {
+        typedef typename TConfig::TContigsSum   TContigsSum;
         //give emtpy bitvector and bitvector range sine we will not check mappability
-        Pair<uint8_t, Pair<uint32_t, uint32_t>> dummy_bit_interval;
+        Pair<uint8_t, Pair<TContigsSum, TContigsSum>> dummy_bit_interval;
          directSearch(ossContext, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, dummy_bit_interval, TDir(), TDistanceTag());
     }
 
