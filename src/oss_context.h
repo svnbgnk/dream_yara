@@ -343,6 +343,7 @@ struct OSSContext
 
     uint8_t maxError;
     uint8_t strata;
+    uint32_t readLength;
 
     typedef MapperTraits<TSpec, TConfig>        TTraits;
     typedef typename TTraits::TReadsContext     TReadsContext;
@@ -353,6 +354,7 @@ struct OSSContext
     typedef typename TTraits::TSparseIter       TSparseIter;
 //     typedef typename TTraits::TBiIter           MySparseIter;
     typedef State<TSparseIter>                  TTState;
+    typedef typename TTraits::TBitvectorsMeta   TBitvectorsMeta;
 
 
     // Shared-memory read-write data.
@@ -367,6 +369,7 @@ struct OSSContext
     // Shared-memory read-only data.
     TReadSeqs & readSeqs;
     TContigSeqs const & contigSeqs;
+    TBitvectorsMeta bitvectorsMeta;
 //     Options const &     options;
 
     OSSContext(TReadsContext & ctx,
@@ -401,11 +404,10 @@ struct OSSContext
         strata = instrata;
 
 //         initReadsContext(ctx, readCount);
-        clear(ctxOSS);
-        resize(ctxOSS, readSeqs);
-
         std::cout << "maxError: " << (int)nerrors << "\tStrata: " << (int)strata << "\n";
         if(!mScheme){
+            clear(ctxOSS);
+            resize(ctxOSS, readSeqs);
             std::cout << "Using one Scheme" << "\n";
             oneSSBestXMapper = true;
 

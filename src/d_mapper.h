@@ -387,12 +387,14 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         std::cout << "Loading Bitvectors: " << bPath << "\n";
         loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, len);
         std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << " Length: " << me.bitvectors[0].first.size() << "\n";
+        ossContext.bitvectorsMeta = me.bitvectorsMeta;
     }else{
         std::cout << "No bitvectors loaded" << "\n";
     }
 
     bool mscheme = false;
-    ossContext.setReadContextOSS(maxError, strata, mscheme); //TODO reverse
+    ossContext.setReadContextOSS(maxError, strata, mscheme);
+    ossContext.readLength = len;
 
     std::cout << "Using 0 and " << maxError << " Scheme" << "\n";
 
@@ -400,10 +402,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
 
     if(mscheme){
-        find(0, maxError, strata, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+        find(0, maxError, strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
 //         find(0, maxError, strata, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
     }else{
-        find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
+        find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
 //         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
     }
 
