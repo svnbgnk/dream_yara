@@ -386,8 +386,12 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         bPath += "/";
         std::cout << "Loading Bitvectors: " << bPath << "\n";
         loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, len);
-        std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << " Length: " << me.bitvectors[0].first.size() << "\n";
-        ossContext.bitvectorsMeta = me.bitvectorsMeta;
+        std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << "\n";
+
+        if(!me.bitvectors.empty()){
+            std::cout << "Length: " << me.bitvectors[0].first.size() << "\n";
+            ossContext.bitvectorsMeta = me.bitvectorsMeta;
+        }
     }else{
         std::cout << "No bitvectors loaded" << "\n";
     }
