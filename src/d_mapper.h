@@ -57,6 +57,8 @@ public:
 
     CharString              MappabilityDirectory;
     bool                    ossOff = false;
+    bool                    noMappability = false;
+    uint32_t                startBin = 0;
     uint32_t                readLength = 0;
 
     double                  loadFilter      = 0.0;
@@ -366,9 +368,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     TMatchesAppender appender(me.matchesByCoord);
     Delegate delegate(appender);
     DelegateDirect delegateDirect(appender);
-
     TContigSeqs & contigSeqs = me.contigs.seqs;
-
 
     uint32_t len;
     if(disOptions.readLength != 0)
@@ -381,24 +381,27 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     ossContext.maxError = maxError;
 //     ossContext.strata = strata;
 
-    CharString bPath = me.options.mappabilitySubDirectory;
-    if(length(bPath) != 0){
+
+    if(!disOptions.noMappability){
+        CharString bPath = me.options.mappabilitySubDirectory;
         bPath += "/";
         std::cout << "Loading Bitvectors: " << bPath << "\n";
         loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, len);
         std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << "\n";
 
         if(!me.bitvectors.empty()){
-            std::cout << "Length: " << me.bitvectors[0].first.size() << "\n";
+            std::cout << "Index Size: " << length(me.biIndex.fwd.sa) << "\n";
+            std::cout << "Number of Sequences: " << length(me.contigs.seqs) << "\n";
+
+            std::cout << "Length of Bitvectors: " << me.bitvectors[0].first.size() << "\n";
             ossContext.bitvectorsMeta = me.bitvectorsMeta;
         }
-    }else{
-        std::cout << "No bitvectors loaded" << "\n";
     }
 
-    bool mscheme = false;
+    bool mscheme = true;
     ossContext.setReadContextOSS(maxError, strata, mscheme);
     ossContext.readLength = len;
+    ossContext.numberOfSequences = length(me.contigs.seqs);
 
     std::cout << "Using 0 and " << maxError << " Scheme" << "\n";
 
@@ -435,64 +438,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     aggregateMatchesOSS(me, readSeqs);
 //     aggregateMatches(me, readSeqs);
 
-    rankMatches(me, me.reads.seqs);
-    if (me.options.verifyMatches)
-        verifyMatches(me);
-    alignMatches(me);
-    copyMatches(mainMapper, me, disOptions);
-    copyCigars(mainMapper, me, disOptions);
-    appendStats(mainMapper, me);
-
-
-//     Iter<TBiIndex, VSTree<TopDown<> > > iter(biindex);
-//     Iter<TIndex, VSTree<TopDown<> > > iterUni(index);
-//
-//     Iter<TBiIndex, VSTree<TopDown<> > > iter2(biindex);
-//     Iter<TIndex, VSTree<TopDown<> > > iterUni2(index);
-//
-// //                    1234567890123456
-//     DnaString test =    "GGGTCGCGGTGCGCGGCGACGAAGG";
-//     DnaString testrev = "GGAAGCAGCGGCGCGTGGCGCTGGG";
-
-//     int k = 0;
-//     while(k < length(testrev)){
-//         std::cout << "k: " << k << "\n";
-//         std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
-//         if (!goDown(iter, testrev[k], Fwd())){
-//             std::cout << "Stop" << "\n";
-//             std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
-//             break;
-//         }
-//         ++k;
-//     }
-//
-
-//     std::cout << "Unidirectional Index" << "\n";
-//     std::cout << iterUni.vDesc.range.i1 << ":" << iterUni.vDesc.range.i2 << "\n";
-//     std::cout << goDown(iterUni, testrev) << "\n";
-//     std::cout << iterUni.vDesc.range.i1 << ":" << iterUni.vDesc.range.i2 << "\n";
-//
-//     std::cout << "BidirectionalIndex" << "\n";
-//     std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
-//     std::cout << goDown(iter, testrev, Rev()) << "\n";
-//     std::cout << iter.fwdIter.vDesc.range.i1 << ":" << iter.fwdIter.vDesc.range.i2 << "\n";
-//
-//     std::cout << "Unidirectional Index" << "\n";
-//     std::cout << iterUni2.vDesc.range.i1 << ":" << iterUni2.vDesc.range.i2 << "\n";
-//     std::cout << goDown(iterUni2, test) << "\n";
-//     std::cout << iterUni2.vDesc.range.i1 << ":" << iterUni2.vDesc.range.i2 << "\n";
-//
-//     std::cout << "BidirectionalIndex" << "\n";
-//     std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";
-//     std::cout << iter2.revIter.vDesc.range.i1 << ":" << iter2.revIter.vDesc.range.i2 << "\n";
-//     std::cout << goDown(iter2, test[0], Fwd()) << "\n";
-//     std::cout << goDown(iter2, test[0], Rev()) << "\n";
-//     std::cout << iter2.fwdIter.vDesc.range.i1 << ":" << iter2.fwdIter.vDesc.range.i2 << "\n";
-//     std::cout << iter2.revIter.vDesc.range.i1 << ":" << iter2.revIter.vDesc.range.i2 << "\n";
-
-
-//     isMapped(me.ctx, readId)
-//     getMinErrors(me.ctx, readId) + strata <= error i am currently searching for
 
     }
     else
@@ -540,6 +485,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         clearSeeds(me);
     }
     aggregateMatches(me, readSeqs);
+    }
+
     rankMatches(me, me.reads.seqs);
     if (me.options.verifyMatches)
         verifyMatches(me);
@@ -547,7 +494,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     copyMatches(mainMapper, me, disOptions);
     copyCigars(mainMapper, me, disOptions);
     appendStats(mainMapper, me);
-    }
 
 }
 
@@ -688,11 +634,11 @@ inline void _mapReadsImplOSS(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCon
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
 
 
-     typedef Delegate<TTraits>          TDelegate;
-     TDelegate delegate(appender);
+    typedef Delegate<TTraits>          TDelegate;
+    TDelegate delegate(appender);
 
-     delegate(ossContext, start, end, errors, readID);
-     std::cout << "experimental Delegate call: "<< length(me.matchesByCoord) << "\n";
+    delegate(ossContext, start, end, errors, readID);
+    std::cout << "experimental Delegate call: "<< length(me.matchesByCoord) << "\n";
 
     //does not work since i cant use templates needed for ossContext
 
@@ -1335,7 +1281,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
         prepairMainMapper(mainMapper, filter, disOptions);
 
         if(disOptions.filterType == NONE){
-            for(uint32_t i = 0; i < disOptions.numberOfBins; ++i){ //wird interaction with InTextVerification
+            for(uint32_t i = disOptions.startBin; i < disOptions.numberOfBins; ++i){ //weird interaction with InTextVerification
                 std::cout << "In bin Number: " << i << "\n";
                 disOptions.currentBinNo = i;
                 Options options = mainMapper.options;

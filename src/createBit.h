@@ -161,7 +161,7 @@ void order_bit_vector(TIndex & index, TText const & text, bitvectors & b, uint32
 
     std::vector<TContigsLen> sequenceLengths = getSeqLengths<TContigsSize, TContigsLen>(text);
     if(verbose){
-        std::cout << "Number of Sequences: " << number_of_indeces << "\n";
+
         std::cout << "cumSequenceLengths: \n";
         /*
         auto cumSequenceLengths = stringSetLimits(text);
@@ -182,7 +182,7 @@ void order_bit_vector(TIndex & index, TText const & text, bitvectors & b, uint32
 
 
     if(verbose){
-        cout << "\nNumber of Sequences in index: " << number_of_indeces << endl;
+        std::cout << "\nNumber of Sequences: " << (int)number_of_indeces << "\n";
         cout << "Start sorting bitvectors with " << mythreads << "threads" << endl;
     }
 

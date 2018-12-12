@@ -254,7 +254,7 @@ inline void linkBitvectors(TContext & ossContext,
             exit(0);
         }
     }
-    for(uint16_t i = 0; i < shift_r.size(); ++i){
+    for(int16_t i = 0; i < shift_r.size(); ++i){
         for(uint16_t j = 0; j < meta.size(); ++j){
             if(shift_r[i] == meta[j].first && meta[j].second)
             {
@@ -265,7 +265,7 @@ inline void linkBitvectors(TContext & ossContext,
         }
     }
 
-    for(uint16_t i = shift_l.size() - 1; i >= 0; --i){
+    for(int32_t i = shift_l.size() - 1; i >= 0; --i){
         for(uint16_t j = 0; j < meta.size(); ++j){
             if(shift_l[i] == meta[j].first && !meta[j].second)
             {

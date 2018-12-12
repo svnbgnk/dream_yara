@@ -344,6 +344,7 @@ struct OSSContext
     uint8_t maxError;
     uint8_t strata;
     uint32_t readLength;
+    uint32_t numberOfSequences;
 
     typedef MapperTraits<TSpec, TConfig>        TTraits;
     typedef typename TTraits::TReadsContext     TReadsContext;
@@ -430,10 +431,10 @@ struct OSSContext
 //         std::cout << "saved State" << "\n";
     }
 
-    template <size_t nbrBlocks>
+    template <size_t nbrBlocks, typename TSALength>
     bool itvCondition(OptimalSearch<nbrBlocks> const & s,
                       uint8_t const blockIndex,
-                      uint32_t ivalOne)
+                      TSALength ivalOne)
     {
         return(itv && ivalOne < (static_cast<int>(s.pi.size()) - blockIndex - 1 + normal.directsearchblockoffset) * normal.directsearch_th);
     }
@@ -451,9 +452,10 @@ struct OSSContext
         return(itv && iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 < (s.pi.size() - blockIndex - 1 + comp.directsearchblockoffset) * comp.directsearch_th);
     }
 
+    template <typename TSALength>
     bool itvConditionUni(uint8_t const blockSize,
                          uint8_t const blockIndex,
-                         uint32_t ivalOne)
+                         TSALength ivalOne)
     {
         return(itv && ivalOne < (static_cast<int>(blockSize) - blockIndex - 1 + uni.directsearchblockoffset) * uni.directsearch_th);
     }
@@ -464,10 +466,13 @@ struct OSSContext
                                            OptimalSearch<nbrBlocks> const & s,
                                           uint8_t blockIndex)
     {
+        uint32_t step = (needleRightPos - needleLeftPos - 1);
+        if(normal.distancetoblockend > step)
+            return false;
         uint32_t prevBlocklength = (blockIndex > 0) ? s.blocklength[blockIndex - 1] : 0;
         uint32_t nextBlocklength = s.blocklength[blockIndex];
-        uint32_t step = (needleRightPos - needleLeftPos - 1);
 
+//         std::cout << "Step: " << step << "\t" << prevBlocklength << "\t" << nextBlocklength << "\n";
 
         bool enoughDistanceToBlockEnds = step + normal.distancetoblockend < nextBlocklength && step - normal.distancetoblockend > prevBlocklength;
         return(((step & normal.step) == 0) && enoughDistanceToBlockEnds);

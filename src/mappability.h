@@ -69,7 +69,7 @@ string get_output_path(OptionsM const & opt)
 template <typename T>
 inline void save(vector<T> const & c, string const & output_path, OptionsM const & opt)
 {
-    if(opt.verbose && c.size() < 10000)
+    if(opt.verbose && c.size() < 50000)
     {
         for(int i = 0; i < c.size(); ++i)
             std::cout << (int)c[i] << " ";

@@ -138,7 +138,10 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("of", "ossOff", "Turn Optimal Search Schemes off."));
 
+    addOption(parser, ArgParseOption("nM", "noMappability", "Do not use Mappability in Search Schemes"));
+
     addOption(parser, ArgParseOption("l", "length", "Read length (max)", ArgParseOption::INTEGER));
+    addOption(parser, ArgParseOption("sb", "startBin", "skip Bins", ArgParseOption::INTEGER));
 
     addOption(parser, ArgParseOption("v", "verbose", "Displays global statistics."));
     addOption(parser, ArgParseOption("vv", "very-verbose", "Displays extensive statistics for each batch of reads."));
@@ -288,6 +291,10 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     // Append trailing slash if it doesn't exist.
     appendTrailingSlash(disOptions.IndicesDirectory);
 
+//     disOptions.MappabilityDirectory = disOptions.IndicesDirectory;
+//     disOptions.MappabilityDirectory += "mappability";
+//     appendTrailingSlash(disOptions.MappabilityDirectory);
+
     // Parse read input files.
     switch (getArgumentValueCount(parser, 1))
     {
@@ -307,8 +314,11 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     getOptionValue(disOptions.MappabilityDirectory, parser, "mappability");
     if (isSet(parser, "ossOff")) disOptions.ossOff = true;
+    if (isSet(parser, "noMappability")) disOptions.noMappability = true;
 
     getOptionValue(disOptions.readLength, parser, "length");
+
+    getOptionValue(disOptions.startBin, parser, "startBin");
 
     // Parse output file.
     getOptionValue(disOptions.superOutputFile, parser, "output-file");
