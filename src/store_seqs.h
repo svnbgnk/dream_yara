@@ -135,11 +135,11 @@ inline void loadAllBitvectors(CharString const bitvectorpath,
 {
      std::string tmp_file_name = std::string("") + toCString(bitvectorpath) + "left_anchored_bvector_" +  std::to_string(K) + "_shift_" +  std::to_string(0);
      if(file_exists(tmp_file_name)){
-         std::cout << "Load the following Bitvectors:" << "\n";
+//          std::cout << "Load the following Bitvectors:" << "\n";
          for(uint32_t shift = 0; shift < K + 1; ++shift){
             tmp_file_name = std::string("") + toCString(bitvectorpath) + "left_anchored_bvector_" +  std::to_string(K) + "_shift_" +  std::to_string(shift);
             if(file_exists(tmp_file_name)){
-                std::cout << "Filename: " << tmp_file_name << "\n";
+//                 std::cout << "Filename: " << tmp_file_name << "\n";
                 TVector b;
                 load_from_file(b, tmp_file_name);
                 TVSupport rb(& b);
@@ -151,7 +151,7 @@ inline void loadAllBitvectors(CharString const bitvectorpath,
         for(uint32_t shift = 0; shift < K + 1; ++shift){
             tmp_file_name = std::string("") + toCString(bitvectorpath) + "right_anchored_bvector_" +  std::to_string(K) + "_shift_" +  std::to_string(shift);
             if(file_exists(tmp_file_name)){
-                std::cout << "Filename: " << tmp_file_name << "\n";
+//                 std::cout << "Filename: " << tmp_file_name << "\n";
                 TVector b;
                 load_from_file(b, tmp_file_name);
                 TVSupport rb(& b);

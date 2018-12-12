@@ -255,6 +255,8 @@ struct Stats
     TValue classifyReads;
     TValue rankSeeds;
     TValue extendHits;
+    TValue loadingBitvectors;
+    TValue optimumSearch;
     TValue sortMatches;
     TValue compactMatches;
     TValue selectPairs;
@@ -275,6 +277,8 @@ struct Stats
         classifyReads(0),
         rankSeeds(0),
         extendHits(0),
+        loadingBitvectors(0),
+        optimumSearch(0),
         sortMatches(0),
         compactMatches(0),
         selectPairs(0),
@@ -1447,11 +1451,13 @@ inline void printStats(Mapper<TSpec, TConfig> const & me, Timer<TValue> const & 
     std::cerr << "Total time:\t\t\t" << getValue(timer) << " sec" << std::endl;
     std::cerr << "Genome loading time:\t\t" << me.stats.loadContigs << " sec" << "\t\t" << me.stats.loadContigs / total << " %" << std::endl;
     std::cerr << "Reads loading time:\t\t" << me.stats.loadReads << " sec" << "\t\t" << me.stats.loadReads / total << " %" << std::endl;
+    std::cerr << "Classification time:\t\t" << me.stats.classifyReads << " sec" << "\t\t" << me.stats.classifyReads / total << " %" << std::endl;
     std::cerr << "Seeding time:\t\t\t" << me.stats.collectSeeds << " sec" << "\t\t" << me.stats.collectSeeds / total << " %" << std::endl;
     std::cerr << "Filtering time:\t\t\t" << me.stats.findSeeds << " sec" << "\t\t" << me.stats.findSeeds / total << " %" << std::endl;
-    std::cerr << "Classification time:\t\t" << me.stats.classifyReads << " sec" << "\t\t" << me.stats.classifyReads / total << " %" << std::endl;
     std::cerr << "Ranking time:\t\t\t" << me.stats.rankSeeds << " sec" << "\t\t" << me.stats.rankSeeds / total << " %" << std::endl;
     std::cerr << "Extension time:\t\t\t" << me.stats.extendHits << " sec" << "\t\t" << me.stats.extendHits / total << " %" << std::endl;
+    std::cerr << "Bitvector loading time:\t\t" << me.stats.loadingBitvectors << " sec" << "\t\t" << me.stats.loadingBitvectors/ total << " %" << std::endl;
+    std::cerr << "Optimum Search time:\t\t" << me.stats.optimumSearch << " sec" << "\t\t" << me.stats.optimumSearch / total << " %" << std::endl;
     std::cerr << "Sorting time:\t\t\t" << me.stats.sortMatches << " sec" << "\t\t" << me.stats.sortMatches / total << " %" << std::endl;
     std::cerr << "Compaction time:\t\t" << me.stats.compactMatches << " sec" << "\t\t" << me.stats.compactMatches / total << " %" << std::endl;
     if (IsSameType<typename TConfig::TSequencing, PairedEnd>::VALUE)

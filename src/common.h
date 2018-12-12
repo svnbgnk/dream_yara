@@ -245,7 +245,7 @@ inline void linkBitvectors(TContext & ossContext,
     std::vector<uint32_t> shift_l = blocklengths.second;
 
     std::vector<std::pair<uint32_t, bool> > & meta = ossContext.bitvectorsMeta;
-    std::cout << "SearchScheme has: " << ss[0].pi.size() << " parts" << "\n";
+//     std::cout << "SearchScheme has: " << ss[0].pi.size() << " parts" << "\n";
 
     //test blocklengths of search scheme
     for(uint16_t i = 0; i < shift_r.size() - 1; ++i){
@@ -258,7 +258,7 @@ inline void linkBitvectors(TContext & ossContext,
         for(uint16_t j = 0; j < meta.size(); ++j){
             if(shift_r[i] == meta[j].first && meta[j].second)
             {
-                std::cout << "left anchored with shift: " << meta[j].first << "\n";
+//                 std::cout << "left anchored with shift: " << meta[j].first << "\n";
                 bit_filtered.push_back(& bitvectors[j]);
                 break;
             }
@@ -269,7 +269,7 @@ inline void linkBitvectors(TContext & ossContext,
         for(uint16_t j = 0; j < meta.size(); ++j){
             if(shift_l[i] == meta[j].first && !meta[j].second)
             {
-                std::cout << "right anchored with shift: " << meta[j].first << "\n";
+//                 std::cout << "right anchored with shift: " << meta[j].first << "\n";
                 bit_filtered.push_back(& bitvectors[j]);
                 break;
             }

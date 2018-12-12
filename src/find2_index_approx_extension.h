@@ -1304,7 +1304,7 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     _optimalSearchSchemeComputeChronBlocklength(scheme);
 
     //load Bitvectors needed for scheme (Blocklength and chronblockLengths have to be calculated therefore I need to assume needle length)
-    std::cout << "Scheme: " << minErrors << "\t" << maxErrors << ">\n";
+//     std::cout << "Scheme: " << minErrors << "\t" << maxErrors << ">\n";
     std::vector<TBitvectorPair * > lbitvectors;
     linkBitvectors(ossContext, scheme, bitvectors, lbitvectors);
 

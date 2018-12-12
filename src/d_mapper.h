@@ -205,6 +205,8 @@ inline void appendStats(Mapper<TSpec, TMainConfig> & mainMapper, Mapper<TSpec, T
     mainMapper.stats.classifyReads  += childMapper.stats.classifyReads;
     mainMapper.stats.rankSeeds      += childMapper.stats.rankSeeds;
     mainMapper.stats.extendHits     += childMapper.stats.extendHits;
+    mainMapper.stats.loadingBitvectors += childMapper.stats.loadingBitvectors;
+    mainMapper.stats.optimumSearch +=  childMapper.stats.optimumSearch;
     mainMapper.stats.sortMatches    += childMapper.stats.sortMatches;
     mainMapper.stats.compactMatches += childMapper.stats.compactMatches;
     mainMapper.stats.selectPairs    += childMapper.stats.selectPairs;
@@ -378,14 +380,18 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
     uint16_t maxError = me.options.errorRate * len;
     uint16_t strata = disOptions.strataRate * len;
-//     ossContext.maxError = maxError;
-//     ossContext.strata = strata;
 
+
+    if(disOptions.verbose > 1){
+        std::cout << "maxError: " << maxError << "\t" << strata << "\n";
+    }
 
     if(!disOptions.noMappability){
+        start(me.timer);
         CharString bPath = me.options.mappabilitySubDirectory;
         bPath += "/";
-        std::cout << "Loading Bitvectors: " << bPath << "\n";
+        if(disOptions.verbose > 1)
+            std::cout << "\nLoading Bitvectors: " << bPath << "\n";
         loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, len);
         std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << "\n";
 
@@ -396,24 +402,30 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
             std::cout << "Length of Bitvectors: " << me.bitvectors[0].first.size() << "\n";
             ossContext.bitvectorsMeta = me.bitvectorsMeta;
         }
+        stop(me.timer);
+        me.stats.loadingBitvectors += getValue(me.timer);
+        if(disOptions.verbose > 1)
+            std::cerr << "Loading Bitvectors time:\t\t\t" << me.timer << std::endl;
     }
 
+    // copy parameters to ossContext
     bool mscheme = true;
     ossContext.setReadContextOSS(maxError, strata, mscheme);
     ossContext.readLength = len;
     ossContext.numberOfSequences = length(me.contigs.seqs);
 
-    std::cout << "Using 0 and " << maxError << " Scheme" << "\n";
-
-//     myTfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
-//     myfind(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
-
+    start(me.timer);
     if(mscheme){
         find(0, maxError, strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
-//         find(0, maxError, strata, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
     }else{
         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
-//         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
+    }
+    stop(me.timer);
+    me.stats.optimumSearch += getValue(me.timer);
+    if(disOptions.verbose > 0)
+    {
+        std::cerr << "\nOptimum Search time:\t\t" << me.timer << std::endl;
+        std::cerr << "Matches count:\t\t\t" << length(me.matchesByCoord) << std::endl;
     }
 
 //     if(addMyOwnOption) //IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE
@@ -436,8 +448,11 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     std::cout << "End of Matches ____________________________________________________________________________________________________ " << "\n";
 
     aggregateMatchesOSS(me, readSeqs);
-//     aggregateMatches(me, readSeqs);
 
+    if(disOptions.verbose > 0)
+    {
+        std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
+    }
 
     }
     else
@@ -484,7 +499,18 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         clearHits(me);
         clearSeeds(me);
     }
+    if(disOptions.verbose > 0){
+        std::cerr << "\n Major search time:\t\t" << me.stats.extendHits +  me.stats.findSeeds << std::endl;
+        std::cerr << "Matches count:\t\t\t" << length(me.matchesByCoord) << std::endl;
+    }
+
     aggregateMatches(me, readSeqs);
+
+    if(disOptions.verbose > 0)
+    {
+        std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
+    }
+
     }
 
     rankMatches(me, me.reads.seqs);
@@ -1282,7 +1308,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
 
         if(disOptions.filterType == NONE){
             for(uint32_t i = disOptions.startBin; i < disOptions.numberOfBins; ++i){ //weird interaction with InTextVerification
-                std::cout << "In bin Number: " << i << "\n";
+                std::cout << "\n\nIn bin Number: " << i << "\n";
                 disOptions.currentBinNo = i;
                 Options options = mainMapper.options;
                 appendFileName(options.contigsIndexFile, disOptions.IndicesDirectory, i);
