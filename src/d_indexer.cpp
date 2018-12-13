@@ -273,6 +273,13 @@ void saveContigs(YaraIndexer<TSpec, TConfig> & me)
 
     if (!saveContigsLimits(me.options) || !saveBi(me.contigs, toCString(me.options.contigsIndexFile)))
         throw RuntimeError("Error while saving the reference.");
+
+    if (me.options.verbose)
+    {
+        mtx.lock();
+        std::cerr <<"[bin " << me.options.currentBinNo << "] Saved forward and reverse reference." << std::endl;
+        mtx.unlock();
+    }
 }
 
 // ----------------------------------------------------------------------------
