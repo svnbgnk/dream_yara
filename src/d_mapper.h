@@ -353,7 +353,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           StringSet<TReadSeqs, TSeqsSpec> & readSeqs,
                           DisOptions & disOptions)
 {
-
     if(!disOptions.ossOff){
 
     initReadsContext(me, readSeqs);
@@ -365,12 +364,20 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
 
+
 //     reserve(me.matchesByCoord, countHits(me) / 3); //some formula includding distance errors and mappability
 
     TMatchesAppender appender(me.matchesByCoord);
     Delegate delegate(appender);
     DelegateDirect delegateDirect(appender);
     TContigSeqs & contigSeqs = me.contigs.seqs;
+/*
+    uint32_t seqN = length(contigSeqs);
+    for(int i = 0; i < seqN; ++i){
+        Dna5String const & n_infix = infix(contigSeqs[i], 2499, 2499 + 100);
+        std::cout << "I: " << i << "\n";
+        std::cout << n_infix << "\n";
+    }*/
 
     uint32_t len;
     if(disOptions.readLength != 0)
@@ -1262,7 +1269,10 @@ inline void prepairMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter c
 template <typename TSpec, typename TMainConfig>
 inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptions & disOptions)
 {
-    aggregateMatches(mainMapper, mainMapper.reads.seqs);
+    if(disOptions.ossOff)
+        aggregateMatches(mainMapper, mainMapper.reads.seqs);
+    else
+        aggregateMatchesOSS(mainMapper, mainMapper.reads.seqs);
     rankMatches2(mainMapper, mainMapper.reads.seqs);
     transferCigars(mainMapper, disOptions);
 

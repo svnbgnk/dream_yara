@@ -222,6 +222,7 @@ inline void alignmentMyersBitvector(TContex & ossContext,
             if(usingReverseText){
                 saPosOnFwd(sa_info_tmp, genomelength, needleL);
             }
+//             std::cout << "1  " << tmp0 << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, length(needle)) << "\n";
             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, length(needle)), needleId, errors2);
         }
 
@@ -252,6 +253,7 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                             if(usingReverseText){
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
+//                             std::cout << "2  " << tmp2 << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, occLength) << "\n";
                             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
                         }
                     }
@@ -270,6 +272,7 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                             if(usingReverseText){
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
+//                             std::cout << "3  " << tmp << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, occLength) << "\n";
                             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
                         }
                     }
@@ -286,6 +289,7 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                             if(usingReverseText){
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
+//                             std::cout << "4  " << tmp1 << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, occLength) << "\n";
                             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
                         }
                     }

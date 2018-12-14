@@ -827,12 +827,15 @@ compactUniqueMatches(TMatches & matches, Tag<TPosition> const & posTag)
     {
         *newIt = *oldIt;
 
+//        std::cout << getMember(*newIt, Errors()) << "\t < 5 , " << getMember(*newIt, ContigBegin()) << " >\t" << getMember(*newIt, ContigEnd()) << "\n";
+
         ++oldIt;
 
         while (oldIt != matchesEnd && isDuplicate(*newIt, *oldIt, posTag)) ++oldIt;
 
         ++newIt;
     }
+//    std::cout << "End Sorting" << "\n";
 
     return newIt - matchesBegin;
 }
