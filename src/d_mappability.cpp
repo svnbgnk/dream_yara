@@ -118,10 +118,12 @@ void setupArgumentParser(ArgumentParser & parser, OptionsM const & options)
     addOption(parser, ArgParseOption("i", "indels", "Turns on indels (EditDistance). "
         "If not selected, only mismatches will be considered."));
 
+
+    addOption(parser, ArgParseOption("triv", "trivial", "Use trivial Mappability Calculation"));
+
     addOption(parser, ArgParseOption("hi", "high", "Stores the mappability vector in 16 bit unsigned integers instead of 8 bit (max. value 65535 instead of 255)"));
 
     addOption(parser, ArgParseOption("o", "overlap", "Number of overlapping reads (o + 1 Strings will be searched at once beginning with their overlap region)", ArgParseArgument::INTEGER, "INT"));
-//     setRequired(parser, "overlap");
 
     addOption(parser, ArgParseOption("t", "threads", "Number of threads", ArgParseArgument::INTEGER, "INT"));
     setDefaultValue(parser, "threads", omp_get_max_threads());
@@ -182,8 +184,17 @@ parseCommandLine(OptionsM & options, ArgumentParser & parser, int argc, char con
 
 
     options.indels = isSet(parser, "indels");
+    options.trivial = isSet(parser, "trivial");
     options.high = isSet(parser, "high");
     options.verbose = isSet(parser, "verbose");
+
+    if(!isSet(parser, "trivial")){
+        if(!isSet(parser, "overlap")){
+            std::cerr << "Overlap needs to be Set when using the non-trivial algorithm.\n";
+            exit(1);
+        }
+    }
+
 
     return ArgumentParser::PARSE_OK;
 }
@@ -198,14 +209,14 @@ inline void runMappability(OptionsM const & options,
 {
 
     //load Text
-    typedef SeqStore<void, YaraContigsConfig<Alloc<> > >              TContigs;
+    typedef SeqStore<void, YaraContigsConfig<Alloc<> > >              TContigs; //MMap<>
     TContigs text;
     try
     {
         if (!open(text, toCString(options.contigsIndexFile), OPEN_RDONLY))
             throw RuntimeError("Error while opening reference file.");
     }
-    catch (BadAlloc const & /* e */)
+    catch (BadAlloc const & ) // e
     {
         throw RuntimeError("Insufficient memory to load the reference.");
     }
@@ -213,7 +224,7 @@ inline void runMappability(OptionsM const & options,
 
 
     //load BidirectionalIndex
-    typedef YaraFMConfig<TContigsSize, TContigsLen, TContigsSum, Alloc<> > TIndexConfig;
+    typedef YaraFMConfig<TContigsSize, TContigsLen, TContigsSum, Alloc<> > TIndexConfig; //MMap<>
     typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
     typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
     typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
@@ -225,7 +236,7 @@ inline void runMappability(OptionsM const & options,
         if (!open(biIndex, toCString(options.contigsIndexFile), OPEN_RDONLY))
             throw RuntimeError("Error while opening reference index file.");
     }
-    catch (BadAlloc const & /* e */)
+    catch (BadAlloc const &  e ) // e
     {
         throw RuntimeError("Insufficient memory to load the reference index.");
     }
@@ -410,15 +421,9 @@ int main(int argc, char const ** argv)
     {
 //         Timer<double>       timer;
         Timer<double>       globalTimer;
-//         start (timer);
         start (globalTimer);
 
         runDisMappability(options);
-
-/*
-        stop(timer);
-        if (options.verbose)
-            std::cerr <<"All bins are done indexing reference!\t" << timer << std::endl;*/
 
         stop(globalTimer);
         std::cerr <<"\nFinshed in \t\t\t" << globalTimer << std::endl;

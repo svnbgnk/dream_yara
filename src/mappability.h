@@ -12,10 +12,9 @@ using namespace seqan;
 
 #include "common.h"
 #include "algo1.hpp"
-
-// #include "algo2.hpp"
-// #include "algo3.hpp"
-// #include "algo4.hpp"
+#include "algo2.hpp"
+#include "algo3.hpp"
+#include "algo4.hpp"
 
 
 // ----------------------------------------------------------------------------
@@ -39,6 +38,7 @@ struct OptionsM
     bool            high;
 
     unsigned        currentBinNo;
+    bool            trivial;
     unsigned        threads;
     bool            verbose;
 
@@ -53,7 +53,8 @@ struct OptionsM
     numberOfBins(64),
     currentBinNo(0),
     threads(1),
-    verbose(false)
+    verbose(false),
+    trivial(false)
     {}
 };
 
@@ -81,13 +82,11 @@ inline void save(vector<T> const & c, string const & output_path, OptionsM const
     outfile.close();
 }
 
-template <typename TDistance, typename value_type, typename TIndex, typename TText>
-inline void run(TIndex & index, TText const & text, OptionsM const & opt)
+template <typename value_type, typename TIndex, typename TText, typename TDistanceTag>
+inline void run(TIndex & index, TText const & text, OptionsM const & opt, TDistanceTag const &)
 {
-//     Dna5String const & infix_n = infix(text, 0, 100);
-
     vector<value_type> c(length(text) - opt.k_length + 1, 0);
-//     if(opt.indels){
+    if(opt.trivial){
         switch (opt.errors)
         {
             case 0:  runAlgoTrivial<0>(index, text, c, opt);
@@ -103,27 +102,25 @@ inline void run(TIndex & index, TText const & text, OptionsM const & opt)
             default: cerr << "E = " << opt.errors << " not yet supported.\n";
                     exit(1);
         }
-
-        /*
     }
     else
     {
         switch (opt.errors)
         {
-            case 0:  runAlgo4<0>(index, text, c, opt);
+            case 0:  runAlgo4<0>(index, text, c, opt, TDistanceTag());
                     break;
-            case 1:  runAlgo4<1>(index, text, c, opt);
+            case 1:  runAlgo4<1>(index, text, c, opt, TDistanceTag());
                     break;
-            case 2:  runAlgo4<2>(index, text, c, opt);
+            case 2:  runAlgo4<2>(index, text, c, opt, TDistanceTag());
                     break;
-            case 3:  runAlgo4<3>(index, text, c, opt);
+            case 3:  runAlgo4<3>(index, text, c, opt, TDistanceTag());
                     break;
-            case 4:  runAlgo4<4>(index, text, c, opt);
+            case 4:  runAlgo4<4>(index, text, c, opt, TDistanceTag());
                     break;
             default: cerr << "E = " << opt.errors << " not yet supported.\n";
                     exit(1);
         }
-    }*/
+    }
 
 //     if (SearchParams::outputProgress)
 //         std::cout << '\r';
@@ -133,26 +130,26 @@ inline void run(TIndex & index, TText const & text, OptionsM const & opt)
     save(c, output_path, opt);
 }
 
-template <typename TDistance, typename TIndex, typename TText>
+
+template <typename value_type, typename TIndex, typename TText>
 inline void run(TIndex & index, TText const & text, OptionsM const & opt)
 {
-    if (opt.high) {
-        run<TDistance, uint16_t>(index, concat(text), opt);
+    if (opt.indels) {
+        run<value_type>(index, concat(text), opt, EditDistance());
     }
     else
-        run<TDistance, uint8_t>(index, concat(text), opt);
+        run<value_type>(index, concat(text), opt, HammingDistance());
 }
 
-template<typename TIndex, typename TText>
+
+template <typename TIndex, typename TText>
 inline void calcMappa(TIndex & index, TText const & text, OptionsM const & opt)
 {
-    if (opt.indels) {
-        run<EditDistance>(index, text, opt);
+    if (opt.high) {
+        run<uint16_t>(index, concat(text), opt);
     }
     else
-        run<HammingDistance>(index, text, opt);
+        run<uint8_t>(index, concat(text), opt);
 }
-
-
 
 #endif
