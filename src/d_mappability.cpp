@@ -103,7 +103,7 @@ void setupArgumentParser(ArgumentParser & parser, OptionsM const & options)
 
     addSection(parser, "Output OptionsM");
 
-    addOption(parser, ArgParseOption("O", "output", "Path to output directory (error number, length and overlap will be appended to the output file)", ArgParseArgument::OUTPUT_FILE, "OUT"));
+    addOption(parser, ArgParseOption("O", "output", "Path to output directory", ArgParseArgument::OUTPUT_FILE, "OUT"));
 //     setRequired(parser, "output");
 
 //    addArgument(parser, ArgParseArgument(ArgParseArgument::INPUT_PREFIX, "REFERENCE FILE DIR"));
