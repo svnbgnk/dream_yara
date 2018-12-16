@@ -138,7 +138,13 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("of", "ossOff", "Turn Optimal Search Schemes off."));
 
+    addOption(parser, ArgParseOption("c", "compare", "Compare hits between OSS and the original Yara seed + extention."));
+    hideOption(getOption(parser, "compare"));
+
     addOption(parser, ArgParseOption("nM", "noMappability", "Do not use Mappability in Search Schemes"));
+
+    addOption(parser, ArgParseOption("th", "threshold", "Occurrence was filtered when below this threshold", ArgParseOption::INTEGER));
+    hideOption(getOption(parser, "threshold"));
 
     addOption(parser, ArgParseOption("l", "length", "Read length (max)", ArgParseOption::INTEGER));
     addOption(parser, ArgParseOption("sb", "startBin", "skip Bins", ArgParseOption::INTEGER));
@@ -313,7 +319,11 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     }
 
     getOptionValue(disOptions.MappabilityDirectory, parser, "mappability");
+
+    getOptionValue(disOptions.threshold, parser, "threshold");
+
     if (isSet(parser, "ossOff")) disOptions.ossOff = true;
+    if (isSet(parser, "compare")) disOptions.compare = true;
     if (isSet(parser, "noMappability")) disOptions.noMappability = true;
 
     getOptionValue(disOptions.readLength, parser, "length");

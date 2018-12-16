@@ -1300,9 +1300,11 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     typedef typename TTraits::TReadSeqs                                                 TReadSeqs;
     typedef typename Size<TReadSeqs>::Type                                              TReadId;
 
+    //TODO use readLength to only calculate scheme for bitvectors use real read length to search for it
     auto scheme = OptimalSearchSchemes<minErrors, maxErrors>::VALUE;
     calcConstParameters(scheme);
     uint32_t readLength = ossContext.readLength;
+    //copy scheme here
 
     _optimalSearchSchemeComputeFixedBlocklength(scheme, readLength);
     _optimalSearchSchemeComputeChronBlocklength(scheme);
@@ -1314,7 +1316,7 @@ find(OSSContext<TSpec, TConfig> & ossContext,
 
 
     // Iterate over all reads.
-    uint32_t k = 0;
+//     uint32_t k = 0;
     iterate(needles, [&](TReadIt const & readIt)
     {
         bool skip = false;
@@ -1330,7 +1332,7 @@ find(OSSContext<TSpec, TConfig> & ossContext,
         }
         if(!skip)
             find(ossContext, delegate, delegateDirect, index, bitvectors, it, position(readIt), scheme, TDistanceTag());
-        k++;
+//         k++;
     }, Rooted(), typename TTraits::TThreading());
 /*
  * not needed for Yara??
@@ -1388,7 +1390,7 @@ inline void find(const int minErrors,
                  TDistanceTag const & )
 {
     std::vector<std::pair<TBitvector, TSupport>> empty_bitvectors;
-    find(minErrors, maxErrors, ossContext, delegate, delegateDirect, index, empty_bitvectors, needles, TDistanceTag());
+    find(minErrors, maxErrors, ossContext, delegate, delegateDirmatchItOSSect, index, empty_bitvectors, needles, TDistanceTag());
 }
 
 //TODO introduce multiple schemes
