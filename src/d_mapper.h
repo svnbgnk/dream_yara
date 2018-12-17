@@ -440,9 +440,9 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
 
 //      std::cout << getMember(*newIt, Errors()) << "\t < 5 , " << getMember(*newIt, ContigBegin()) << " >\t" << getMember(*newIt, ContigEnd()) << "\n";
 
-    int64_t seqNo = getSeqNo(getMember(match, ContigId()));
-    int64_t seqOffset = getSeqOffset(getMember(match, ContigBegin()));
-    int64_t seqOffsetEnd = seqOffset + len;//getSeqOffset(getMember(match, ContigEnd()));
+    int64_t seqNo = getMember(match, ContigId());
+    int64_t seqOffset = getMember(match, ContigBegin());
+    int64_t seqOffsetEnd = seqOffset + len;//getMember(match, ContigEnd());
     bool rC = onReverseStrand(match);
     if(edit)
         seqOffsetEnd += maxErrors;
@@ -470,9 +470,9 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
             }
         }
     }
-
+/*
     Dna5String part = infix(text[seqNo], seqOffset, seqOffsetEnd);
-    std::cout << "Search occ <" <<  seqNo << ", " << seqOffset << ">" << "\tRC: " << rC << "\n" << part << "\n";
+    std::cout << "Search occ <" <<  seqNo << ", " << seqOffset << ">" << "\tRC: " << rC << "\n" << part << "\n";*/
     if(!edit){
         std::cout << readOcc[0] << "\n";
     }else{
