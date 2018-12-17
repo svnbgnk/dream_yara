@@ -217,7 +217,7 @@ inline void appendStats(Mapper<TSpec, TMainConfig> & mainMapper, Mapper<TSpec, T
     mainMapper.stats.writeMatches   += childMapper.stats.writeMatches;
     mainMapper.stats.rescuedReads   += childMapper.stats.rescuedReads;
 }
-
+/*
 
 // ----------------------------------------------------------------------------
 // Function copyMatches()
@@ -248,6 +248,56 @@ inline void copyMatches(Mapper<TSpec, TMainConfig> & mainMapper, Mapper<TSpec, T
         currentMatch.contigEnd     = childMapper.matchesByCoord[i].contigEnd;
         currentMatch.errors        = childMapper.matchesByCoord[i].errors;
         appendValue(appender, currentMatch, Generous(), TThreading());
+    }
+    stop(mainMapper.timer);
+    disOptions.copyAlignments += getValue(mainMapper.timer);
+}*/
+
+template<typename TGMatch, typename TMatch>
+inline void copyMatch(TGMatch & globalMatch, TMatch const & match, DisOptions & disOptions)
+{
+    uint32_t readId = match.readId;
+    uint32_t origReadId = readId;
+    if(disOptions.filterType != NONE)
+        origReadId = disOptions.origReadIdMap[disOptions.currentBinNo][readId];
+    globalMatch.readId = origReadId;
+    globalMatch.contigId      = match.contigId + disOptions.getContigOffsets();
+    globalMatch.isRev         = match.isRev;
+    globalMatch.contigBegin   = match.contigBegin;
+    globalMatch.contigEnd     = match.contigEnd;
+    globalMatch.errors        = match.errors;
+}
+
+// ----------------------------------------------------------------------------
+// Function copyMatches()
+// ----------------------------------------------------------------------------
+template <typename TSpec, typename TConfig, typename TMainConfig>
+inline void copyMatches(Mapper<TSpec, TMainConfig> & mainMapper, Mapper<TSpec, TConfig> & childMapper, DisOptions & disOptions)
+{
+     start(mainMapper.timer);
+    typedef typename MapperTraits<TSpec, TMainConfig>::TMatch             TMatch;
+    typedef typename MapperTraits<TSpec, TMainConfig>::TMatches           TMatches;
+//     typedef StringSet<TMatches, Segment<TMatches> >                       TMatchesSet;
+//     typedef String<TMatch, Segment<TMatches> >                            TMatchesSegment; //still wrong?
+    typedef typename Iterator<TMatches, Standard>::Type                   TMatchesIterator;
+    typedef typename MapperTraits<TSpec, TMainConfig>::TThreading         TThreading;
+    typedef typename MapperTraits<TSpec, TMainConfig>::TMatchesAppender   TMatchesAppender;
+
+    TMatchesAppender appender(mainMapper.matchesByCoord);
+
+
+    uint32_t matchCount = length(childMapper.matchesSetByCoord);
+    for (uint32_t i = 0; i < matchCount; ++i)
+    {
+        auto const & matches = childMapper.matchesSetByCoord[i];
+        auto matchIt = begin(matches, Standard());
+        auto matchEnd = end(matches, Standard());
+        while(matchIt != matchEnd){
+             TMatch currentMatch;
+             copyMatch(currentMatch, *matchIt, disOptions);
+             appendValue(appender, currentMatch, Generous(), TThreading());
+             ++matchIt;
+        }
     }
     stop(mainMapper.timer);
     disOptions.copyAlignments += getValue(mainMapper.timer);
