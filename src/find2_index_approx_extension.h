@@ -1236,48 +1236,6 @@ find(TContex & ossContext,
 }
 
 
-//INFO do not actually need this function since read strata will be checked later ?? (also hits is string now not vector)
-/*
-bool id_smaller(const hit & x, const hit & y)
-{
-    return x.readId < y.readId;
-}
-
-template<typename TContex, typename hit>
-void removeBadHits(TContex & ossContext, std::vector<hit> & hits)
-{
-    std::cout << "Start removing Bad Hits: " << "\n";
-    uint32_t correct_errors;
-    std::vector<bool> bad(hits.size());
-//     auto condition = [& correct_errors](const THit & v) { return v.errors > correct_errors;};
-
-    auto start = std::chrono::high_resolution_clock::now();
-    uint32_t count = hits.size();
-    sort(hits.begin(), hits.end(), id_smaller);
-    auto finish = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = finish - start;
-    std::cout << "Finished sorting after ID: " << elapsed.count() << "s" << "\n";
-
-    uint32_t lastId = 0;
-    auto itb = bad.begin();
-    for(auto it = hits.begin(); it != hits.end();){
-        lastId = (*it).readId;
-        correct_errors = getMinErrors(ossContext.ctx, lastId) + ossContext.strata;
-        while(lastId == (*it).readId && it != hits.end()){
-            *itb = (*it).errors > correct_errors;
-            ++itb;
-            ++it;
-        }
-    }
-    hits.erase(std::remove_if(hits.begin(), hits.end(),
-      [&bad, &hits](auto const &i) { return bad.at(&i - hits.data()); }), hits.end());
-
-    finish = std::chrono::high_resolution_clock::now();
-    elapsed = finish - start;
-    std::cout << "Deleted In Text Verification Hits (which were not fulfilling the strata condition): " << count - hits.size() << "\t" << elapsed.count() << "s" << "\n";
-}*/
-
-
 template <size_t minErrors, size_t maxErrors,
           typename TSpec, typename TConfig,
           typename TDelegate, typename TDelegateD,
@@ -1339,11 +1297,6 @@ find(OSSContext<TSpec, TConfig> & ossContext,
         }
 //         k++;
     }, Rooted(), typename TTraits::TThreading());
-/*
- * not needed for Yara??
-    if(ossContext.itv && ossContext.oneSSBestXMapper){
-        removeBadHits(ossContext, ossContext.dhits);
-    }*/
 }
 
 

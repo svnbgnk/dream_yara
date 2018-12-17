@@ -405,7 +405,7 @@ struct SHit{
 
 template<size_t minErrors, size_t maxErrors,
          typename TIndex, typename TContigSeqs, typename TMatch>
-int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, int threshold, bool const edit, bool const editMappa)
+int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len, int threshold, bool const edit, bool const editMappa)
 {
     int mErrors = maxErrors;
 
@@ -425,10 +425,19 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, int threshol
 
     uint32_t seqNo = getSeqNo(getMember(match, ContigId()));
     uint64_t seqOffset = getSeqOffset(getMember(match, ContigBegin()));
-    uint64_t seqOffsetEnd = getSeqOffset(getMember(match, ContigEnd()));
+    uint64_t seqOffsetEnd = seqOffset + len;//getSeqOffset(getMember(match, ContigEnd()));
+    bool rC = onReverseStrand(match);
+    if(edit)
+        seqOffsetEnd += maxErrors;
     if(!edit){ //edit
         Dna5String part = infix(text[seqNo], seqOffset, seqOffsetEnd);
-        appendValue(readOcc, part);
+        if(rC){
+            Dna5StringReverseComplement revc(part);
+            appendValue(readOcc, revc);
+        }
+        else{
+            appendValue(readOcc, part);
+        }
     }
     else
     {
@@ -436,9 +445,22 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, int threshol
             return(666);
         for(int off = -mErrors; off <= mErrors; ++off){
             Dna5String part = infix(text[seqNo], static_cast<int64_t>(seqOffset) + off, static_cast<int64_t>(seqOffsetEnd) + off);
-            appendValue(readOcc, part);
+            if(rC){
+                Dna5StringReverseComplement revc(part);
+                appendValue(readOcc, revc);
+            }else{
+                appendValue(readOcc, part);
+            }
         }
     }
+
+    std::cout << "Search occ <" <<  seqNo << ", " << seqOffset << ">" << "\tRC: " << rC << "\n";
+    if(!edit){
+        std::cout << readOcc[0] << "\n";
+    }else{
+        std::cout << readOcc[mErrors] << "\n";
+    }
+
 
     if(!edit){//edit
         find<minErrors, maxErrors>(delegate, index, readOcc[0], HammingDistance());
@@ -475,21 +497,21 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, int threshol
 
 
 template<typename TIndex, typename TContigSeqs, typename TMatch>
-int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint8_t maxErrors, int threshold, bool const edit, bool const editMappa)
+int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint8_t maxErrors, uint32_t len, int threshold, bool const edit, bool const editMappa)
 {
     int hits = 0;
 
     switch (maxErrors)
     {
-        case 0: hits = testReadOcc<0, 0>(index, text, match, threshold, edit, editMappa);
+        case 0: hits = testReadOcc<0, 0>(index, text, match, len, threshold, edit, editMappa);
                 break;
-        case 1: hits = testReadOcc<0, 1>(index, text, match, threshold, edit, editMappa);
+        case 1: hits = testReadOcc<0, 1>(index, text, match, len, threshold, edit, editMappa);
                 break;
-        case 2: hits = testReadOcc<0, 2>(index, text, match, threshold, edit, editMappa);
+        case 2: hits = testReadOcc<0, 2>(index, text, match, len, threshold, edit, editMappa);
                 break;
-        case 3: hits = testReadOcc<0, 3>(index, text, match, threshold, edit, editMappa);
+        case 3: hits = testReadOcc<0, 3>(index, text, match, len, threshold, edit, editMappa);
                 break;
-        case 4: hits = testReadOcc<0, 4>(index, text, match, threshold, edit, editMappa);
+        case 4: hits = testReadOcc<0, 4>(index, text, match, len, threshold, edit, editMappa);
                 break;
         default: std::cerr << "E = " << maxErrors << " not yet supported.\n";
                 std::exit(1);
@@ -497,6 +519,22 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint8_t maxE
     return hits;
 }
 
+template<typename TMatch>
+inline bool matchSmaller(TMatch const & a, TMatch const & b){
+    return getSortKey(a, ContigBegin()) < getSortKey(b, ContigBegin());
+}
+
+template<typename TMatch>
+inline uint32_t getReadIdOSS(TMatch const & a)
+{
+    return(a.readId);
+}
+
+template<typename TMatch>
+inline uint8_t getErrorsOSS(TMatch const & a)
+{
+    return(a.errors);
+}
 
 // ----------------------------------------------------------------------------
 // Function _mapReadsImpl()
@@ -712,38 +750,80 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 auto matchIt = begin(matches, Standard());
                 auto matchEnd = end(matches, Standard());
 
+                //get min Error
+                uint32_t readId = getReadIdOSS(*matchIt);
+                uint8_t minErrors = getMinErrors(me.ctx, readId);
+
                 auto const matchesOSS = me2.matchesSetByCoord[i];
                 auto matchItOSS = begin(matchesOSS, Standard());
                 auto matchEndOSS = end(matchesOSS, Standard());
 
 
                 while(matchIt != matchEnd){
-
-                    if(wrong)
-                        std::cout << "Something went wrong\n";
-
                     bool same = isDuplicate(*matchIt, *matchItOSS, ContigBegin());
                     if(!same){
-                        std::cout << "Need to verify this: " << "\n";
-                        write(std::cout, *matchIt);
-                        std::cout << "Compared to this one: " << "\n";
-                        write(std::cout, *matchItOSS);
-                        int nhits = testReadOcc( me.biIndex, me.contigs.seqs, *matchIt, maxError, disOptions.threshold, true, false); //TODO add Threshold as input option for me
-                        if(nhits > disOptions.threshold)
-                            wrong = true;
 
-                        ++matchIt;
-                        if(matchEnd - matchIt > disOptions.threshold)
-                            break;
+                        //Yara Strata Error
+                        if(getErrorsOSS(*matchIt) > strata + minErrors){
+                            std::cout << "Yara outside of strata\n";
+                            write(std::cout, *matchIt);
+                            ++matchIt;
+                            continue;
+                        }
+
+                        //test if yara missed the hit
+                        auto matchIt_temp = matchItOSS;
+                        bool smaller = true;
+                        bool same2 = false;
+                        while(matchIt_temp != matchEndOSS && !same2 && smaller){
+                            ++matchIt_temp;
+                            same2 = isDuplicate(*matchIt, *matchIt_temp, ContigBegin());
+                            if(same2){
+                                break;
+                            }
+                            smaller = matchSmaller(*matchIt_temp, *matchIt); //TODO move into while
+                        }
+                        //Skip missed hits
+                        if(same2){
+                            std::cout << "Yara missed\n";
+                            while(matchItOSS != matchIt_temp){
+                                write(std::cout, *matchItOSS);
+                                ++matchItOSS;
+                            }
+/*
+                            std::cout << "found Same:\n";
+                            write(std::cout, *matchIt);
+                            write(std::cout, *matchItOSS);*/
+                        }
+                        else
+                        //verify if hit was missed because of mappability
+                        {
+
+
+                            std::cout << "Need to verify this: " << "\n";
+                            write(std::cout, *matchIt);
+                            std::cout << "Compared to this one: " << "\n";
+                            write(std::cout, *matchItOSS);
+                            std::cout << "needle: \n  " << me.reads.seqs[readId] << "\n";
+                            int nhits = testReadOcc( me.biIndex, me.contigs.seqs, *matchIt, maxError, len, disOptions.threshold, true, false); //TODO add Threshold as input option for me
+                            if(nhits < disOptions.threshold)
+                                wrong = true;
+
+                            if(wrong)
+                                std::cout << "Something went wrong\n";
+                            ++matchIt;
+                        }
                     }
                     else
-                    {
+                    {/*
+                        std::cout << "Same\n";
+                        write(std::cout, *matchIt);
+                        write(std::cout, *matchItOSS);*/
                         ++matchIt;
                         ++matchItOSS;
 
                         if(matchItOSS == matchEndOSS)
                             --matchItOSS;
-
                     }
                 }
             }
