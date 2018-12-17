@@ -403,6 +403,23 @@ struct SHit{
     {}
 };
 
+bool sHit_smaller(const SHit & x, const SHit & y)
+{
+    if(getSeqNo(x.occ) == getSeqNo(y.occ))
+        return getSeqOffset(x.occ) < getSeqOffset(y.occ);
+    else
+        return getSeqNo(x.occ) < getSeqNo(y.occ);
+
+}
+
+template<int disT>
+bool sHit_similar(const SHit & x, const SHit & y)
+{
+    return(getSeqNo(x.occ) == getSeqNo(y.occ) && getSeqOffset(x.occ) + disT >= getSeqOffset(y.occ) && getSeqOffset(x.occ) <= getSeqOffset(y.occ) + disT);
+}
+
+
+
 template<size_t minErrors, size_t maxErrors,
          typename TIndex, typename TContigSeqs, typename TMatch>
 int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len, int threshold, bool const edit, bool const editMappa)
@@ -423,9 +440,9 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
 
 //      std::cout << getMember(*newIt, Errors()) << "\t < 5 , " << getMember(*newIt, ContigBegin()) << " >\t" << getMember(*newIt, ContigEnd()) << "\n";
 
-    uint32_t seqNo = getSeqNo(getMember(match, ContigId()));
-    uint64_t seqOffset = getSeqOffset(getMember(match, ContigBegin()));
-    uint64_t seqOffsetEnd = seqOffset + len;//getSeqOffset(getMember(match, ContigEnd()));
+    int64_t seqNo = getSeqNo(getMember(match, ContigId()));
+    int64_t seqOffset = getSeqOffset(getMember(match, ContigBegin()));
+    int64_t seqOffsetEnd = seqOffset + len;//getSeqOffset(getMember(match, ContigEnd()));
     bool rC = onReverseStrand(match);
     if(edit)
         seqOffsetEnd += maxErrors;
@@ -443,8 +460,8 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
     {
         if(seqOffset < mErrors || length(text[seqNo]) < seqOffsetEnd + mErrors)
             return(666);
-        for(int off = -mErrors; off <= mErrors; ++off){
-            Dna5String part = infix(text[seqNo], static_cast<int64_t>(seqOffset) + off, static_cast<int64_t>(seqOffsetEnd) + off);
+        for(int64_t off = -mErrors; off <= mErrors; ++off){
+            Dna5String part = infix(text[seqNo], seqOffset + off, seqOffsetEnd + off);
             if(rC){
                 Dna5StringReverseComplement revc(part);
                 appendValue(readOcc, revc);
@@ -454,7 +471,8 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
         }
     }
 
-    std::cout << "Search occ <" <<  seqNo << ", " << seqOffset << ">" << "\tRC: " << rC << "\n";
+    Dna5String part = infix(text[seqNo], seqOffset, seqOffsetEnd);
+    std::cout << "Search occ <" <<  seqNo << ", " << seqOffset << ">" << "\tRC: " << rC << "\n" << part << "\n";
     if(!edit){
         std::cout << readOcc[0] << "\n";
     }else{
@@ -473,6 +491,9 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
         else
             find<minErrors, maxErrors>(delegate, index, readOcc[mErrors], EditDistance());
 
+        std::sort(hits.begin(), hits.end(), sHit_smaller);
+        hits.erase(std::unique(hits.begin(), hits.end(), sHit_similar<2 * maxErrors>), hits.end());
+
         std::cout << hits.size() << " hits!!!!!!!!!!" << "\n";
 
         int k = 0;
@@ -484,6 +505,9 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
                 find<minErrors, maxErrors>(delegate, index, readOcc[k], EditDistance());
             ++k;
             //use sort and erase
+
+            std::sort(hits.begin(), hits.end(), sHit_smaller);
+            hits.erase(std::unique(hits.begin(), hits.end(), sHit_similar<2 * maxErrors>), hits.end());
             std::cout << hits.size() << " hits!!!!!!!!!!e" << "\n";
         }
     }
