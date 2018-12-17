@@ -81,6 +81,7 @@ struct Options
     bool                verifyMatches;
 
     unsigned            readsCount;
+    bool                mmap;
     unsigned            threadsCount;
     unsigned            hitsThreshold;
     bool                rabema;
@@ -108,6 +109,7 @@ struct Options
 //        libraryOrientation(FWD_REV),
         verifyMatches(true),
         readsCount(100000),
+        mmap(false),
         threadsCount(1),
         hitsThreshold(300),
         rabema(false),

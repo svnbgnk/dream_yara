@@ -431,6 +431,8 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint8_t maxE
 
     switch (maxErrors)
     {
+        case 0: hits = testReadOcc<0, 0>(index, text, match, threshold, edit, editMappa);
+                break;
         case 1: hits = testReadOcc<0, 1>(index, text, match, threshold, edit, editMappa);
                 break;
         case 2: hits = testReadOcc<0, 2>(index, text, match, threshold, edit, editMappa);
@@ -449,11 +451,9 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint8_t maxE
 // ----------------------------------------------------------------------------
 // Function _mapReadsImpl()
 // ----------------------------------------------------------------------------
-template <typename TSpec, typename TConfig, typename TMainConfig, typename TIndex, typename TBiIndex, typename TReadSeqs, typename TSeqsSpec>
+template <typename TSpec, typename TConfig, typename TMainConfig, typename TReadSeqs, typename TSeqsSpec>
 inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           Mapper<TSpec, TMainConfig>  & mainMapper,
-                          TIndex & index,
-                          TBiIndex & biindex,
                           StringSet<TReadSeqs, TSeqsSpec> & readSeqs,
                           DisOptions & disOptions)
 {
@@ -466,6 +466,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     uint16_t maxError = me.options.errorRate * len;
     uint16_t strata = disOptions.strataRate * len;
+    Mapper<void, TConfig> me2(disOptions);
 
     if(!disOptions.ossOff){
 
@@ -499,9 +500,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         if(disOptions.verbose > 1)
             std::cout << "\nLoading Bitvectors: " << bPath << "\n";
         loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, len);
-        std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << "\n";
 
         if(!me.bitvectors.empty()){
+            std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << "\n";
             std::cout << "Index Size: " << length(me.biIndex.fwd.sa) << "\n";
             std::cout << "Number of Sequences: " << length(me.contigs.seqs) << "\n";
 
@@ -533,27 +534,36 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         std::cerr << "\nOptimum Search time:\t\t" << me.timer << std::endl;
         std::cerr << "Matches count:\t\t\t" << lengthSum(me.matchesByCoord) << std::endl;
     }
+/*
+    std::cout << "Before: " << "\n";
+    for(int i = 0; i < length(me.matchesByCoord); ++i){
+        auto const & match = me.matchesByCoord[i];
+        write(std::cout, match);
 
-//     if(addMyOwnOption) //IsSameType<typename TConfig::TSeedsDistance, EditDistance>::VALUE
-//         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, EditDistance());
-//     else
-//         find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, readSeqs, HammingDistance());
+    }
+    std::cout << "After: " << "\n";
+    */
+    //save OSS hits
+    if(disOptions.compare){
+        me2.matchesByCoord = me.matchesByCoord;
+        me2.matchesSetByCoord = me.matchesSetByCoord;
+        clear(me.matchesSetByCoord);
+        clear(me.matchesByCoord);
+        aggregateMatchesOSS(me2, readSeqs);
+    }else{
+        aggregateMatchesOSS(me, readSeqs);
+    }
 
-
-//     std::cout << "Finished Searching: " << "\n";
-//     typedef typename TTraits::TMatch                             TMatch;
-//     for(int i = 0; i < length(me.matchesByCoord); ++i){
-//         std::cout << "Match: " << "\n";
-//         TMatch myMatch = me.matchesByCoord[i];
-//         std::cout << myMatch.contigBegin << "\n";
-//         std::cout << myMatch.contigEnd << "\n";
-//         std::cout << "ContigId: " << myMatch.contigId << "\n";
-//         std::cout << "Errors: " << myMatch.errors << "\n";
-//         std::cout << "ReadId: "<< myMatch.readId << "\n" << "\n";
-//     }
-//     std::cout << "End of Matches ____________________________________________________________________________________________________ " << "\n";
-
-    aggregateMatchesOSS(me, readSeqs);
+/*
+    for(int i = 0; i < length(me2.matchesSetByCoord); ++i){
+        auto const & matches = me2.matchesSetByCoord[i];
+        auto matchIt = begin(matches, Standard());
+        auto matchEnd = end(matches, Standard());
+        while(matchIt != matchEnd){
+            write(std::cout, *matchIt);
+            ++matchIt;
+        }
+    }*/
 
 
     if(disOptions.verbose > 0)
@@ -563,16 +573,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     }
 
-
-
     if(disOptions.ossOff || disOptions.compare)
     {
-        //save OSS hits
-        auto sets = me.matchesSetByCoord;
-        auto matches = me.matchesByCoord;
-        clear(me.matchesSetByCoord);
-        clear(me.matchesByCoord);
-
+        std::cout << "Using Seed and Extension: \n";
         initReadsContext(me, readSeqs);
         initSeeds(me, readSeqs);
 
@@ -638,8 +641,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
             }
 
             std::cout << "Print OSS Matches" << "\n\n\n";
-            for(int i = 0; i < length(sets); ++i){
-                auto const & matches = sets[i];
+            for(int i = 0; i < length(me2.matchesSetByCoord); ++i){
+                auto const & matches = me2.matchesSetByCoord[i];
                 auto matchIt = begin(matches, Standard());
                 auto matchEnd = end(matches, Standard());
                 while(matchIt != matchEnd){
@@ -650,56 +653,47 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
 
             std::cout << "\n\n";
-            int offSet = 0;
-            auto matchesOSS = sets[0];
-            auto matchItOSS = begin(matchesOSS, Standard());
-            auto matchEndOSS = end(matchesOSS, Standard());
             bool wrong = false;
 
-            std::cout << "compare lengths: " << length(me.matchesSetByCoord) << "\t" << length(sets) << "\n";
+            std::cout << "compare lengths: " << length(me.matchesSetByCoord) << "\t" << length(me2.matchesSetByCoord) << "\n";
 
             for(int i = 0; i < length(me.matchesSetByCoord); ++i){
                 auto const matches = me.matchesSetByCoord[i];
-
                 auto matchIt = begin(matches, Standard());
                 auto matchEnd = end(matches, Standard());
 
+                auto const matchesOSS = me2.matchesSetByCoord[i];
+                auto matchItOSS = begin(matchesOSS, Standard());
+                auto matchEndOSS = end(matchesOSS, Standard());
+
+
                 while(matchIt != matchEnd){
+
                     if(wrong)
                         std::cout << "Something went wrong\n";
 
                     bool same = isDuplicate(*matchIt, *matchItOSS, ContigBegin());
                     if(!same){
-
                         std::cout << "Need to verify this: " << "\n";
                         write(std::cout, *matchIt);
                         std::cout << "Compared to this one: " << "\n";
                         write(std::cout, *matchItOSS);
                         int nhits = testReadOcc( me.biIndex, me.contigs.seqs, *matchIt, maxError, disOptions.threshold, true, false); //TODO add Threshold as input option for me
-                        if(nhits > 10)
+                        if(nhits > disOptions.threshold)
                             wrong = true;
 
                         ++matchIt;
+                        if(matchEnd - matchIt > disOptions.threshold)
+                            break;
                     }
                     else
-                    {/*
-                        std::cout << "Same: \n";
-                         write(std::cout, *matchIt);
-                         write(std::cout, *matchItOSS);*/
+                    {
                         ++matchIt;
                         ++matchItOSS;
 
-                        if(matchEndOSS == matchItOSS)
-                        {
-                            ++offSet;
-                            if(offSet >= length(sets)){
-                                std::cout << "reached end off OSS hits\n";
-                                --matchItOSS;
-                            }
-                            matchesOSS = sets[offSet];
-                            matchItOSS = begin(matchesOSS, Standard());
-                            matchEndOSS = end(matchesOSS, Standard());
-                        }
+                        if(matchItOSS == matchEndOSS)
+                            --matchItOSS;
+
                     }
                 }
             }
@@ -1070,7 +1064,7 @@ inline void loadFilteredReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCo
 template <typename TSpec, typename TConfig, typename TMainConfig>
 inline void mapReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & mainMapper, DisOptions & disOptions)
 {
-    _mapReadsImpl(me, mainMapper, me.index, me.biIndex, me.reads.seqs, disOptions);
+    _mapReadsImpl(me, mainMapper, me.reads.seqs, disOptions);
 
 //     _mapReadsImplOSS(me, mainMapper, me.biIndex, me.reads.seqs, disOptions);
 }
@@ -1081,13 +1075,18 @@ inline void mapReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & 
 template <typename TSpec, typename TConfig, typename TMainConfig>
 inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & mainMapper, DisOptions & disOptions)
 {
-    // add load bitvectors here also add info to disOptions about them
+
     loadFilteredReads(me, mainMapper, disOptions);
+    std::cout << "loaded Reads"<< "\n" << length(me.reads.seqs) << "\n";
     if (empty(me.reads.seqs)) return;
     loadContigs(me);
+    std::cout << "loaded Contigs" << "\n" << length(me.contigs.seqs)<< "\n";
 //     loadContigsIndex(me);
     loadContigsBiIndex(me);
+    std::cout << "loaded Index" << "\nIndexSize: ";
+    std::cout << length(me.biIndex.fwd.sa) << "\n";
     mapReads(me, mainMapper, disOptions);
+    std::cout << "Mapped Reads" << "\n";
 }
 
 
@@ -1109,9 +1108,18 @@ void spawnMapper(Options const & options,
                  TSequencing const & /*sequencing*/,
                  TSeedsDistance const & /*distance*/)
 {
-    typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TConfig;
-    Mapper<void, TConfig> mapper(options);
-    runMapper(mapper, mainMapper, disOptions);
+    if(disOptions.mmap)
+    {
+        typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TConfig;
+        Mapper<void, TConfig> mapper(options);
+        runMapper(mapper, mainMapper, disOptions);
+    }
+    else
+    {
+        typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, Alloc<>>  TConfig;
+        Mapper<void, TConfig> mapper(options);
+        runMapper(mapper, mainMapper, disOptions);
+    }
 }
 // ----------------------------------------------------------------------------
 // Function configureMapper()
@@ -1503,7 +1511,8 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
         prepairMainMapper(mainMapper, filter, disOptions);
 
         if(disOptions.filterType == NONE){
-            for(uint32_t i = disOptions.startBin; i < disOptions.numberOfBins; ++i){ //weird interaction with InTextVerification
+            for(uint32_t i = disOptions.startBin; i < disOptions.numberOfBins; ++i){
+                //TODO iterate over reads batches using one Index
                 std::cout << "\n\nIn bin Number: " << i << "\n";
                 disOptions.currentBinNo = i;
                 Options options = mainMapper.options;

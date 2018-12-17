@@ -250,6 +250,11 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     // Setup performance disOptions.
     addSection(parser, "Performance Options");
 
+    addOption(parser, ArgParseOption("mm", "mmap",
+        "Turns memory-mapping on, i.e. the index is not loaded into RAM but accessed directly in secondary-memory. "
+        "This makes the algorithm only slightly slower but the index does not have to be loaded into main memory "
+        "(which takes some time)."));
+
     addOption(parser, ArgParseOption("t", "threads", "Specify the number of threads to use.", ArgParseOption::INTEGER));
     setMinValue(parser, "threads", "1");
     setMaxValue(parser, "threads", "2048");
@@ -391,6 +396,9 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     disOptions.verifyMatches = !isSet(parser, "no-indels");
 
     // Parse performance disOptions.
+
+    if (isSet(parser, "mmap")) disOptions.mmap = true;
+
     getOptionValue(disOptions.threadsCount, parser, "threads");
     getOptionValue(disOptions.readsCount, parser, "reads-batch");
 

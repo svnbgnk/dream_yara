@@ -1310,7 +1310,7 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     _optimalSearchSchemeComputeChronBlocklength(scheme);
 
     //load Bitvectors needed for scheme (Blocklength and chronblockLengths have to be calculated therefore I need to assume needle length)
-//     std::cout << "Scheme: " << minErrors << "\t" << maxErrors << ">\n";
+    std::cout << "Scheme: " << minErrors << "\t" << maxErrors << ">\n";
     std::vector<TBitvectorPair * > lbitvectors;
     linkBitvectors(ossContext, scheme, bitvectors, lbitvectors);
 
@@ -1323,15 +1323,20 @@ find(OSSContext<TSpec, TConfig> & ossContext,
         TReadRef it = value(readIt);
         if(ossContext.bestXMapper){
             TReadId readId = getReadId(ossContext.readSeqs, position(readIt));
-            bool skip = false;
+//             std::cout << "ReadId: " << readId << "\n";
             if(isMapped(ossContext.ctx, readId)){
-                if(getMinErrors(ossContext.ctx, readId) + ossContext.strata < minErrors){
+//                 std::cout << "MinErrors: " << (int)getMinErrors(ossContext.ctx, readId) << "\n";
+                if(static_cast<uint8_t>(getMinErrors(ossContext.ctx, readId)) + ossContext.strata < minErrors){
+//                     std::cout << "Skip" << "\n";
                     skip = true;
                 }
             }
         }
-        if(!skip)
+
+        if(!skip){
+//             std::cout << "Search\n";
             find(ossContext, delegate, delegateDirect, index, bitvectors, it, position(readIt), scheme, TDistanceTag());
+        }
 //         k++;
     }, Rooted(), typename TTraits::TThreading());
 /*
@@ -1361,6 +1366,8 @@ inline void find(const int minErrors,
 {
     switch (maxErrors)
     {
+        case 0: find<0, 0>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                break;
         case 1: find<0, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
                 break;
         case 2: find<0, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
@@ -1390,10 +1397,8 @@ inline void find(const int minErrors,
                  TDistanceTag const & )
 {
     std::vector<std::pair<TBitvector, TSupport>> empty_bitvectors;
-    find(minErrors, maxErrors, ossContext, delegate, delegateDirmatchItOSSect, index, empty_bitvectors, needles, TDistanceTag());
+    find(minErrors, maxErrors, ossContext, delegate, delegateDirect, index, empty_bitvectors, needles, TDistanceTag());
 }
-
-//TODO introduce multiple schemes
 
 
 // for find2_index_approx.h find function
@@ -1410,6 +1415,8 @@ inline void find(const int minErrors,
 {
     switch (maxErrors)
     {
+        case 0: find<0, 0>(delegate, index, needles, TDistanceTag());
+                break;
         case 1: find<0, 1>(delegate, index, needles, TDistanceTag());
                 break;
         case 2: find<0, 2>(delegate, index, needles, TDistanceTag());

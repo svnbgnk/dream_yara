@@ -116,6 +116,21 @@ inline void find(const int minErrors,
 
     switch (maxErrors)
     {
+        case 0:
+        {
+            switch (strata)
+            {
+                case 0 :
+                {
+                    find<0, 0>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                default: std::cerr << "strata = " << strata << " not possible with current maxError.\n";
+                exit(1);
+            }
+            break;
+
+        }
         case 1:
         {
             switch (strata)
