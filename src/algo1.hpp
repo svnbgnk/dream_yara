@@ -42,7 +42,7 @@ inline void runAlgoTrivial(TIndex & index, TText const & text, TContainer & c, T
     #pragma omp parallel for schedule(dynamic, 500) num_threads(opt.threads)
     for (uint64_t i = 0; i < textLength - opt.k_length + 1; ++i)
     {
-        value_type hits = 0;
+//         value_type hits = 0;
 
         std::vector<smallHit> myhits;
 /*
@@ -54,6 +54,7 @@ inline void runAlgoTrivial(TIndex & index, TText const & text, TContainer & c, T
         };*/
 
         auto delegate = [&myhits](auto const &it, auto const & /*needle*/, unsigned const occErrors) {
+
            for (auto occ : getOccurrences(it.fwdIter)){
                 smallHit me;
                 me.occ = occ;
@@ -71,7 +72,7 @@ inline void runAlgoTrivial(TIndex & index, TText const & text, TContainer & c, T
             _optimalSearchScheme(delegate, it, needle, scheme, HammingDistance());
 
         std::sort(myhits.begin(), myhits.end(), occ_s);
-        myhits.erase(std::unique(myhits.begin(), myhits.end(), occ_sim<15>), myhits.end());
+        myhits.erase(std::unique(myhits.begin(), myhits.end(), occ_sim<errors * 3>), myhits.end());
 
         if(myhits.size() < max_val)
             c[i] = myhits.size();
