@@ -109,26 +109,37 @@ template <size_t nbrBlocks, size_t N>
 /*constexpr */inline void _optimalSearchSchemeComputeChronBlocklength(std::array<OptimalSearch<nbrBlocks>, N> & ss)
 {
 
+    int16_t blockSize = nbrBlocks;
     for (OptimalSearch<nbrBlocks> & s : ss){
         s.chronBL[s.pi[0] - 1]  = s.blocklength[0];
-        for(int j = 1; j < nbrBlocks; ++j)
+        for(int16_t j = 1; j < blockSize; ++j){
             s.chronBL[s.pi[j] - 1] = s.blocklength[j] -  s.blocklength[j - 1];
-        for(int j = 1; j < nbrBlocks; ++j)
-            s.chronBL[j] += s.chronBL[j - 1];
+        }
 
-        if(nbrBlocks > 1){
-            s.revChronBL[s.pi[nbrBlocks - 1] - 1]  = s.blocklength[nbrBlocks - 1] - s.blocklength[nbrBlocks - 2];
-            for(int i = static_cast<int> (nbrBlocks) - 2; i >= 0; --i){
+        for(int16_t j = 1; j < blockSize; ++j){
+            std::cerr << ""; //if blockSize == 2 compiler skips the loop??
+            s.chronBL[j] += s.chronBL[j - 1];
+        }
+
+//         int32_t tmp = s.chronBL[1]; // if blockSize == 2 compiler skip previous loop
+//         std::cout << tmp << "\n";
+
+
+        if(blockSize > 1){
+            s.revChronBL[s.pi[blockSize - 1] - 1]  = s.blocklength[blockSize - 1] - s.blocklength[blockSize - 2];
+            for(int16_t i = blockSize - 2; i >= 0; --i){
                 s.revChronBL[s.pi[i] - 1] = s.blocklength[i] - ((i > 0) ? s.blocklength[i - 1] : 0);
             }
 
-            for(int i = nbrBlocks - 2; i >= 0; --i)
+            for(int16_t i = blockSize - 2; i >= 0; --i)
                 s.revChronBL[i] += s.revChronBL[i + 1];
         }
-        else{
+        else
+        {
             s.revChronBL[0] = s.blocklength[0];
         }
     }
+
     for (OptimalSearch<nbrBlocks> & s : ss){
         for (uint8_t j = 0; j < s.pi.size(); ++j)
         {
@@ -157,8 +168,18 @@ inline void filterCheckSortBlockLimits(TVector & r, TVector & l)
     auto itr = r.end();
     auto itl = l.end();
 
+
     if(itr != unique(r.begin(), r.end()) || itl != unique(l.begin(), l.end())){
         std::cerr << "Search Schemes contain unexpected blocklengths\n";
+        std::cerr << "r: \n";
+        for(int i = 0; i < r.size(); ++i){
+            std::cerr << r[i] << "\t";
+        }
+        std::cerr << "\nl: \n";
+        for(int i = 0; i < l.size(); ++i){
+            std::cerr << l[i] << "\t";
+        }
+        std::cerr << "\n";
         exit(0);
     }
 

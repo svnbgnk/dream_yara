@@ -348,7 +348,9 @@ void configureMappability(OptionsM const & options,
 inline void runDisMappability(OptionsM & options)
 {
     for(uint32_t i = 0; i < options.numberOfBins; ++i){
-        std::cout << "In bin Number: " << i << "\n";
+        std::cerr << "In bin Number: " << i << "\n";
+        Timer<double>       timer;
+        start (timer);
 
         //create_dir
         CharString path = options.output;
@@ -358,7 +360,7 @@ inline void runDisMappability(OptionsM & options)
 
         const int dir_test = mkdir(path_dir.data(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         if (-1 == dir_test)
-            std::cout << "Error creating directory!\n";
+            std::cerr << "Error creating directory!\n";
 
         options.currentBinNo = i;
         OptionsM binOption = options;
@@ -367,6 +369,9 @@ inline void runDisMappability(OptionsM & options)
         if (!openContigsLimits(binOption))
             throw RuntimeError("Error while opening reference file.");
         configureMappability(binOption, options);
+
+        stop(timer);
+        std::cerr << "Time: " << timer << "\n";
     }
 }
 
