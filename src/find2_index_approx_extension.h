@@ -227,7 +227,7 @@ inline void alignmentMyersBitvector(TContex & ossContext,
 
         int32_t bestHit = (errors2 <= max_e) ? errors2 : max_e + 1;
         TSAValue best_sa = sa_info_tmp;
-        uint32_t best_length = length(needleId);
+        uint32_t best_length = needleL;
 
         for(uint8_t e = 1; e <= max_e; ++e){
             if(bestHit <= e){
