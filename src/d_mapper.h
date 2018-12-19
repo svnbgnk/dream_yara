@@ -584,6 +584,15 @@ inline uint8_t getErrorsOSS(TMatch const & a)
     return(a.errors);
 }
 
+template<typename TSpec>
+inline bool isSimilar(Match<TSpec> const & a, Match<TSpec> const & b, uint8_t errors)
+{
+    int64_t offSetA = getMember(a, ContigBegin());
+    int64_t offSetB = getMember(b, ContigBegin());
+    return contigEqual(a, b) && strandEqual(a, b) && offSetA + errors >= offSetB && offSetB + errors >= offSetA;
+
+}
+
 // ----------------------------------------------------------------------------
 // Function _mapReadsImpl()
 // ----------------------------------------------------------------------------
@@ -809,7 +818,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
                 while(matchIt != matchEnd){
                     bool same = isDuplicate(*matchIt, *matchItOSS, ContigBegin());
-                    if(!same){
+                    if(!isSimilar(*matchIt, *matchItOSS, maxError)){
 
                         //Yara Strata Error
                         if(getErrorsOSS(*matchIt) > strata + minErrors){
@@ -836,7 +845,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                             std::cout << "Yara missed\n";
                             while(matchItOSS != matchIt_temp){
                                 write(std::cout, *matchItOSS);
-                                std::cout << "needle: \n  " << me.reads.seqs[readId] << "\n";
+                                std::cout << "needle: \n   " << me.reads.seqs[readId] << "\n";
                                 printOcc(me.contigs.seqs, *matchItOSS, maxError);
                                 ++matchItOSS;
                             }
@@ -848,8 +857,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         else
                         //verify if hit was missed because of mappability
                         {
-
-
                             std::cout << "Need to verify this: " << "\n";
                             write(std::cout, *matchIt);
                             std::cout << "Compared to this one: " << "\n";
@@ -865,10 +872,14 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         }
                     }
                     else
-                    {/*
-                        std::cout << "Same\n";
-                        write(std::cout, *matchIt);
-                        write(std::cout, *matchItOSS);*/
+                    {
+                        if(!same)
+                        {
+                            std::cout << "Only Similar\n";
+                            write(std::cout, *matchIt);
+                            write(std::cout, *matchItOSS);
+
+                        }
                         ++matchIt;
                         ++matchItOSS;
 
