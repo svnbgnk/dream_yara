@@ -822,8 +822,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
                         //Yara Strata Error
                         if(getErrorsOSS(*matchIt) > strata + minErrors){
-                            std::cout << "Yara outside of strata\n";
-                            write(std::cout, *matchIt);
+//                             std::cout << "Yara outside of strata\n";
+//                             write(std::cout, *matchIt);
                             ++matchIt;
                             continue;
                         }
@@ -878,6 +878,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                             std::cout << "Only Similar\n";
                             write(std::cout, *matchIt);
                             write(std::cout, *matchItOSS);
+                            std::cout << "needle: \n   " << me.reads.seqs[readId] << "\n";
+                            printOcc(me.contigs.seqs, *matchIt, maxError);
+                            printOcc(me.contigs.seqs, *matchItOSS, maxError);
 
                         }
                         ++matchIt;

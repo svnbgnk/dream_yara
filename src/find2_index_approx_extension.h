@@ -833,9 +833,9 @@ inline void _optimalSearchSchemeDeletion(TContex & ossContext,
             _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex2, lastEdit, Fwd(), EditDistance());
     }
 
-//     bool not_at_end = std::is_same<TDir, Rev>::value && needleRightPos != length(needle) + 1 || !std::is_same<TDir, Rev>::value && needleLeftPos != 0/* || true*/;
+    bool not_at_end = std::is_same<TDir, Rev>::value && needleRightPos != length(needle) + 1 || !std::is_same<TDir, Rev>::value && needleLeftPos != 0/* || true*/;
 
-    if (/*not_at_end && */maxErrorsLeftInBlock > 0 && goDown(iter, TDir()))
+    if (not_at_end && maxErrorsLeftInBlock > 0 && goDown(iter, TDir()))
     {
         do
         {
@@ -875,7 +875,6 @@ inline void _optimalSearchSchemeChildren(TContex & ossContext,
         do
         {
             bool delta = !ordEqual(parentEdgeLabel(iter, TDir()), needle[goToRight ? needleRightPos - 1 : needleLeftPos - 1]);
-//             std::cout << "_optimalSearchSchemeChildren: " << delta << "\n";
             if (!std::is_same<TDistanceTag, EditDistance>::value && minErrorsLeftInBlock > 0 && charsLeft + delta < minErrorsLeftInBlock + 1u)
             {
                 continue;
@@ -907,8 +906,8 @@ inline void _optimalSearchSchemeChildren(TContex & ossContext,
             }
 
             //Deletion
-//             bool not_at_end = std::is_same<TDir, Rev>::value && needleRightPos2 != length(needle) + 1 || !std::is_same<TDir, Rev>::value && needleLeftPos2 != 0/* || true*/;
-            if (std::is_same<TDistanceTag, EditDistance>::value/* && not_at_end*/)
+            bool not_at_end = std::is_same<TDir, Rev>::value && needleRightPos2 != length(needle) + 1 || !std::is_same<TDir, Rev>::value && needleLeftPos2 != 0/* || true*/;
+            if (std::is_same<TDistanceTag, EditDistance>::value && not_at_end)
                 _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors + 1, s, blockIndex, true, TDir(), TDistanceTag());
         } while (goRight(iter, TDir()));
     }
@@ -1040,7 +1039,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                  TDir const & ,
                                  TDistanceTag const &)
 {
-    //TODO add strata tag
     if(ossContext.oneSSBestXMapper){
         bool save = false;
         uint32_t readId = getReadId(ossContext.readSeqs, needleId);
@@ -1068,7 +1066,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     {
 //         std::cout << "Done" << "\n";
         //last input only matters for unidirectional searches (has to be false in this case)
-        if(/*!lastEdit*/true){
+        if(!lastEdit/*true*/){
             if(checkMappa){
                 filteredDelegate(ossContext, delegate, iter, needle, needleId, bitvectors, errors);
             }
@@ -1103,9 +1101,9 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     // Approximate search in current block.
     else
     {
-//         bool not_at_end = std::is_same<TDir, Rev>::value && needleRightPos != length(needle) || !std::is_same<TDir, Rev>::value && needleLeftPos != 1/* || true*/;
+        bool not_at_end = std::is_same<TDir, Rev>::value && needleRightPos != length(needle) || !std::is_same<TDir, Rev>::value && needleLeftPos != 1/* || true*/;
         // Insertion
-        if (std::is_same<TDistanceTag, EditDistance>::value/* && not_at_end*/)
+        if (std::is_same<TDistanceTag, EditDistance>::value && not_at_end)
         {
             bool const goToRight = std::is_same<TDir, Rev>::value;
             int32_t const needleLeftPos2 = needleLeftPos - !goToRight;
