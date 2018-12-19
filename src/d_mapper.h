@@ -544,21 +544,21 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint8_t maxE
 }
 
 template<typename TContigSeqs, typename TMatch>
-void printOcc(TContigSeqs & text, TMatch & match)
+void printOcc(TContigSeqs & text, TMatch & match, int64_t ex = 0)
 {
-    typedef typename InfixOnValue<TContigSeqs const>::Type         TInfix;
+//     typedef typename InfixOnValue<TContigSeqs const>::Type         TInfix;
 
     StringSet<Dna5String> readOcc;
     int64_t seqNo = getMember(match, ContigId());
     int64_t seqOffset = getMember(match, ContigBegin());
     int64_t seqOffsetEnd = getMember(match, ContigEnd()); // seqOffset + len;
 
-    TInfix part = infix(text[seqNo], seqOffset, seqOffsetEnd);
+    Dna5String part = infix(text[seqNo], seqOffset - ex, seqOffsetEnd + ex);
 
     if(onReverseStrand(match))
     {
-            Dna5StringReverseComplement revc(part);
-            appendValue(readOcc, revc);
+        Dna5StringReverseComplement revc(part);
+        appendValue(readOcc, revc);
     }
     else
     {
@@ -836,6 +836,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                             std::cout << "Yara missed\n";
                             while(matchItOSS != matchIt_temp){
                                 write(std::cout, *matchItOSS);
+                                std::cout << "needle: \n  " << me.reads.seqs[readId] << "\n";
+                                printOcc(me.contigs.seqs, *matchItOSS, maxError);
                                 ++matchItOSS;
                             }
 /*
