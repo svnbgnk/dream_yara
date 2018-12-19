@@ -543,6 +543,30 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint8_t maxE
     return hits;
 }
 
+template<typename TContigSeqs, typename TMatch>
+void printOcc(TContigSeqs & text, TMatch & match)
+{
+    typedef typename InfixOnValue<TContigSeqs const>::Type         TInfix;
+
+    StringSet<Dna5String> readOcc;
+    int64_t seqNo = getMember(match, ContigId());
+    int64_t seqOffset = getMember(match, ContigBegin());
+    int64_t seqOffsetEnd = getMember(match, ContigEnd()); // seqOffset + len;
+
+    TInfix part = infix(text[seqNo], seqOffset, seqOffsetEnd);
+
+    if(onReverseStrand(match))
+    {
+            Dna5StringReverseComplement revc(part);
+            appendValue(readOcc, revc);
+    }
+    else
+    {
+        appendValue(readOcc, part);
+    }
+    std::cout << readOcc[0] << "\n";
+}
+
 template<typename TMatch>
 inline bool matchSmaller(TMatch const & a, TMatch const & b){
     return getSortKey(a, ContigBegin()) < getSortKey(b, ContigBegin());

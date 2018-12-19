@@ -356,11 +356,15 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 //     typedef typename TContigs::TSeqs                         TContigSeqs;
     typedef typename TTraits::TContigSeqs                    TContigSeqs;
     typedef typename InfixOnValue<TContigSeqs const>::Type   TContigSeqsInfix;
-
+    typedef typename InfixOnValue<TNeedle const>::Type       TNeedleInfix;
+//      typedef ModifiedString<TNeedleInfix, ModReverse>     TNeedleInfixRev;
 
     TContigSeqs const & genome = ossContext.contigSeqs;
 
 //     auto const & genome = indexText(*iter.fwdIter.index);
+
+//     bool test = needle;
+    ModifiedString<TNeedle, ModReverse > revneedle(needle);
 
     if (std::is_same<TDistanceTag, EditDistance>::value){
         //TODO put this into a function
