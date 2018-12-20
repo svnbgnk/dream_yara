@@ -175,6 +175,47 @@ inline void saPosOnFwd(TSAValue & sa_info,
     setSeqOffset(sa_info, genomelength - getSeqOffset(sa_info) - occLength);
 //     sa_info.i2 = genomelength - sa_info.i2 - occLength;
 }
+/*
+//skip mismatches in the start and end adjust sa_value and occlength accordingly
+template <typename TNeedle, typename TSAValue, typename TInfix>
+inline void trimHit(TNeedle const & needle, TInfix const & infix, TSAValue & sa_info, uint32_t & occlength, uint8_t errors)
+{
+    // trimming does not work everytime ex: TCCCCCCCCGCTA
+    //                                      CCCCCCCCGCTA -> only after comparing C to G it is clear we need and insertion
+    //                                                      in the beginning
+    std::cout << "Trimming: \n";
+    std::cout << "Needle" << sa_info << "\t" << occlength << "\n" << needle << "\n";
+    std::cout << infix << "\n";
+    uint32_t k = 0;
+    while(needle[k] != infix[k] && k < errors + 2)
+    {
+        ++k;
+    }
+
+    //check if edit operation was required
+    if(k == errors + 1)
+        k = 0;
+
+    uint32_t len = length(needle);
+    uint32_t l = 1;
+
+    uint32_t left_errors = errors + 2 - k;
+    while(needle[len - l] != infix[occlength - l] && l < errors + 2 - k)
+    {
+        ++l;
+    }
+    // check if edit operation was required
+    if(l == left_errors - 1)
+        l = 1;
+
+
+    auto seqOffset = getSeqOffset(sa_info);
+    setSeqOffset(sa_info, seqOffset + k);
+    occlength = occlength - k - l + 1;
+
+    std::cout << "trimmed:" << sa_info << "\t" << occlength << "\n" << infix << "\n" << k << "\t" << l - 1 << "\n";
+}*/
+
 
 template <typename TContex,
           typename TDelegateD,
@@ -215,22 +256,23 @@ inline void alignmentMyersBitvector(TContex & ossContext,
         TSAValue sa_info_tmp = sa_info;
         //No Insertions or Deletions
 //         cout << "E: " << (int)0 << endl;
-        TString const & tmp0 = infix(ex_infix, overlap_l, ex_infixL - overlap_r);
-        int32_t errors2 = 0 - globalAlignmentScore(tmp0, needle, MyersBitVector()); //shold be uint32_t
-        if(errors2 <= max_e){
-            if(usingReverseText){
-                saPosOnFwd(sa_info_tmp, genomelength, needleL);
-            }
-//             std::cout << "1  " << tmp0 << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, length(needle)) << "\n";
-//             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, length(needle)), needleId, errors2);
+        TString const infix_tmp0 = infix(ex_infix, overlap_l, ex_infixL - overlap_r); //use n_infix
+        int32_t errors2 = 0 - globalAlignmentScore(infix_tmp0, needle, MyersBitVector()); //shold be uint32_t
+
+        if(usingReverseText){
+            saPosOnFwd(sa_info_tmp, genomelength, needleL);
         }
 
+        //if the current best hit is not good it will not get reported
         int32_t bestHit = (errors2 <= max_e) ? errors2 : max_e + 1;
         TSAValue best_sa = sa_info_tmp;
         uint32_t best_length = needleL;
+//         TString bestInfix = infix_tmp0;
 
         for(uint8_t e = 1; e <= max_e; ++e){
             if(bestHit <= e){
+                //trimHit
+//                 trimHit(needle, bestInfix, best_sa, best_length, bestHit);
                 delegateDirect(ossContext, best_sa, posAdd(best_sa, best_length), needleId, bestHit);
                 return;
             }
@@ -254,19 +296,20 @@ inline void alignmentMyersBitvector(TContex & ossContext,
 //                         sa_info_tmp.i2 = sa_info_tmp.i2 + (pos * k);
                         setSeqOffset(sa_info_tmp, getSeqOffset(sa_info_tmp) + (pos * k));
 
-                        TString const & tmp2 = infix(ex_infix, (pos * k) + overlap_l, ex_infixL - overlap_r - (pos * (m - k)));
-                        errors2 = 0 - globalAlignmentScore(tmp2, needle, MyersBitVector());
+                        TString const infix_tmp = infix(ex_infix, (pos * k) + overlap_l, ex_infixL - overlap_r - (pos * (m - k)));
+                        errors2 = 0 - globalAlignmentScore(infix_tmp, needle, MyersBitVector());
                         if(errors2 < bestHit){
                             occLength = length(needle) - (pos * m);
                             if(usingReverseText){
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
-//                             std::cout << "2  " << tmp2 << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, occLength) << "\n";
+//                             std::cout << "2  " << infix_tmp << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, occLength) << "\n";
 
 //                             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
                             bestHit = errors2;
                             best_sa = sa_info_tmp;
                             best_length = occLength;
+//                             bestInfix = infix_tmp;
                         }
                     }
                 }
@@ -274,29 +317,30 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                 {
                     //insertions left and deletion right
                     if(overlap_l >= del){
-                        TString const & tmp = infix(ex_infix, overlap_l - del, ex_infixL - overlap_r - ins);
+                        TString const infix_tmp = infix(ex_infix, overlap_l - del, ex_infixL - overlap_r - ins);
                         sa_info_tmp = sa_info;
 //                         sa_info_tmp.i2 = sa_info_tmp.i2 - del;
                         setSeqOffset(sa_info_tmp, getSeqOffset(sa_info_tmp) - del);
-                        errors2 = 0 - globalAlignmentScore(tmp, needle, MyersBitVector());
+                        errors2 = 0 - globalAlignmentScore(infix_tmp, needle, MyersBitVector());
                         if(errors2 < bestHit){
                             occLength = length(needle) - ins + del;
                             if(usingReverseText){
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
-//                             std::cout << "3  " << tmp << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, occLength) << "\n";
+//                             std::cout << "3  " << infix_tmp << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, occLength) << "\n";
 //                             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
                             bestHit = errors2;
                             best_sa = sa_info_tmp;
                             best_length = occLength;
+//                             bestInfix = infix_tmp;
                         }
                     }
 
                     //insertions right and deletion left
                     if(overlap_r >= del){
                         sa_info_tmp = sa_info; //just include del from before into the calculation and delete this
-                        TString const & tmp1 = infix(ex_infix, overlap_l + ins, ex_infixL - overlap_r + del);
-                        errors2 = 0 - globalAlignmentScore(tmp1, needle, MyersBitVector());
+                        TString const infix_tmp = infix(ex_infix, overlap_l + ins, ex_infixL - overlap_r + del);
+                        errors2 = 0 - globalAlignmentScore(infix_tmp, needle, MyersBitVector());
 //                         sa_info_tmp.i2 = sa_info_tmp.i2 + ins;
                         setSeqOffset(sa_info_tmp, getSeqOffset(sa_info_tmp) + ins);
                         if(errors2 < bestHit){
@@ -304,17 +348,19 @@ inline void alignmentMyersBitvector(TContex & ossContext,
                             if(usingReverseText){
                                 saPosOnFwd(sa_info_tmp, genomelength, occLength);
                             }
-//                             std::cout << "4  " << tmp1 << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, occLength) << "\n";
+//                             std::cout << "4  " << infix_tmp << "\t" << errors2 << "\t" << sa_info_tmp << "\t" << posAdd(sa_info_tmp, occLength) << "\n";
 //                             delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, occLength), needleId, errors2);
                             bestHit = errors2;
                             best_sa = sa_info_tmp;
                             best_length = occLength;
+//                             bestInfix = infix_tmp;
                         }
                     }
                 }
             }
         }
         if(bestHit <= max_e){
+//             trimHit(needle, bestInfix, best_sa, best_length, bestHit);
             delegateDirect(ossContext, best_sa, posAdd(best_sa, best_length), needleId, bestHit);
         }
     }
@@ -425,11 +471,11 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 TContigsLen seqOffset = getSeqOffset(sa_info);
 
                 //types for globalAlignmentScore
-                Dna5String const & ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
-                Dna5String const & n_infix = infix(genome[getSeqNo(sa_info)], seqOffset, seqOffset + needleL);
-                Dna5String const & needleRef = needle;
+                TContigSeqsInfix ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
+                TContigSeqsInfix n_infix = infix(genome[getSeqNo(sa_info)], seqOffset, seqOffset + needleL);
+//                 Dna5String const & needleRef = needle;
 
-                alignmentMyersBitvector(ossContext, delegateDirect, needleRef, needleId, n_infix, ex_infix, chromlength, sa_info, max_e, overlap_l, overlap_r, intDel, false);
+                alignmentMyersBitvector(ossContext, delegateDirect, needle, needleId, n_infix, ex_infix, chromlength, sa_info, max_e, overlap_l, overlap_r, intDel, false);
             }
         }
     }
