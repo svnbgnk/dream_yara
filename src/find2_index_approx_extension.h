@@ -1307,12 +1307,12 @@ find(TContex & ossContext,
      std::array<OptimalSearch<nbrBlocks>, N> const & ss,
      TDistanceTag const & )
 {
-//     auto scheme = ss;
-//     _optimalSearchSchemeComputeFixedBlocklength(scheme, length(needle));
-//     _optimalSearchSchemeComputeChronBlocklength(scheme);
+    auto scheme = ss;
+    _optimalSearchSchemeComputeFixedBlocklength(scheme, length(needle));
+    _optimalSearchSchemeComputeChronBlocklength(scheme);
 //     Iter<Index<TText, BidirectionalIndex<TIndexSpec> >, VSTree<TopDown<> > > it(index);
     Iter<TIndex, VSTree<TopDown<> > > it(index);
-    _optimalSearchScheme(ossContext, delegate, delegateDirect, it, bitvectors, needle, needleId, ss/*scheme*/, TDistanceTag());
+    _optimalSearchScheme(ossContext, delegate, delegateDirect, it, bitvectors, needle, needleId, scheme, TDistanceTag());
 }
 
 
@@ -1341,17 +1341,12 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     //TODO use readLength to only calculate scheme for bitvectors use real read length to search for it
     auto scheme = OptimalSearchSchemes<minErrors, maxErrors>::VALUE;
     calcConstParameters(scheme);
-    uint32_t readLength = ossContext.readLength;
-    //copy scheme here
 
-    _optimalSearchSchemeComputeFixedBlocklength(scheme, readLength);
-    _optimalSearchSchemeComputeChronBlocklength(scheme);
-
-    //load Bitvectors needed for scheme (Blocklength and chronblockLengths have to be calculated therefore I need to assume needle length)
     std::cout << "Scheme: " << minErrors << "\t" << maxErrors << ">\n";
     std::vector<TBitvectorPair * > lbitvectors;
+    //load Bitvectors needed for scheme (Blocklength and chronblockLengths have to be calculated therefore I need to assume needle length)
+    //use either specified maxumum readLength given as input or length of first needle
     linkBitvectors(ossContext, scheme, bitvectors, lbitvectors);
-
 
     // Iterate over all reads.
 //     uint32_t k = 0;

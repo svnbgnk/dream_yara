@@ -288,12 +288,17 @@ template<typename TContext,
          size_t nbrBlocks, size_t N,
          typename TBitvectorPair>
 inline void linkBitvectors(TContext & ossContext,
-                    std::array<OptimalSearch<nbrBlocks>, N> const ss,
+                    std::array<OptimalSearch<nbrBlocks>, N> ss,
                     std::vector<TBitvectorPair > & bitvectors,
                     std::vector<TBitvectorPair * > & bit_filtered)
 {
     if(bitvectors.empty())
         return;
+
+    _optimalSearchSchemeComputeFixedBlocklength(ss, ossContext.readLength);
+    _optimalSearchSchemeComputeChronBlocklength(ss);
+
+
     auto blocklengths = loadBlockLimits(ss);
     std::vector<uint32_t> shift_r = blocklengths.first;
     std::vector<uint32_t> shift_l = blocklengths.second;
