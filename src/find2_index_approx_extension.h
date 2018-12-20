@@ -1287,7 +1287,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 }
 
 
-
 template <typename TContex,
           typename TDelegate, typename TDelegateD,
           typename TIndex,
@@ -1357,6 +1356,13 @@ find(OSSContext<TSpec, TConfig> & ossContext,
         if(ossContext.bestXMapper){
             TReadId readId = getReadId(ossContext.readSeqs, position(readIt));
 //             std::cout << "ReadId: " << readId << "\n";
+
+            //advance condition for multiple SearchSchemes
+            /*
+            bool m = isMapped(ossContext.ctx, readId);
+            uint8_t minE = getMinErrors(ossContext.ctx, readId);
+            bool search = (maxErrors == ossContext.maxError ||  maxErrors - minErrors == ossContext.strata) && !m ||
+                             m && std::min(minE + ossContext.strata, ossContext.maxError) == maxErrors;*/
             if(isMapped(ossContext.ctx, readId)){
 //                 std::cout << "MinErrors: " << (int)getMinErrors(ossContext.ctx, readId) << "\n";
                 if(static_cast<uint8_t>(getMinErrors(ossContext.ctx, readId)) + ossContext.strata < minErrors){
