@@ -265,6 +265,298 @@ inline void find(const int minErrors,
     }
 }
 
+
+template <typename TContex,
+          typename TDelegate, typename TDelegateD,
+          typename TText, typename TIndexSpec,
+          typename TVector, typename TVSupport,
+          typename TNeedle, typename TStringSetSpec,
+          typename TDistanceTag>
+inline void findChris(const int minErrors,
+                 const int maxErrors,
+                 int strata,
+                 TContex & ossContext,
+                 TDelegate & delegate,
+                 TDelegateD & delegateDirect,
+                 Index<TText, BidirectionalIndex<TIndexSpec> > & index,
+                 std::vector<std::pair<TVector, TVSupport>> & bitvectors, // cant be const since TVSupport.set_vector(&TVector
+                 StringSet<TNeedle, TStringSetSpec> const & needles,
+                 TDistanceTag const & )
+{
+    if(strata == 99 || ossContext.oneSSBestXMapper)
+        strata = maxErrors;
+
+    switch (maxErrors)
+    {
+        case 0:
+        {
+            switch (strata)
+            {
+                case 0 :
+                {
+                    find<0, 0>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                default: std::cerr << "strata = " << strata << " not possible with current maxError.\n";
+                exit(1);
+            }
+            break;
+
+        }
+        case 1:
+        {
+            switch (strata)
+            {
+                case 0 :
+                {
+                    find<0, 0>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<1, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 1 :
+                {
+                    find<0, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                default: std::cerr << "strata = " << strata << " not possible with current maxError.\n";
+                exit(1);
+            }
+            break;
+
+        }
+        case 2:
+        {
+            switch (strata)
+            {
+                case 0 :
+                {
+                    find<0, 0>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<1, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 1 :
+                {
+                    find<0, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 2 :
+                {
+                    find<0, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                default: std::cerr << "strata = " << strata << " not possible with current maxError.\n";
+                exit(1);
+            }
+            break;
+
+        }
+        case 3:
+        {
+            switch (strata)
+            {
+                case 0 :
+                {
+                    find<0, 0>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<1, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 1 :
+                {
+                    find<0, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag()); // MinError = 1
+                    break;
+                }
+                case 2 :
+                {
+                    find<0, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 3 :
+                {
+                    find<0, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                default: std::cerr << "strata = " << strata << " not possible with current maxError.\n";
+                exit(1);
+            }
+            break;
+
+        }
+        case 4:
+        {
+            switch (strata)
+            {
+                case 0 :
+                {
+                    find<0, 0>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<1, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 1 :
+                {
+                    find<0, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 2 :
+                {
+                    find<0, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 3 :
+                {
+                    find<0, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 4 :
+                {
+                    find<0, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                default: std::cerr << "strata = " << strata << " not possible with current maxError.\n";
+                exit(1);
+            }
+            break;
+        }
+        case 5:
+        {
+            switch (strata)
+            {
+                case 0 :
+                {
+                    find<0, 0>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<1, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<5, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 1 :
+                {
+                    find<0, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 2 :
+                {
+                    find<0, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 3 :
+                {
+                    find<0, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 4 :
+                {
+                    find<0, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<5, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 5 :
+                {
+                    find<0, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                default: std::cerr << "strata = " << strata << " not possible with current maxError.\n";
+                exit(1);
+            }
+            break;
+        }
+        case 6:
+        {
+            switch (strata)
+            {
+                case 0 :
+                {
+                    find<0, 0>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<1, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<5, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<6, 6>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 1 :
+                {
+                    find<0, 1>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<6, 6>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<2, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 2 :
+                {
+                    find<0, 2>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<6, 6>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<3, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 3 :
+                {
+                    find<0, 3>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 6>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<4, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 4 :
+                {
+                    find<0, 4>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<5, 6>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<5, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 5 :
+                {
+                    find<0, 5>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    find<6, 6>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                case 6 :
+                {
+                    find<0, 6>(ossContext, delegate, delegateDirect, index, bitvectors, needles, TDistanceTag());
+                    break;
+                }
+                default: std::cerr << "strata = " << strata << " not possible with current maxError.\n";
+                exit(1);
+            }
+            break;
+        }
+
+        default: std::cerr << "E = " << maxErrors << " not yet supported.\n";
+                 exit(1);
+    }
+}
+
 //no bitvectors so substitute them
 template <typename TContex,
           typename TDelegate, typename TDelegateD,
