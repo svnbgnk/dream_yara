@@ -134,6 +134,11 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     setValidValues(parser, 1, SeqFileIn::getFileExtensions());
     setHelpText(parser, 1, "Either one single-end or two paired-end / mate-pair read files.");
 
+    addSection(parser, "Optimum Search Scheme - Mappability Options.");
+
+    addOption(parser, ArgParseOption("v", "verbose", "Displays global statistics."));
+    addOption(parser, ArgParseOption("vv", "very-verbose", "Displays extensive statistics for each batch of reads."));
+
     addOption(parser, ArgParseOption("m", "mappability", "Path to mappability directory", ArgParseArgument::INPUT_FILE, "IN"));
 
     addOption(parser, ArgParseOption("of", "ossOff", "Turn Optimal Search Schemes off."));
@@ -146,11 +151,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     addOption(parser, ArgParseOption("th", "threshold", "Occurrence was filtered when below this threshold", ArgParseOption::INTEGER));
     hideOption(getOption(parser, "threshold"));
 
-    addOption(parser, ArgParseOption("l", "length", "Read length (max)", ArgParseOption::INTEGER));
+    addOption(parser, ArgParseOption("rl", "length", "Read length (max)", ArgParseOption::INTEGER));
     addOption(parser, ArgParseOption("sb", "startBin", "skip Bins", ArgParseOption::INTEGER));
-
-    addOption(parser, ArgParseOption("v", "verbose", "Displays global statistics."));
-    addOption(parser, ArgParseOption("vv", "very-verbose", "Displays extensive statistics for each batch of reads."));
 
     // Setup output disOptions.
     addSection(parser, "Output Options");
@@ -251,8 +253,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     addSection(parser, "Performance Options");
 
     addOption(parser, ArgParseOption("mm", "mmap",
-        "Turns memory-mapping on, i.e. the index is not loaded into RAM but accessed directly in secondary-memory. "
-        "This makes the algorithm only slightly slower but the index does not have to be loaded into main memory "
+        "Turns on memory-mapping on, i.e. the index is not loaded into RAM."
+        "This makes the search only slightly slower, but the index does not have to be loaded into main memory "
         "(which takes some time)."));
 
     addOption(parser, ArgParseOption("t", "threads", "Specify the number of threads to use.", ArgParseOption::INTEGER));

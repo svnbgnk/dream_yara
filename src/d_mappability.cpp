@@ -349,7 +349,7 @@ inline void runDisMappability(OptionsM & options)
 {
     for(uint32_t i = 0; i < options.numberOfBins; ++i){
         std::cerr << "In bin Number: " << i << "\n";
-        Timer<double>       timer;
+        Timer<int64_t>       timer;
         start (timer);
 
         //create_dir
@@ -425,7 +425,7 @@ int main(int argc, char const ** argv)
     try
     {
 //         Timer<double>       timer;
-        Timer<double>       globalTimer;
+        Timer<int64_t>       globalTimer;
         start (globalTimer);
 
         runDisMappability(options);

@@ -593,6 +593,46 @@ inline bool isSimilar(Match<TSpec> const & a, Match<TSpec> const & b, uint8_t er
 
 }
 
+/*
+template <typename TSpec, typename TConfig, typename TReadSeqs>
+inline void trimHit(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeqs)
+{
+    // trimming does not work everytime ex: GTCCCCCCCCGCTA
+    //                                      ACCCCCCCCGCTA -> only after comparing C to G it is clear we need and insertion
+    //                                                      in the beginning
+    std::cout << "Trimming: \n";
+    std::cout << "Needle" << sa_info << "\t" << occlength << "\n" << needle << "\n";
+    std::cout << infix << "\n";
+    uint32_t k = 0;
+    while(needle[k] != infix[k] && k < errors + 2)
+    {
+        ++k;
+    }
+
+    //check if edit operation was required
+    if(k == errors + 1)
+        k = 0;
+
+    uint32_t len = length(needle);
+    uint32_t l = 1;
+
+    uint32_t left_errors = errors + 2 - k;
+    while(needle[len - l] != infix[occlength - l] && l < errors + 2 - k)
+    {
+        ++l;
+    }
+    // check if edit operation was required
+    if(l == left_errors - 1)
+        l = 1;
+
+
+    auto seqOffset = getSeqOffset(sa_info);
+    setSeqOffset(sa_info, seqOffset + k);
+    occlength = occlength - k - l + 1;
+
+    std::cout << "trimmed:" << sa_info << "\t" << occlength << "\n" << infix << "\n" << k << "\t" << l - 1 << "\n";
+}*/
+
 // ----------------------------------------------------------------------------
 // Function _mapReadsImpl()
 // ----------------------------------------------------------------------------
@@ -695,8 +735,16 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         clear(me.matchesSetByCoord);
         clear(me.matchesByCoord);
         aggregateMatchesOSS(me2, readSeqs);
+
+        if(disOptions.verbose > 0)
+            std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me2.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
+//         trimHits(me2, readSeqs);
     }else{
         aggregateMatchesOSS(me, readSeqs);
+//         trimHits(me, readSeqs);
+
+        if(disOptions.verbose > 0)
+            std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
     }
 
 /*
@@ -709,12 +757,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
             ++matchIt;
         }
     }*/
-
-
-    if(disOptions.verbose > 0)
-    {
-        std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
-    }
 
     }
 
