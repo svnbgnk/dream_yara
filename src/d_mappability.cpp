@@ -188,6 +188,9 @@ parseCommandLine(OptionsM & options, ArgumentParser & parser, int argc, char con
     options.high = isSet(parser, "high");
     options.verbose = isSet(parser, "verbose");
 
+    if(options.indels)
+        options.k_length += options.errors;
+
     if(!isSet(parser, "trivial")){
         if(!isSet(parser, "overlap")){
             std::cerr << "Overlap needs to be Set when using the non-trivial algorithm.\n";

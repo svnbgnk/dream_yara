@@ -59,7 +59,7 @@ public:
     bool                    ossOff = false;
     bool                    noMappability = false;
     bool                    compare = false;
-    uint32_t                threshold = 10;
+    uint32_t                threshold = 11;
     uint32_t                startBin = 0;
     uint32_t                readLength = 0;
 
@@ -444,30 +444,37 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
     int64_t seqOffset = getMember(match, ContigBegin());
     int64_t seqOffsetEnd = seqOffset + len;//getMember(match, ContigEnd());
     bool rC = onReverseStrand(match);
-    if(edit)
+    if(edit){
+        /*
+        if(rC)
+            seqOffset -= maxErrors;
+        else*/
         seqOffsetEnd += maxErrors;
+    }
     if(!edit){ //edit
         Dna5String part = infix(text[seqNo], seqOffset, seqOffsetEnd);
+        /*
         if(rC){
             Dna5StringReverseComplement revc(part);
             appendValue(readOcc, revc);
         }
-        else{
-            appendValue(readOcc, part);
-        }
+        else{*/
+        appendValue(readOcc, part);
+//         }
     }
     else
     {
-        if(seqOffset < mErrors || length(text[seqNo]) < seqOffsetEnd + mErrors)
+        if(seqOffset < mErrors || length(text[seqNo]) < seqOffsetEnd)
             return(666);
         for(int64_t off = -mErrors; off <= mErrors; ++off){
             Dna5String part = infix(text[seqNo], seqOffset + off, seqOffsetEnd + off);
+            /*
             if(rC){
                 Dna5StringReverseComplement revc(part);
                 appendValue(readOcc, revc);
-            }else{
-                appendValue(readOcc, part);
-            }
+            }else{*/
+            appendValue(readOcc, part);
+//             }
         }
     }
 /*
@@ -476,6 +483,8 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
     if(!edit){
         std::cout << readOcc[0] << "\n";
     }else{
+//         for(int i = 0; i < length(readOcc); ++i)
+//             std::cout << readOcc[i] << "\n";
         std::cout << readOcc[mErrors] << "\n";
     }
 
@@ -505,7 +514,7 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
                 find<minErrors, maxErrors>(delegate, index, readOcc[k], EditDistance());
             ++k;
             //use sort and erase
-
+            std::cout << "Hits before del: " << hits.size() << "\n";
             std::sort(hits.begin(), hits.end(), sHit_smaller);
             hits.erase(std::unique(hits.begin(), hits.end(), sHit_similar<2 * maxErrors>), hits.end());
             std::cout << hits.size() << " hits!!!!!!!!!!e" << "\n";
@@ -635,7 +644,7 @@ void compareHits(Mapper<TSpec, TConfig> & me,
 
 
             std::cout << "\n\n";
-            bool wrong = false;
+//             bool wrong = false;
 
             std::cout << "compare lengths: " << length(me.matchesSetByCoord) << "\t" << length(me2.matchesSetByCoord) << "\n";
 
@@ -699,8 +708,13 @@ void compareHits(Mapper<TSpec, TConfig> & me,
                             write(std::cout, *matchIt);
                             std::cout << "Compared to this one: " << "\n";
                             write(std::cout, *matchItOSS);
-                            std::cout << "needle: \n  " << me.reads.seqs[readId] << "\n";
-                            int nhits = testReadOcc(me.biIndex, me.contigs.seqs, *matchIt, maxError, disOptions.readLength, disOptions.threshold, true, false); //TODO add Threshold as input option for me
+//
+                            Dna5String tneedle = me.reads.seqs[readId];
+                            Dna5StringReverseComplement revN(tneedle);
+                            std::cout << "needle: \n  " << tneedle << "\n   " << revN << "\n";
+
+                            int nhits = testReadOcc(me.biIndex, me.contigs.seqs, *matchIt, maxError, disOptions.readLength, disOptions.threshold, true, true); //TODO add Threshold as input option for me
+                            bool wrong = false; //revert this
                             if(nhits < disOptions.threshold)
                                 wrong = true;
 
@@ -853,6 +867,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.readLength = len;
     ossContext.numberOfSequences = length(me.contigs.seqs);
     ossContext.normal.suspectunidirectional = false; //TODO reverse
+    ossContext.itv = false;
 
 
     start(me.timer);

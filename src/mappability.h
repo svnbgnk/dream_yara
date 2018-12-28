@@ -62,7 +62,10 @@ struct OptionsM
 string get_output_path(OptionsM const & opt)
 {
     string output_path = toCString(opt.output);
-    output_path += "/mappability_" + to_string(opt.errors) + "_" + to_string(opt.k_length)/* + "_" + to_string(opt.overlap)*/;
+    if(opt.indels)
+        output_path += "/mappability_" + to_string(opt.errors) + "_" + to_string(opt.k_length - opt.errors)/* + "_" + to_string(opt.overlap)*/;
+    else
+        output_path += "/mappability_" + to_string(opt.errors) + "_" + to_string(opt.k_length)/* + "_" + to_string(opt.overlap)*/;
     output_path += ".gmapp" + string(opt.high ? "16" : "8");
     return output_path;
 }
