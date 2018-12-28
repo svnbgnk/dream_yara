@@ -394,7 +394,7 @@ inline void transferCigars(Mapper<TSpec, TMainConfig> & mainMapper, DisOptions &
 }
 
 
-
+/*
 struct SHit{
     Pair <uint64_t, uint64_t> occ;
     template <typename TOcc>
@@ -416,7 +416,7 @@ template<int disT>
 bool sHit_similar(const SHit & x, const SHit & y)
 {
     return(getSeqNo(x.occ) == getSeqNo(y.occ) && getSeqOffset(x.occ) + disT >= getSeqOffset(y.occ) && getSeqOffset(x.occ) <= getSeqOffset(y.occ) + disT);
-}
+}*/
 
 
 
@@ -425,15 +425,21 @@ template<size_t minErrors, size_t maxErrors,
 int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len, int threshold, bool const edit, bool const editMappa)
 {
     int mErrors = maxErrors;
+    uint64_t dist = 3 * mErrors;
 
-    std::vector<SHit> hits;
+//     std::vector<SHit> hits;
+    std::set<uint64_t> hits;
+    uint64_t occSize = 0;
 
-    auto delegate = [&hits](auto & iter, DnaString const & needle, uint8_t errors)
+    auto delegate = [&hits](auto & it, DnaString const & needle, uint8_t errors)
     {
-        for (auto occ : getOccurrences(iter)){
-            SHit me(occ);
-            hits.push_back(me);
+        for(uint64_t i = it.fwdIter.vDesc.range.i1; i < it.fwdIter.vDesc.range.i2; ++i){
+            hits.insert(i);
         }
+//         for (auto occ : getOccurrences(iter)){
+//             SHit me(occ);
+//             hits.push_back(me);
+//         }
     };
 
     StringSet<Dna5String> readOcc;
@@ -445,22 +451,11 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
     int64_t seqOffsetEnd = seqOffset + len;//getMember(match, ContigEnd());
     bool rC = onReverseStrand(match);
     if(edit){
-        /*
-        if(rC)
-            seqOffset -= maxErrors;
-        else*/
         seqOffsetEnd += maxErrors;
     }
     if(!edit){ //edit
         Dna5String part = infix(text[seqNo], seqOffset, seqOffsetEnd);
-        /*
-        if(rC){
-            Dna5StringReverseComplement revc(part);
-            appendValue(readOcc, revc);
-        }
-        else{*/
         appendValue(readOcc, part);
-//         }
     }
     else
     {
@@ -468,13 +463,7 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
             return(666);
         for(int64_t off = -mErrors; off <= mErrors; ++off){
             Dna5String part = infix(text[seqNo], seqOffset + off, seqOffsetEnd + off);
-            /*
-            if(rC){
-                Dna5StringReverseComplement revc(part);
-                appendValue(readOcc, revc);
-            }else{*/
             appendValue(readOcc, part);
-//             }
         }
     }
 /*
@@ -488,6 +477,8 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
         std::cout << readOcc[mErrors] << "\n";
     }
 
+    typedef Pair <uint64_t, uint64_t>       TOcc;
+    std::vector<TOcc > occs;
 
     if(!edit){//edit
         find<minErrors, maxErrors>(delegate, index, readOcc[0], HammingDistance());
@@ -500,29 +491,90 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
         else
             find<minErrors, maxErrors>(delegate, index, readOcc[mErrors], EditDistance());
 
-        std::sort(hits.begin(), hits.end(), sHit_smaller);
-        hits.erase(std::unique(hits.begin(), hits.end(), sHit_similar<2 * maxErrors>), hits.end());
+        std::cout << "Hits before del: " << hits.size() << "\n";
+        occSize = 1;
+//         typedef Pair <uint64_t, uint64_t>       TOcc;
+//         std::vector<TOcc > occs;
+        occs.reserve(hits.size());
+        for(std::set<uint64_t>::iterator hitsIt = hits.begin(); hitsIt != hits.end(); ++hitsIt)
+                        occs.push_back(index.fwd.sa[*hitsIt]);
+        std::sort(occs.begin(), occs.end(),
+                  [](TOcc & x, TOcc & y){
+                        if(getSeqNo(x) == getSeqNo(y))
+                            return getSeqOffset(x) < getSeqOffset(y);
+                        else
+                        return getSeqNo(x) < getSeqNo(y);
+                    });
 
-        std::cout << hits.size() << " hits!!!!!!!!!!" << "\n";
+        uint64_t prev = 0;
+        for(uint64_t i = 1; i < occs.size(); ++i){
+            if(!(getSeqNo(occs[i]) == getSeqNo(occs[prev]) &&
+                getSeqOffset(occs[i]) + dist >= getSeqOffset(occs[prev]) &&
+                getSeqOffset(occs[i]) <= getSeqOffset(occs[prev]) + dist))
+            {
+                prev = i;
+                ++occSize;
+            }
+        }
+        std::cout << occSize << " hits!!!!!!!!!!" << "\n";
+
+
+//         std::sort(hits.begin(), hits.end(), sHit_smaller);
+//         hits.erase(std::unique(hits.begin(), hits.end(), sHit_similar<2 * maxErrors>), hits.end());
+//         std::cout << hits.size() << " hits!!!!!!!!!!" << "\n";
 
         int k = 0;
-        while(hits.size() < threshold && k < length(readOcc)){
+        while(/*hits.size()*/occSize < threshold && k < length(readOcc)){
             hits.clear();
             if(!editMappa)
                 find<minErrors, maxErrors>(delegate, index, readOcc[k], HammingDistance());
             else
                 find<minErrors, maxErrors>(delegate, index, readOcc[k], EditDistance());
             ++k;
+
             //use sort and erase
+
             std::cout << "Hits before del: " << hits.size() << "\n";
-            std::sort(hits.begin(), hits.end(), sHit_smaller);
-            hits.erase(std::unique(hits.begin(), hits.end(), sHit_similar<2 * maxErrors>), hits.end());
-            std::cout << hits.size() << " hits!!!!!!!!!!e" << "\n";
+            occSize = 1;
+            occs.clear();
+            occs.reserve(hits.size());
+            for(std::set<uint64_t>::iterator hitsIt = hits.begin(); hitsIt != hits.end(); ++hitsIt)
+                            occs.push_back(index.fwd.sa[*hitsIt]);
+            std::sort(occs.begin(), occs.end(),
+                    [](TOcc & x, TOcc & y){
+                            if(getSeqNo(x) == getSeqNo(y))
+                                return getSeqOffset(x) < getSeqOffset(y);
+                            else
+                            return getSeqNo(x) < getSeqNo(y);
+                        });
+
+            prev = 0;
+            for(uint64_t i = 1; i < occs.size(); ++i){
+                if(!(getSeqNo(occs[i]) == getSeqNo(occs[prev]) &&
+                    getSeqOffset(occs[i]) + dist >= getSeqOffset(occs[prev]) &&
+                    getSeqOffset(occs[i]) <= getSeqOffset(occs[prev]) + dist))
+                {
+                    prev = i;
+                    ++occSize;
+                }
+            }
+            std::cout << occSize << " hits!!!!!!!!!!e" << "\n";
+
+//             std::cout << "Hits before del: " << hits.size() << "\n";
+//             std::sort(hits.begin(), hits.end(), sHit_smaller);
+//             hits.erase(std::unique(hits.begin(), hits.end(), sHit_similar<2 * maxErrors>), hits.end());
+//             std::cout << hits.size() << " hits!!!!!!!!!!e" << "\n";
         }
     }
 
-    int nhits = hits.size();
-    return nhits;
+//     int nhits = (int)occSize;//hits.size();
+//     if(occSize < 10){
+//         std::cout << "Something went wrong2" << "\n";
+//         std::cout << "Print occs\n";
+//         for(int i = 0; i < occs.size(); ++i)
+//             std::cout << occs[i] << "\n";
+//     }
+    return occSize;
 }
 
 
