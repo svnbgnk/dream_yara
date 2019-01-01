@@ -1,6 +1,6 @@
 using namespace seqan;
 
-struct SHit;
+struct smallHit;
 
 template <unsigned max_errors, typename TIter, typename TOcc, typename TText>
 inline void extendExact3(TIter it, TOcc * hits, TIter * it_zero_errors, TText const & text, unsigned const length,
@@ -17,9 +17,9 @@ inline void extendExact3(TIter it, TOcc * hits, TIter * it_zero_errors, TText co
             // std::cout << "set zero it for [" << a-ab << "]\n";
         } // TODO: könnte man für max_errors > 0 rausoptimieren
         //Sven occ
-        /*
+/*
         for (auto occ : getOccurrences(it)){
-            SHit hit(occ);
+            smallHit hit(occ);
             hits[a-ab].push_back(hit);
         }*/
         for(uint64_t i = it.fwdIter.vDesc.range.i1; i < it.fwdIter.vDesc.range.i2; ++i){
@@ -173,9 +173,9 @@ inline void extend3(TIter it, TOcc * hits, TIter * it_zero_errors, unsigned erro
         if (max_errors == errors_left)
             it_zero_errors[a-ab] = it;
         //Sven occ
-        /*
+/*
         for (auto occ : getOccurrences(it)){
-            SHit hit(occ);
+            smallHit hit(occ);
             hits[a-ab].push_back(hit);
         }*/
         for(uint64_t i = it.fwdIter.vDesc.range.i1; i < it.fwdIter.vDesc.range.i2; ++i){

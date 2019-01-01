@@ -73,6 +73,7 @@ string get_output_path(OptionsM const & opt)
 template <typename T>
 inline void save(vector<T> const & c, string const & output_path, OptionsM const & opt)
 {
+    //edit many 0 to end
     if(opt.verbose && c.size() < 50000)
     {
         for(int i = 0; i < c.size(); ++i)
@@ -85,22 +86,22 @@ inline void save(vector<T> const & c, string const & output_path, OptionsM const
     outfile.close();
 }
 
-template <typename value_type, typename TIndex, typename TText, typename TDistanceTag>
-inline void run(TIndex & index, TText const & text, OptionsM const & opt, TDistanceTag const &)
+template <typename value_type, typename TIndex, typename TText, typename TSeqLengths, typename TDistanceTag>
+inline void run(TIndex & index, TText const & text, TSeqLengths const & sL, OptionsM const & opt, TDistanceTag const &)
 {
     vector<value_type> c(length(text) - opt.k_length + 1, 0);
     if(opt.trivial){
         switch (opt.errors)
         {
-            case 0:  runAlgoTrivial<0>(index, text, c, opt);
+            case 0:  runAlgoTrivial<0>(index, text, sL, c, opt);
                     break;
-            case 1:  runAlgoTrivial<1>(index, text, c, opt);
+            case 1:  runAlgoTrivial<1>(index, text, sL, c, opt);
                     break;
-            case 2:  runAlgoTrivial<2>(index, text, c, opt);
+            case 2:  runAlgoTrivial<2>(index, text, sL, c, opt);
                     break;
-            case 3:  runAlgoTrivial<3>(index, text, c, opt);
+            case 3:  runAlgoTrivial<3>(index, text, sL, c, opt);
                     break;
-            case 4:  runAlgoTrivial<4>(index, text, c, opt);
+            case 4:  runAlgoTrivial<4>(index, text, sL, c, opt);
                     break;
             default: cerr << "E = " << opt.errors << " not yet supported.\n";
                     exit(1);
@@ -110,15 +111,15 @@ inline void run(TIndex & index, TText const & text, OptionsM const & opt, TDista
     {
         switch (opt.errors)
         {
-            case 0:  runAlgo4<0>(index, text, c, opt, TDistanceTag());
+            case 0:  runAlgo4<0>(index, text, sL, c, opt, TDistanceTag());
                     break;
-            case 1:  runAlgo4<1>(index, text, c, opt, TDistanceTag());
+            case 1:  runAlgo4<1>(index, text, sL, c, opt, TDistanceTag());
                     break;
-            case 2:  runAlgo4<2>(index, text, c, opt, TDistanceTag());
+            case 2:  runAlgo4<2>(index, text, sL, c, opt, TDistanceTag());
                     break;
-            case 3:  runAlgo4<3>(index, text, c, opt, TDistanceTag());
+            case 3:  runAlgo4<3>(index, text, sL, c, opt, TDistanceTag());
                     break;
-            case 4:  runAlgo4<4>(index, text, c, opt, TDistanceTag());
+            case 4:  runAlgo4<4>(index, text, sL, c, opt, TDistanceTag());
                     break;
             default: cerr << "E = " << opt.errors << " not yet supported.\n";
                     exit(1);
@@ -137,11 +138,15 @@ inline void run(TIndex & index, TText const & text, OptionsM const & opt, TDista
 template <typename value_type, typename TIndex, typename TText>
 inline void run(TIndex & index, TText const & text, OptionsM const & opt)
 {
+    std::vector<uint64_t> sequenceLengths = getSeqLengths<uint64_t, uint64_t>(text);
+//     std::cout << "Number of Sequences: " << seqan::length(text) << "\n";
+
+
     if (opt.indels) {
-        run<value_type>(index, concat(text), opt, EditDistance());
+        run<value_type>(index, concat(text), sequenceLengths, opt, EditDistance());
     }
     else
-        run<value_type>(index, concat(text), opt, HammingDistance());
+        run<value_type>(index, concat(text), sequenceLengths, opt, HammingDistance());
 }
 
 
@@ -149,10 +154,10 @@ template <typename TIndex, typename TText>
 inline void calcMappa(TIndex & index, TText const & text, OptionsM const & opt)
 {
     if (opt.high) {
-        run<uint16_t>(index, concat(text), opt);
+        run<uint16_t>(index, text, opt);
     }
     else
-        run<uint8_t>(index, concat(text), opt);
+        run<uint8_t>(index, text, opt);
 }
 
 #endif

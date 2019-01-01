@@ -245,7 +245,13 @@ inline void runMappability(OptionsM const & options,
     }
 
     std::string mappability_path = toCString(options.output);
-    mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length);
+//     mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length);
+
+    if(options.indels)
+        mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length - options.errors)/* + "_" + to_string(opt.overlap)*/;
+    else
+        mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length)/* + "_" + to_string(options.overlap)*/;
+
     mappability_path += ".gmapp" + string(options.high ? "16" : "8");
 
     //calculate mappability

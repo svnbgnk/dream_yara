@@ -456,19 +456,19 @@ std::string mytime()
 
 */
 
-template <typename TChar, typename TConfig, typename TMappVector>
-void resetLimits(seqan::String<TChar, TConfig> const &, TMappVector const &, unsigned const)
+template <typename TChar, typename TSeqLengths, typename TConfig, typename TMappVector>
+void resetLimits(seqan::String<TChar, TConfig> const &, TSeqLengths const & , TMappVector const &, unsigned const)
 { }
 
-template <typename TString, typename TConfig, typename TMappVector>
-void resetLimits(seqan::StringSet<TString, TConfig> const & text, TMappVector & c, unsigned const length)
+template <typename TString, typename TSeqLengths, typename TConfig, typename TMappVector>
+void resetLimits(seqan::StringSet<TString, TConfig> const & text, TSeqLengths const & sequenceLengths, TMappVector & c, unsigned const length)
 {
-    auto const & limits = seqan::stringSetLimits(text);
-    for (unsigned i = 1; i < seqan::length(limits) - 1; ++i)
+//     auto const & limits = seqan::stringSetLimits(text);
+    for (unsigned i = 1; i < sequenceLengths.size() - 1; ++i) //seqan::length(limits)
     {
         for (unsigned j = 1; j < length; ++j)
         {
-            c[limits[i] - j] = 0;
+            c[sequenceLengths[i] - j] = 0;
         }
     }
 }

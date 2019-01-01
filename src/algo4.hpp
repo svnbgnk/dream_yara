@@ -1,5 +1,5 @@
 using namespace seqan;
-
+/*
 struct smallHit{
     Pair <uint64_t, uint64_t> occ;
     uint8_t errors;
@@ -32,19 +32,25 @@ bool occs_smaller(TOcc & x, TOcc & y)
         return getSeqOffset(x) < getSeqOffset(y);
     else
         return getSeqNo(x) < getSeqNo(y);
-}
+}*/
 
-template <unsigned errors, typename TIndex, typename TText, typename TContainer, typename TOptions, typename TDistanceTag>
-inline void runAlgo4(TIndex & index, TText const & text, TContainer & c, TOptions const & opt, TDistanceTag const &)
+template <unsigned errors, typename TIndex, typename TText, typename TSeqLengths, typename TContainer, typename TOptions, typename TDistanceTag>
+inline void runAlgo4(TIndex & index, TText const & text, TSeqLengths const & sequenceLengths, TContainer & c, TOptions const & opt, TDistanceTag const &)
 {
     typedef typename TContainer::value_type value_type;
 
     constexpr uint64_t max_val = std::numeric_limits<value_type>::max();
     typedef Iter<TIndex, VSTree<TopDown<> > > TIter;
 
-    auto const & limits = stringSetLimits(text);
-
     uint64_t const textLength = length(text); // lengthSum() forwards to length() for a single string
+
+    //     auto const & limits = stringSetLimits(text);
+//     std::vector<uint64_t> sequenceLengths = getSeqLengths<uint64_t, uint64_t>(text); //has to be calc before since concat(text)
+    /*
+    std::cout << "Seqlengths\n";
+    for(int i = 0; i < sequenceLengths.size(); ++i)
+        std::cout << (int)sequenceLengths[i] << "\n";
+    std::cout << "Finished Seq len\n";*/
 
     const uint64_t max_i = textLength - opt.k_length + 1;
     const uint64_t step_size = opt.k_length - opt.overlap + 1;
@@ -72,7 +78,7 @@ inline void runAlgo4(TIndex & index, TText const & text, TContainer & c, TOption
             _optimalSearchSchemeComputeFixedBlocklength(scheme, new_overlap); // only do when new_overlap != overlap
 
             TIter it_zero_errors[end_pos - begin_pos];
-//             value_type hits[end_pos - begin_pos] = {};
+//             std::vector<smallHit> hits[end_pos - begin_pos] = {};
             std::set<uint64_t> hits[end_pos - begin_pos] = {};
 
             auto delegate = [&hits, &it_zero_errors, begin_pos, &opt, textLength, new_overlap, &text](
@@ -103,10 +109,17 @@ inline void runAlgo4(TIndex & index, TText const & text, TContainer & c, TOption
                 value_type cValue = 0;
                 uint64_t dist = 3 * errors;
 
+                std::set<uint64_t> & chits = hits[j - begin_pos];
+                if(chits.empty()){
+                    c[j] = 0;
+                    continue;
+                }
+
+//                     std::sort(occs.begin(), occs.end(), occ_s);
+//                     occs.erase(std::unique(occs.begin(), occs.end(), occ_sim<3 * errors>), occs.end());
+//                     cValue = std::min((uint64_t) occs.size(), max_val);
+
                 if(std::is_same<TDistanceTag, EditDistance>::value){
-                    std::set<uint64_t> & chits = hits[j - begin_pos];
-                    if(chits.empty())
-                        continue;
                     //locate
                     typedef Pair <uint32_t, uint64_t>       TOcc;
                     std::vector<TOcc > occs;
@@ -116,6 +129,7 @@ inline void runAlgo4(TIndex & index, TText const & text, TContainer & c, TOption
                     }
 
 
+
                     std::sort(occs.begin(), occs.end(),
                               [](TOcc & x, TOcc & y){
                             if(getSeqNo(x) == getSeqNo(y))
@@ -123,25 +137,16 @@ inline void runAlgo4(TIndex & index, TText const & text, TContainer & c, TOption
                             else
                                 return getSeqNo(x) < getSeqNo(y);
                     });
-/*
-                    // check for similar occ
-                    occs.erase(std::unique(occs.begin(), occs.end(),
-                                           [&dist](TOcc & x, TOcc & y){
-                                               return (getSeqNo(x) == getSeqNo(y) &&
-                                               getSeqOffset(x) + dist >= getSeqOffset(y) &&
-                                               getSeqOffset(x) <= getSeqOffset(y) + dist);
-                                        }), occs.end()); //TODO use 3*errors instead*/
-
 
                     ++cValue;
-//                     uint64_t prev = 0;
+                    uint64_t prev = 0;
                     for(uint64_t i = 1; i < occs.size(); ++i){
 //                         std::cout << occs[i] << "\n";
-                        if(!(getSeqNo(occs[i]) == getSeqNo(occs[/*prev*/i - 1]) &&
-                           getSeqOffset(occs[i]) + dist >= getSeqOffset(occs[/*prev*/i - 1]) &&
-                           getSeqOffset(occs[i]) <= getSeqOffset(occs[/*prev*/i - 1]) + dist))
+                        if(!(getSeqNo(occs[i]) == getSeqNo(occs[prev]) &&
+                           getSeqOffset(occs[i]) + dist >= getSeqOffset(occs[prev]) &&
+                           getSeqOffset(occs[i]) <= getSeqOffset(occs[prev]) + dist))
                         {
-//                             prev = i;
+                            prev = i;
                             ++cValue;
                         }
                     }
@@ -150,31 +155,37 @@ inline void runAlgo4(TIndex & index, TText const & text, TContainer & c, TOption
                     cValue = std::min((uint64_t) cValue, max_val);
 
 
-//                     std::vector<SHit> & chits = hits[j - begin_pos];
-//                     std::sort(chits.begin(), chits.end(), sHit_smaller);
-//                     chits.erase(std::unique(chits.begin(), chits.end(), sHit_similar<3 * errors>), chits.end()); //TODO use 3*errors instead
-//                     cValue = std::min((uint64_t) chits.size(), max_val);
                 }
                 else
                 {
                     cValue = hits[j - begin_pos].size();
                 }
 
+//                 std::sort(chits.begin(), chits.end(), occ_s);
+//                 chits.erase(std::unique(chits.begin(), chits.end(), occ_sim<3 * errors>), chits.end());
+//                 cValue = std::min((uint64_t) chits.size(), max_val);
+
+
                 if (countOccurrences(it_zero_errors[j - begin_pos]) > 1) // guaranteed to exist, since there has to be at least one match!
                 {
                     for (auto const & occ : getOccurrences(it_zero_errors[j-begin_pos], Fwd()))
                     {
-                        auto const occ_pos = posGlobalize(occ, limits);
+//                         auto const occ_pos = posGlobalize(occ, limits);
+//                         std::cout << "Occ: "<< occ << "\t" << (int)getSeqOffset(occ) << "\t" << (int)sequenceLengths[getSeqNo(occ)] << "\n";
+                        uint64_t const occ_pos = getSeqOffset(occ) + sequenceLengths[getSeqNo(occ)];
+//                         std::cout << (int)occ_pos << "\n";
                         c[occ_pos] = cValue;//hits[j - begin_pos];
                     }
+//                     std::cout << "filled all positions\n";
                 }
                 else
                 {
                     c[j] = cValue;//hits[j - begin_pos];
                 }
+
             }
         }
     }
 
-    resetLimits(indexText(index), c, opt.k_length);
+    resetLimits(text, sequenceLengths, c, opt.k_length);
 }

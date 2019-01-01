@@ -4,6 +4,12 @@ struct smallHit{
     Pair <uint64_t, uint64_t> occ;
     uint8_t errors;
 //     DnaString read;
+    template <typename TOcc>
+    smallHit(TOcc & inOcc):
+        occ(inOcc)
+    {}
+    smallHit()
+    {}
 };
 
 bool occ_s(const smallHit & x, const smallHit & y)
@@ -25,8 +31,8 @@ bool occ_sim(const smallHit & x, const smallHit & y)
     return(x.occ.i1 == y.occ.i1 && x.occ.i2 + disT >= y.occ.i2 && x.occ.i2 <= y.occ.i2 + disT);
 }
 
-template <unsigned errors, typename TIndex, typename TText, typename TContainer, typename TOptions>
-inline void runAlgoTrivial(TIndex & index, TText const & text, TContainer & c, TOptions const & opt)
+template <unsigned errors, typename TIndex, typename TText, typename TSeqLengths, typename TContainer, typename TOptions>
+inline void runAlgoTrivial(TIndex & index, TText const & text, TSeqLengths const & sequenceLengths, TContainer & c, TOptions const & opt)
 {
     typedef typename TContainer::value_type value_type;
 
@@ -36,6 +42,7 @@ inline void runAlgoTrivial(TIndex & index, TText const & text, TContainer & c, T
 //     _optimalSearchSchemeComputeChronBlocklength(scheme);
 
     uint64_t textLength = seqan::length(text);
+//     std::vector<uint64_t> sequenceLengths = getSeqLengths<uint64_t, uint64_t>(text);
 
 //1000000
     //textLength/(opt.threads*1000)
@@ -74,6 +81,7 @@ inline void runAlgoTrivial(TIndex & index, TText const & text, TContainer & c, T
         std::sort(myhits.begin(), myhits.end(), occ_s);
         myhits.erase(std::unique(myhits.begin(), myhits.end(), occ_sim<errors * 3>), myhits.end());
 
+
         if(myhits.size() < max_val)
             c[i] = myhits.size();
         else
@@ -81,5 +89,5 @@ inline void runAlgoTrivial(TIndex & index, TText const & text, TContainer & c, T
 //         c[i] = hits;
     }
 
-    resetLimits(indexText(index), c, opt.k_length);
+    resetLimits(text, sequenceLengths, c, opt.k_length);
 }

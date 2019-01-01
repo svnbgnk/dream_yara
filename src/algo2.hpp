@@ -1,6 +1,6 @@
 using namespace seqan;
 
-struct SHit;
+struct smallHit;
 
 template <typename TIter, typename TOcc, typename TText>
 inline void extendExact(TIter it, TOcc * hits, TText const & text, unsigned const length,
@@ -15,10 +15,9 @@ inline void extendExact(TIter it, TOcc * hits, TText const & text, unsigned cons
         //Sven occ
         /*
         for (auto occ : getOccurrences(it)){
-            SHit hit(occ);
+            smallHit hit(occ);
             hits[a-ab].push_back(hit);
-        }
-        */
+        }*/
         for(uint64_t i = it.fwdIter.vDesc.range.i1; i < it.fwdIter.vDesc.range.i2; ++i){
             hits[a-ab].insert(i);
         }
@@ -168,9 +167,9 @@ inline void extend(TIter it, TOcc * hits, unsigned errors_left, TText const & te
     if (b - a + 1 == length)
     {
         // Sven occ
-        /*
+/*
         for (auto occ : getOccurrences(it)){
-            SHit hit(occ);
+            smallHit hit(occ);
             hits[a-ab].push_back(hit);
         }*/
         for(uint64_t i = it.fwdIter.vDesc.range.i1; i < it.fwdIter.vDesc.range.i2; ++i){
