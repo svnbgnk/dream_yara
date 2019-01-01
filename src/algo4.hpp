@@ -1,30 +1,28 @@
 using namespace seqan;
 
-struct SHit{
+struct smallHit{
     Pair <uint64_t, uint64_t> occ;
-//     uint8_t errors;
+    uint8_t errors;
 //     DnaString read;
-    template <typename TOcc>
-    SHit(TOcc & inOcc):
-        occ(inOcc)
-    {}
 };
 
-//why cant i sort occ in a custom way?
-
-bool sHit_smaller(const SHit & x, const SHit & y)
+bool occ_s(const smallHit & x, const smallHit & y)
 {
-    if(getSeqNo(x.occ) == getSeqNo(y.occ))
-        return getSeqOffset(x.occ) < getSeqOffset(y.occ);
-    else
-        return getSeqNo(x.occ) < getSeqNo(y.occ);
-
+    if(x.occ.i1 == y.occ.i1){
+        if(x.occ.i2 == y.occ.i2){
+             return x.errors < y.errors;
+        }else{
+            return x.occ.i2 < y.occ.i2;
+        }
+    }else{
+        return x.occ.i1 < y.occ.i1;
+    }
 }
 
 template<int disT>
-bool sHit_similar(const SHit & x, const SHit & y)
+bool occ_sim(const smallHit & x, const smallHit & y)
 {
-    return(getSeqNo(x.occ) == getSeqNo(y.occ) && getSeqOffset(x.occ) + disT >= getSeqOffset(y.occ) && getSeqOffset(x.occ) <= getSeqOffset(y.occ) + disT);
+    return(x.occ.i1 == y.occ.i1 && x.occ.i2 + disT >= y.occ.i2 && x.occ.i2 <= y.occ.i2 + disT);
 }
 
 template<typename TOcc>
@@ -136,16 +134,15 @@ inline void runAlgo4(TIndex & index, TText const & text, TContainer & c, TOption
 
 
                     ++cValue;
-                    uint64_t prev = 0;
+//                     uint64_t prev = 0;
                     for(uint64_t i = 1; i < occs.size(); ++i){
 //                         std::cout << occs[i] << "\n";
-                        if(! (getSeqNo(occs[i]) == getSeqNo(occs[prev]) &&
-                           getSeqOffset(occs[i]) + dist >= getSeqOffset(occs[prev]) &&
-                           getSeqOffset(occs[i]) <= getSeqOffset(occs[prev]) + dist))
+                        if(!(getSeqNo(occs[i]) == getSeqNo(occs[/*prev*/i - 1]) &&
+                           getSeqOffset(occs[i]) + dist >= getSeqOffset(occs[/*prev*/i - 1]) &&
+                           getSeqOffset(occs[i]) <= getSeqOffset(occs[/*prev*/i - 1]) + dist))
                         {
-                            prev = i;
+//                             prev = i;
                             ++cValue;
-//                             std::cout << "prev: " << prev << "\n";
                         }
                     }
 //                     std::cout << "\n";
