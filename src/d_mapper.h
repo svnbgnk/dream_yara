@@ -450,8 +450,8 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
     int64_t seqOffset = getMember(match, ContigBegin());
     int64_t seqOffsetEnd = seqOffset + len;//getMember(match, ContigEnd());
     bool rC = onReverseStrand(match);
-//     if(edit)  //TODO revert this !!!!
-//         seqOffsetEnd += maxErrors;
+    if(edit) //reverse this //TODO revert this !!!!
+        seqOffsetEnd += maxErrors;
     if(!edit){ //edit
         Dna5String part = infix(text[seqNo], seqOffset, seqOffsetEnd);
         appendValue(readOcc, part);
@@ -762,8 +762,9 @@ void compareHits(Mapper<TSpec, TConfig> & me,
 //
                             Dna5String tneedle = me.reads.seqs[readId];
                             Dna5StringReverseComplement revN(tneedle);
-                            std::cout << "needle: \n  " << tneedle << "\n   " << revN << "\n";
+                            std::cout << "needle: \n  " << tneedle << "\n  " << revN << "\n";
 
+                            //TODO use true for editMappability
                             int nhits = testReadOcc(me.biIndex, me.contigs.seqs, *matchIt, maxError, disOptions.readLength, disOptions.threshold, true, false); //TODO add Threshold as input option for me
                             bool wrong = false; //revert this
                             if(nhits < disOptions.threshold)
@@ -918,7 +919,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.readLength = len;
     ossContext.numberOfSequences = length(me.contigs.seqs);
     ossContext.normal.suspectunidirectional = false; //TODO reverse
-    ossContext.itv = false;
 
 
     start(me.timer);

@@ -81,6 +81,13 @@ inline void save(vector<T> const & c, string const & output_path, OptionsM const
         std::cout << "\n";
     }
 
+    //TODO enable this
+//     if(opt.indels){
+//         for(int i = 0; i < opt.errors; ++i)
+//             c.push_back(0);
+//     }
+
+
     ofstream outfile(output_path, ios::out | ios::binary);
     outfile.write((const char*) &c[0], c.size() * sizeof(T));
     outfile.close();
