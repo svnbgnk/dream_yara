@@ -188,8 +188,10 @@ parseCommandLine(OptionsM & options, ArgumentParser & parser, int argc, char con
     options.high = isSet(parser, "high");
     options.verbose = isSet(parser, "verbose");
 
-    if(options.indels)
+    if(options.indels){
         options.k_length += options.errors;
+        std::cout << "Edit Distance therefore modified kmere length to : " << options.k_length << "\n";
+    }
 
     if(!isSet(parser, "trivial")){
         if(!isSet(parser, "overlap")){
@@ -244,16 +246,11 @@ inline void runMappability(OptionsM & options)
     }
 
     std::string mappability_path = toCString(options.output);
-//     mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length);
 
-
-    if(options.indels)
-        options.k_length -= options.errors;
-/*
     if(options.indels)
         mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length - options.errors);
     else
-        mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length);*/
+        mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length);
 
     mappability_path += ".gmapp" + string(options.high ? "16" : "8");
 
@@ -270,6 +267,8 @@ inline void runMappability(OptionsM & options)
         std::cerr << "Cannot find mappability file" << "\n";
         exit(0);
     }
+    if(options.indels)
+        options.k_length -= options.errors;
 
     std::string bitvectors_dir = toCString(options.output);
     bitvectors_dir += "/";
@@ -425,7 +424,7 @@ int main(int argc, char const ** argv)
 
     const int dir_test = mkdir(path_dir.data(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (-1 == dir_test)
-        std::cerr << "Dir already exist\n";
+        std::cerr << path_dir << ": Dir already exist\n";
 
 //    std::string comExt = commonExtension(options.contigsDir, options.numberOfBins);
 //     typedef std::map<uint32_t,CharString>::iterator mapIter;
