@@ -207,8 +207,7 @@ parseCommandLine(OptionsM & options, ArgumentParser & parser, int argc, char con
 template <typename TContigsSize,
           typename TContigsLen,
           typename TContigsSum>
-inline void runMappability(OptionsM const & options,
-                      OptionsM & disOptions)
+inline void runMappability(OptionsM & options)
 {
 
     //load Text
@@ -247,10 +246,14 @@ inline void runMappability(OptionsM const & options,
     std::string mappability_path = toCString(options.output);
 //     mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length);
 
+
     if(options.indels)
-        mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length - options.errors)/* + "_" + to_string(opt.overlap)*/;
+        options.k_length -= options.errors;
+/*
+    if(options.indels)
+        mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length - options.errors);
     else
-        mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length)/* + "_" + to_string(options.overlap)*/;
+        mappability_path += "/mappability_" + to_string(options.errors) + "_" + to_string(options.k_length);*/
 
     mappability_path += ".gmapp" + string(options.high ? "16" : "8");
 
@@ -295,54 +298,51 @@ inline void runMappability(OptionsM const & options,
 
 template <typename TContigsSize,
           typename TContigsLen>
-void configureMappability(OptionsM const & options,
-                     OptionsM & disOptions)
+void configureMappability(OptionsM & options)
 {
     if (options.contigsSum <= MaxValue<uint32_t>::VALUE)
     {
-        runMappability<TContigsSize, TContigsLen, uint32_t>(options, disOptions);
+        runMappability<TContigsSize, TContigsLen, uint32_t>(options);
     }
     else
     {
-        runMappability<TContigsSize, TContigsLen, uint64_t>(options, disOptions);
+        runMappability<TContigsSize, TContigsLen, uint64_t>(options);
     }
 }
 
 
 
 template <typename TContigsSize>
-void configureMappability(OptionsM const & options,
-                     OptionsM & disOptions)
+void configureMappability(OptionsM & options)
 {
     if (options.contigsMaxLength <= MaxValue<uint32_t>::VALUE)
     {
-        configureMappability<TContigsSize, uint32_t>(options, disOptions);
+        configureMappability<TContigsSize, uint32_t>(options);
     }
     else
     {
 #ifdef DR_YARA_LARGE_CONTIGS
-        configureMappability<TContigsSize, uint64_t>(options, disOptions);
+        configureMappability<TContigsSize, uint64_t>(options);
 #else
         throw RuntimeError("Maximum contig length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
 #endif
     }
 }
 
-void configureMappability(OptionsM const & options,
-                     OptionsM & disOptions)
+void configureMappability(OptionsM & options)
 {
     if (options.contigsSize <= MaxValue<uint8_t>::VALUE)
     {
-        configureMappability<uint8_t>(options, disOptions);
+        configureMappability<uint8_t>(options);
     }
     else if (options.contigsSize <= MaxValue<uint16_t>::VALUE)
     {
-        configureMappability<uint16_t>(options, disOptions);
+        configureMappability<uint16_t>(options);
     }
     else
     {
 #ifdef DR_YARA_LARGE_CONTIGS
-        configureMappability<uint32_t>(options, disOptions);
+        configureMappability<uint32_t>(options);
 #else
         throw RuntimeError("Maximum number of contigs exceeded. Recompile with -DYARA_LARGE_CONTIGS=ON.");
 #endif
@@ -377,7 +377,7 @@ inline void runDisMappability(OptionsM & options)
         appendFileName(binOption.contigsIndexFile, options.IndicesDirectory, i);
         if (!openContigsLimits(binOption))
             throw RuntimeError("Error while opening reference file.");
-        configureMappability(binOption, options);
+        configureMappability(binOption);
 
         stop(timer);
         std::cerr << "Time: " << timer << "\n";

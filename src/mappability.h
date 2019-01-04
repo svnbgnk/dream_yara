@@ -81,13 +81,6 @@ inline void save(vector<T> const & c, string const & output_path, OptionsM const
         std::cout << "\n";
     }
 
-    //TODO enable this
-//     if(opt.indels){
-//         for(int i = 0; i < opt.errors; ++i)
-//             c.push_back(0);
-//     }
-
-
     ofstream outfile(output_path, ios::out | ios::binary);
     outfile.write((const char*) &c[0], c.size() * sizeof(T));
     outfile.close();
@@ -96,7 +89,10 @@ inline void save(vector<T> const & c, string const & output_path, OptionsM const
 template <typename value_type, typename TIndex, typename TText, typename TSeqLengths, typename TDistanceTag>
 inline void run(TIndex & index, TText const & text, TSeqLengths const & sL, OptionsM const & opt, TDistanceTag const &)
 {
-    vector<value_type> c(length(text) - opt.k_length + 1, 0);
+    // add Zeroes at the end to make up for smaller mappability for using a larger k_length
+    uint8_t cmod = (opt.indels) ? (opt.errors) : 0;
+
+    vector<value_type> c(length(text) - opt.k_length + cmod + 1, 0);
     if(opt.trivial){
         switch (opt.errors)
         {
