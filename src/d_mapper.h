@@ -918,6 +918,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.setReadContextOSS(maxError, strata, mscheme);
     ossContext.readLength = len;
     ossContext.numberOfSequences = length(me.contigs.seqs);
+    ossContext.itv = false;
     ossContext.normal.suspectunidirectional = false; //TODO reverse
 
 
@@ -1012,6 +1013,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
             std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
         }
 
+        //TODO use optimal Search Schemes again to get "correct Positions"
         if(disOptions.compare){
             compareHits(me, me2, maxError, strata, disOptions);
             /*

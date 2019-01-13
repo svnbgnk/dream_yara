@@ -1111,12 +1111,12 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
         }
         return;
     }
-
+/*
     if(atBlockEnd && checkMappa){
         ReturnCode rcode = checkMappability(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
         if(rcode == ReturnCode::FINISHED)
             return;
-    }
+    }*/
 
     // Exact search in current block.
     if (maxErrorsLeftInBlock == 0)
@@ -1162,13 +1162,15 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                 _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + 1, s, blockIndex, true, TDir(), TDistanceTag());
             }
         }
+/*
         //checkCurrentMappability (inside a Block)
         if(!atBlockEnd && checkMappa && ossContext.inBlockCheckMappabilityCondition(needleLeftPos, needleRightPos, s, blockIndex))
         {
             ReturnCode rcode = checkCurrentMappability(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
             if(rcode == ReturnCode::FINISHED)
                 return;
-        }
+        }*/
+
         _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
     }
 }
