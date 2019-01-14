@@ -112,6 +112,13 @@ typedef Tag<ReadSizeAlt_> const ContigEndOSS;
 struct ContigSizeAlt_;
 typedef Tag<ContigSizeAlt_> const ContigBeginOSS;
 
+//Yet another sorting behavior
+struct ReadSizeAlt2_;
+typedef Tag<ReadSizeAlt2_> const ContigEndITV;
+
+struct ContigSizeAlt2_;
+typedef Tag<ContigSizeAlt2_> const ContigBeginITV;
+
 // ============================================================================
 // Classes
 // ============================================================================
@@ -258,6 +265,33 @@ struct MatchSorter<TMatch, ContigEnd>
         return getSortKey(a, ContigEnd()) < getSortKey(b, ContigEnd());
     }
 };
+
+template <typename TMatch>
+struct MatchSorter<TMatch, ContigBeginITV>
+{
+    inline bool operator()(TMatch const & a, TMatch const & b) const
+    {
+        if(getSortKey(a, ContigBeginITV()) == getSortKey(b, ContigBeginITV()))
+            return getMember(a, ContigEnd()) > getMember(b, ContigEnd());
+//             return getSortKey(a, ContigEndITV()) > getSortKey(b, ContigEndITV());
+        else
+            return getSortKey(a, ContigBeginITV()) < getSortKey(b, ContigBeginITV());
+    }
+};
+
+template <typename TMatch>
+struct MatchSorter<TMatch, ContigEndITV>
+{
+    inline bool operator()(TMatch const & a, TMatch const & b) const
+    {
+        if(getSortKey(a, ContigEndITV()) == getSortKey(b, ContigEndITV()))
+            return getMember(a, ContigBegin()) > getMember(b, ContigBegin());
+//             return getSortKey(a, ContigBeginITV()) > getSortKey(b, ContigBeginITV());
+        else
+            return getSortKey(a, ContigEndITV()) < getSortKey(b, ContigEndITV());
+    }
+};
+
 
 template <typename TMatch, typename TReadSeqs, typename TTag>
 struct MatchSorterOSS
@@ -605,6 +639,36 @@ inline uint64_t getSortKey(Match<TSpec> const & me, ContigEnd)
            ((uint64_t)getMember(me, Errors()));
 }
 
+
+// ----------------------------------------------------------------------------
+// Function getSortKey(ContigBeginITV)
+// ----------------------------------------------------------------------------
+
+template <typename TSpec>
+inline uint64_t getSortKey(Match<TSpec> const & me, ContigBeginITV)
+{
+    typedef Match<TSpec>    TMatch;
+
+    return ((uint64_t)getMember(me, ContigId())      << (1 + MemberBits<TMatch, ContigSize>::VALUE)) |
+           ((uint64_t)onReverseStrand(me)            << MemberBits<TMatch, ContigSize>::VALUE)       |
+           ((uint64_t)getMember(me, ContigBegin()));
+}
+
+// ----------------------------------------------------------------------------
+// Function getSortKey(ContigEndITV)
+// ----------------------------------------------------------------------------
+
+template <typename TSpec>
+inline uint64_t getSortKey(Match<TSpec> const & me, ContigEndITV)
+{
+    typedef Match<TSpec>    TMatch;
+
+    return ((uint64_t)getMember(me, ContigId())     << (1 + MemberBits<TMatch, ContigSize>::VALUE)) |
+           ((uint64_t)onReverseStrand(me)           << MemberBits<TMatch, ContigSize>::VALUE)       |
+           ((uint64_t)getMember(me, ContigEnd()));
+}
+
+
 template <typename TSpec, typename TReadSeqs>
 inline uint8_t lower_bound_edit(Match<TSpec> const & me, TReadSeqs & readSeqs){
 //     std::cout << "ReadLength: " << getReadLength(me, readSeqs) << "\n";
@@ -699,6 +763,26 @@ inline bool isDuplicate(Match<TSpec> const & a, Match<TSpec> const & b, ContigBe
 
 template <typename TSpec>
 inline bool isDuplicate(Match<TSpec> const & a, Match<TSpec> const & b, ContigEnd)
+{
+    return contigEqual(a, b) && strandEqual(a, b) && getMember(a, ContigEnd()) == getMember(b, ContigEnd());
+}
+
+// ----------------------------------------------------------------------------
+// Function isDuplicate(ContigBeginITV)
+// ----------------------------------------------------------------------------
+
+template <typename TSpec>
+inline bool isDuplicate(Match<TSpec> const & a, Match<TSpec> const & b, ContigBeginITV)
+{
+    return contigEqual(a, b) && strandEqual(a, b) && getMember(a, ContigBegin()) == getMember(b, ContigBegin());
+}
+
+// ----------------------------------------------------------------------------
+// Function isDuplicate(ContigEndITV)
+// ----------------------------------------------------------------------------
+
+template <typename TSpec>
+inline bool isDuplicate(Match<TSpec> const & a, Match<TSpec> const & b, ContigEndITV)
 {
     return contigEqual(a, b) && strandEqual(a, b) && getMember(a, ContigEnd()) == getMember(b, ContigEnd());
 }
@@ -868,6 +952,36 @@ inline void removeDuplicates(TMatchesSet & matchesSet, TThreading const & thread
     assign(stringSetLimits(matchesSet), newLimits);
     _refreshStringSetLimits(matchesSet, threading);
 }
+
+// ----------------------------------------------------------------------------
+// Function removeDuplicatesITV()
+// ----------------------------------------------------------------------------
+// Remove duplicate matches from a set of matches.
+
+template <typename TMatchesSet, typename TThreading>
+inline void removeDuplicatesITV(TMatchesSet & matchesSet, TThreading const & threading)
+{
+    typedef typename StringSetLimits<TMatchesSet>::Type         TLimits;
+
+    TLimits newLimits;
+    resize(newLimits, length(stringSetLimits(matchesSet)), Exact());
+    front(newLimits) = 0;
+
+    // Sort matches by end position and move unique matches at the beginning.
+    iterate(matchesSet, MatchesCompactor<TLimits, ContigEndITV>(newLimits), Rooted(), threading);
+
+    // Exclude duplicate matches at the end.
+    assign(stringSetLimits(matchesSet), newLimits);
+    _refreshStringSetLimits(matchesSet, threading);
+
+    // Sort matches by begin position and move unique matches at the beginning.
+    iterate(matchesSet, MatchesCompactor<TLimits, ContigBeginITV>(newLimits), Rooted(), threading);
+
+    // Exclude duplicate matches at the end.
+    assign(stringSetLimits(matchesSet), newLimits);
+    _refreshStringSetLimits(matchesSet, threading);
+}
+
 
 template <typename TMatchesSet, typename TReadSeqs, typename TThreading>
 inline void removeDuplicatesOSS(TMatchesSet & matchesSet, TReadSeqs & readSeqs, TThreading const & threading)

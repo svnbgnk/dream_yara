@@ -439,7 +439,6 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         else if(needleRightPos == needleL + 1){overlap_r = intDel;}
         else{overlap_r = max_e;}
 
-//         std::cout << "Checkpoint" << "NPL: " << needleLeftPos << "\tNRP: " << needleRightPos << "\n";
         for(TContigsSum r = 0; r < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++r)
         {
             if(checkSinglePos(bitvectors, brange, r)){
@@ -469,13 +468,13 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 }
                 //update seqOffset
                 TContigsLen seqOffset = getSeqOffset(sa_info);
-
+/*
                 //types for globalAlignmentScore
                 TContigSeqsInfix ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
                 TContigSeqsInfix n_infix = infix(genome[getSeqNo(sa_info)], seqOffset, seqOffset + needleL);
-//                 Dna5String const & needleRef = needle;
-
                 alignmentMyersBitvector(ossContext, delegateDirect, needle, needleId, n_infix, ex_infix, chromlength, sa_info, max_e, overlap_l, overlap_r, intDel, false);
+                */
+                delegateDirect(ossContext, posAdd(sa_info, -overlap_l), posAdd(sa_info, needleL + overlap_r), needleId, 127);
             }
         }
     }

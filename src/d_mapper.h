@@ -845,6 +845,59 @@ inline void trimHit(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeqs)
 }*/
 
 // ----------------------------------------------------------------------------
+// Function inTextVerification()
+// ----------------------------------------------------------------------------
+
+template<typename TSpec, typename TConfig, typename TMatch, typename TNeedle, typename TError>
+inline bool inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNeedle const & needle, TError maxErrors)
+{
+    typedef MapperTraits<TSpec, TConfig>                        TTraits;
+    typedef typename TConfig::TContigsLen                       TContigsLen;
+    typedef typename TConfig::TContigsSize                      TContigsSize;
+
+    typedef typename TTraits::TContigSeqs                       TContigSeqs;
+    typedef typename InfixOnValue<TContigSeqs const>::Type      TContigSeqsInfix;
+    typedef typename InfixOnValue<TNeedle const>::Type          TNeedleInfix;
+
+    TContigSeqs & contigSeqs = me.contigs.seqs;
+
+//     std::cout << "Needle: \n" << needle << "\n";
+    TContigsSize seqNo = getMember(match, ContigId());
+    TContigsLen seqOffset = getMember(match, ContigBegin());
+    TContigsLen seqOffsetEnd = getMember(match, ContigEnd());;
+    TContigSeqsInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
+//     std::cout << text << "\n";
+
+    typedef Finder<TContigSeqsInfix>                        TFinder;
+    typedef AlignTextBanded</*FindPrefix*/FindInfix,
+                            NMatchesNone_,
+                            NMatchesNone_>                  TMyersSpec;
+    typedef Myers<TMyersSpec, True, void>                   TAlgorithm;
+    typedef PatternState_<TContigSeqsInfix, TAlgorithm>     TPattern;
+    TPattern pattern;
+
+    uint8_t minErrors = maxErrors + 1;
+    TFinder finder(text);
+
+    while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 2))) //TODO choose correct value
+    {
+        uint16_t currentErrors = -getScore(pattern);
+        if(minErrors > currentErrors)
+            minErrors = currentErrors;
+//         std::cout << "cScore: " << currentErrors << "\t";
+    }
+
+//     std::cout << "\nScore: " << (int)minErrors << "\n";
+    if(minErrors <= maxErrors)
+        match.errors = minErrors;
+
+    return(minErrors <= maxErrors);
+}
+
+
+
+
+// ----------------------------------------------------------------------------
 // Function _mapReadsImpl()
 // ----------------------------------------------------------------------------
 template <typename TSpec, typename TConfig, typename TMainConfig, typename TReadSeqs, typename TSeqsSpec>
@@ -918,7 +971,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.setReadContextOSS(maxError, strata, mscheme);
     ossContext.readLength = len;
     ossContext.numberOfSequences = length(me.contigs.seqs);
-    ossContext.itv = false;
+    ossContext.itv = true;
     ossContext.normal.suspectunidirectional = false; //TODO reverse
 
 
@@ -935,7 +988,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         std::cerr << "\nOptimum Search time:\t\t" << me.timer << std::endl;
         std::cerr << "Matches count:\t\t\t" << lengthSum(me.matchesByCoord) << std::endl;
     }
-
+/*
     //save OSS hits
     if(disOptions.compare){
         me2.matchesByCoord = me.matchesByCoord;
@@ -945,11 +998,75 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         aggregateMatchesOSS(me2, readSeqs);
 
         if(disOptions.verbose > 0)
-            std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me2.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
-//         trimHits(me2, readSeqs);
-    }else{
-        aggregateMatchesOSS(me, readSeqs);
-//         trimHits(me, readSeqs);
+            std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me2.matchesSetByCoord) << std::endl;
+
+    }else{*/
+    {
+
+
+        std::cout << "Number of hits: " << length(me.matchesByCoord) << "\n";
+        if(disOptions.compare){
+            aggregateMatchesOSS(me, readSeqs);
+        }
+        else
+        {
+            aggregateMatchesITV(me, readSeqs);
+        }
+
+        std::cout << "Hits after filtering: " << lengthSum(me.matchesSetByCoord) << "\n";
+
+        typedef typename TConfig::TContigsLen                       TContigsLen;
+        typedef typename TConfig::TContigsSize                      TContigsSize;
+
+        uint32_t valids = 0;
+        uint32_t oss = 0;
+        uint32_t wrong = 0;
+        TContigsSize lastContig;
+        TContigsLen lastPos;
+
+        for(int i = 0; i < length(me.matchesSetByCoord); ++i){
+                auto const & matches = me.matchesSetByCoord[i];
+                auto matchIt = begin(matches, Standard());
+                auto matchEnd = end(matches, Standard());
+
+                while(matchIt != matchEnd){
+                    write(std::cout, *matchIt);
+
+                    if(lastContig == getMember(*matchIt, ContigId())){
+                        TContigsLen currentPos = getMember(*matchIt, ContigBegin());
+                        if(lastPos + maxError >= currentPos && currentPos + maxError >= lastPos){
+                            std::cout << "Skip!!!\n";
+                            ++wrong;
+                            //TODO set Invalid
+                            ++matchIt;
+                            continue;
+                        }
+                    }
+                    lastContig = getMember(*matchIt, ContigId());
+                    lastPos = getMember(*matchIt, ContigBegin());
+
+                    if(getMember(*matchIt, Errors()) <= maxError){
+                        std::cout << "2Skip!!\n";
+                        ++oss;
+                        ++matchIt;
+                        continue;
+                    }
+
+                    uint32_t readId = getReadIdOSS(*matchIt);
+                    bool valid = inTextVerification(me, *matchIt, readSeqs[readId], maxError);
+                    if(valid)
+                        std::cout << "Accepted: " << "\t";
+                    if(valid){
+                        write(std::cout, *matchIt);
+                        ++valids;
+                    }else{
+                        setInvalid(*matchIt);
+                    }
+                    ++matchIt;
+                }
+
+        }
+        std::cout << "Hits accepted: " << valids << " OSS: " << oss << " dups: " << wrong << " from: " << lengthSum(me.matchesSetByCoord) << "\n";
 
         if(disOptions.verbose > 0)
             std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
@@ -957,7 +1074,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     }
 
-    if(disOptions.ossOff || disOptions.compare)
+    if(disOptions.ossOff /*|| disOptions.compare*/)
     {
         std::cout << "Using Seed and Extension: \n";
         initReadsContext(me, readSeqs);
@@ -1014,135 +1131,13 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         }
 
         //TODO use optimal Search Schemes again to get "correct Positions"
+        /*
         if(disOptions.compare){
             compareHits(me, me2, maxError, strata, disOptions);
-            /*
-            for(int i = 0; i < length(me.matchesSetByCoord); ++i){
-                auto const & matches = me.matchesSetByCoord[i];
-                auto matchIt = begin(matches, Standard());
-                auto matchEnd = end(matches, Standard());
-                while(matchIt != matchEnd){
-                    write(std::cout, *matchIt);
-                    ++matchIt;
-                }
-            }
-
-            std::cout << "Print OSS Matches" << "\n\n\n";
-            for(int i = 0; i < length(me2.matchesSetByCoord); ++i){
-                auto const & matches = me2.matchesSetByCoord[i];
-                auto matchIt = begin(matches, Standard());
-                auto matchEnd = end(matches, Standard());
-                while(matchIt != matchEnd){
-                    write(std::cout, *matchIt);
-                    ++matchIt;
-                }
-            }
-
-
-            std::cout << "\n\n";
-            bool wrong = false;
-
-            std::cout << "compare lengths: " << length(me.matchesSetByCoord) << "\t" << length(me2.matchesSetByCoord) << "\n";
-
-            for(int i = 0; i < length(me.matchesSetByCoord); ++i){
-                auto const matches = me.matchesSetByCoord[i];
-                auto matchIt = begin(matches, Standard());
-                auto matchEnd = end(matches, Standard());
-
-                //get min Error
-                uint32_t readId = getReadIdOSS(*matchIt);
-                uint8_t minErrors = getMinErrors(me.ctx, readId);
-
-                auto const matchesOSS = me2.matchesSetByCoord[i];
-                auto matchItOSS = begin(matchesOSS, Standard());
-                auto matchEndOSS = end(matchesOSS, Standard());
-
-
-                while(matchIt != matchEnd){
-                    bool same = isDuplicate(*matchIt, *matchItOSS, ContigBegin());
-                    bool similar = isSimilar(*matchIt, *matchItOSS, maxError);
-                    if(!isSimilar(*matchIt, *matchItOSS, 2 * maxError)){
-
-                        //Yara Strata Error
-                        if(getErrorsOSS(*matchIt) > strata + minErrors){
-//                             std::cout << "Yara outside of strata\n";
-//                             write(std::cout, *matchIt);
-                            ++matchIt;
-                            continue;
-                        }
-
-                        //test if yara missed the hit
-                        auto matchIt_temp = matchItOSS;
-                        bool smaller = true;
-                        bool same2 = false;
-                        while(matchIt_temp != matchEndOSS && !same2 && smaller){
-                            ++matchIt_temp;
-                            same2 = isSimilar(*matchIt, *matchIt_temp, 2 * maxError); //isDuplicate(*matchIt, *matchIt_temp, ContigBegin());
-                            if(same2){
-                                break;
-                            }
-                            smaller = matchSmaller(*matchIt_temp, *matchIt); //TODO move into while
-                        }
-                        //Skip missed hits
-                        if(same2){
-                            while(matchItOSS != matchIt_temp){
-                                std::cout << "Yara missed\n";
-                                write(std::cout, *matchItOSS);
-                                std::cout << "needle: \n   " << me.reads.seqs[readId] << "\n";
-                                printOcc(me.contigs.seqs, *matchItOSS, maxError);
-                                ++matchItOSS;
-                            }
-
-//                             std::cout << "found Same:\n";
-//                             write(std::cout, *matchIt);
-//                             write(std::cout, *matchItOSS);
-                        }
-                        else
-                        //verify if hit was missed because of mappability
-                        {
-                            std::cout << "Need to verify this: " << "\n";
-                            write(std::cout, *matchIt);
-                            std::cout << "Compared to this one: " << "\n";
-                            write(std::cout, *matchItOSS);
-                            std::cout << "needle: \n  " << me.reads.seqs[readId] << "\n";
-                            int nhits = testReadOcc( me.biIndex, me.contigs.seqs, *matchIt, maxError, disOptions.readLength, disOptions.threshold, true, false); //TODO add Threshold as input option for me
-                            if(nhits < disOptions.threshold)
-                                wrong = true;
-
-                            if(wrong)
-                                std::cout << "Something went wrong\n";
-                            ++matchIt;
-                        }
-                    }
-                    else
-                    {
-                        if(!same)
-                        {
-                            if(similar){
-                                std::cout << "Only Similar\n";
-                            }
-                            else
-                            {
-                                std::cout << "Only large distance Similar\n";
-                            }
-                            write(std::cout, *matchIt);
-                            write(std::cout, *matchItOSS);
-                            std::cout << "needle: \n   " << me.reads.seqs[readId] << "\n";
-                            printOcc(me.contigs.seqs, *matchIt, maxError);
-                            printOcc(me.contigs.seqs, *matchItOSS, maxError);
-
-                        }
-                        ++matchIt;
-                        ++matchItOSS;
-
-                        if(matchItOSS == matchEndOSS)
-                            --matchItOSS;
-                    }
-                }
-            }*/
-        }
+        }*/
     }
 
+    exit(0);
     rankMatches(me, me.reads.seqs);
     if (me.options.verifyMatches)
         verifyMatches(me);
@@ -1150,7 +1145,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     copyMatches(mainMapper, me, disOptions);
     copyCigars(mainMapper, me, disOptions);
     appendStats(mainMapper, me);
-
 }
 
 

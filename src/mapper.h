@@ -845,6 +845,36 @@ inline void aggregateMatches(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeqs)
 }
 
 template <typename TSpec, typename TConfig, typename TReadSeqs>
+inline void aggregateMatchesITV(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeqs)
+{
+    typedef MapperTraits<TSpec, TConfig>    TTraits;
+    typedef typename TTraits::TMatch        TMatch;
+
+    start(me.timer);
+    // Sort matches by readId and bucket them.
+    sort(me.matchesByCoord, MatchSorter<TMatch, ReadId>(), typename TConfig::TThreading());
+    setHost(me.matchesSetByCoord, me.matchesByCoord);
+    bucket(me.matchesSetByCoord, Getter<TMatch, ReadId>(), getReadsCount(readSeqs), typename TConfig::TThreading());
+    stop(me.timer);
+    me.stats.sortMatches += getValue(me.timer);
+
+    if (me.options.verbose > 1)
+        std::cerr << "Sorting time:\t\t\t" << me.timer << std::endl;
+
+    // Remove duplicate matches (sorts the matches by genomic coordinate).
+    start(me.timer);
+    removeDuplicatesITV(me.matchesSetByCoord, typename TConfig::TThreading());
+    stop(me.timer);
+    me.stats.compactMatches += getValue(me.timer);
+
+    if (me.options.verbose > 1)
+    {
+        std::cerr << "Compaction time:\t\t" << me.timer << std::endl;
+        std::cerr << "Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord) << std::endl;
+    }
+}
+
+template <typename TSpec, typename TConfig, typename TReadSeqs>
 inline void aggregateMatchesOSS(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeqs)
 {
     typedef MapperTraits<TSpec, TConfig>    TTraits;
@@ -853,17 +883,6 @@ inline void aggregateMatchesOSS(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeq
     start(me.timer);
     // Sort matches by readId and bucket them.
     sort(me.matchesByCoord, MatchSorter<TMatch, ReadId>(), typename TConfig::TThreading());
-//     for(int i = 0; i < length(me.matchesByCoord); ++i){
-//         std::cout << "Match: " << "\n";
-//         TMatch myMatch = me.matchesByCoord[i];
-//         std::cout << myMatch.contigBegin << "\n";
-//         std::cout << myMatch.contigEnd << "\n";
-//         std::cout << "ContigId: " << myMatch.contigId << "\n";
-//         std::cout << "Errors: " << myMatch.errors << "\n";
-//         std::cout << "ReadId: "<< myMatch.readId << "\n" << "\n";
-//     }
-//     std::cout << "End of Matches: " << "\n";
-
     setHost(me.matchesSetByCoord, me.matchesByCoord);
     bucket(me.matchesSetByCoord, Getter<TMatch, ReadId>(), getReadsCount(readSeqs), typename TConfig::TThreading());
     stop(me.timer);
