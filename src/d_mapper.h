@@ -1023,11 +1023,20 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         uint32_t wrong = 0;
         TContigsSize lastContig;
         TContigsLen lastPos;
+        uint32_t lastHitLength = 0;
 
         for(int i = 0; i < length(me.matchesSetByCoord); ++i){
                 auto const & matches = me.matchesSetByCoord[i];
                 auto matchIt = begin(matches, Standard());
                 auto matchEnd = end(matches, Standard());
+                bool intervalEnd = false;
+
+                lastContig = getMember(*matchIt, ContigId());
+                lastPos = getMember(*matchIt, ContigBegin());
+                lastHitLength = getMember(*matchIt, ContigEnd() - getMember(*matchIt, ContigBegin();
+                auto largematch = matchIt;
+                write(std::cout, *matchIt);
+                ++matchIt;
 
                 while(matchIt != matchEnd){
                     write(std::cout, *matchIt);
@@ -1035,36 +1044,49 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     if(lastContig == getMember(*matchIt, ContigId())){
                         TContigsLen currentPos = getMember(*matchIt, ContigBegin());
                         if(lastPos + maxError >= currentPos && currentPos + maxError >= lastPos){
-                            std::cout << "Skip!!!\n";
+                            std::cout << "Close!!!\n";
+                            uint32_t cHitLength = getMember(*matchIt, ContigEnd() - getMember(*matchIt, ContigBegin()
+                            if(lastHitLength < cHitLength){
+                                lastHitLength = cHitLength;
+                                setInvalid(*largematch);
+                                largematch = matchIt;
+                            }else{
+                                setInvalid(*matchIt);
+                            }
                             ++wrong;
-                            //TODO set Invalid
                             ++matchIt;
-                            continue;
+                            if(matchIt != matchEnd)
+                                continue;
                         }
                     }
-                    lastContig = getMember(*matchIt, ContigId());
-                    lastPos = getMember(*matchIt, ContigBegin());
 
-                    if(getMember(*matchIt, Errors()) <= maxError){
-                        std::cout << "2Skip!!\n";
+                    if(matchIt != matchEnd){
+                        lastContig = getMember(*matchIt, ContigId());
+                        lastPos = getMember(*matchIt, ContigBegin());
+                        lastHitLength = getMember(*matchIt, ContigEnd() - getMember(*matchIt, ContigBegin();
+                    }
+
+                    if(getMember(*largematch, Errors()) <= maxError){
+                        std::cout << "already Confirmed!!\n";
                         ++oss;
+                        largematch = matchIt;
                         ++matchIt;
                         continue;
                     }
 
-                    uint32_t readId = getReadIdOSS(*matchIt);
-                    bool valid = inTextVerification(me, *matchIt, readSeqs[readId], maxError);
+                    uint32_t readId = getReadIdOSS(*largematch);
+                    bool valid = inTextVerification(me, *largematch, readSeqs[readId], maxError);
                     if(valid)
                         std::cout << "Accepted: " << "\t";
                     if(valid){
-                        write(std::cout, *matchIt);
+                        write(std::cout, *largematch);
                         ++valids;
                     }else{
-                        setInvalid(*matchIt);
+                        setInvalid(*largematch);
                     }
+                    largematch = matchIt;
                     ++matchIt;
                 }
-
         }
         std::cout << "Hits accepted: " << valids << " OSS: " << oss << " dups: " << wrong << " from: " << lengthSum(me.matchesSetByCoord) << "\n";
 
