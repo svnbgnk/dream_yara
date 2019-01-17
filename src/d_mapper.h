@@ -1029,7 +1029,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         uint32_t lastHitLength = 0;
 
         for(int i = 0; i < length(me.matchesSetByCoord); ++i){
-                std::cout << "New read" << i << "\n";
+//                 std::cout << "New read" << i << "\n";
                 auto const & matches = me.matchesSetByCoord[i];
                 auto matchIt = begin(matches, Standard());
                 auto matchEnd = end(matches, Standard());
@@ -1037,26 +1037,26 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 lastContig = getMember(*matchIt, ContigId());
                 lastPos = getMember(*matchIt, ContigBegin());
                 lastHitLength = getMember(*matchIt, ContigEnd()) - getMember(*matchIt, ContigBegin());
-                std::cout << "intervalLength from first hit: " << lastHitLength << "\n";
+//                 std::cout << "intervalLength from first hit: " << lastHitLength << "\n";
                 auto largematch = matchIt;
-                write(std::cout, *matchIt);
+//                 write(std::cout, *matchIt);
                 ++matchIt;
 
                 while(largematch != matchEnd){
                     if(matchIt != matchEnd){
-                        write(std::cout, *matchIt);
+//                         write(std::cout, *matchIt);
                         if(lastContig == getMember(*matchIt, ContigId())){
                             TContigsLen currentPos = getMember(*matchIt, ContigBegin());
                             if(lastPos + me.maxError >= currentPos && currentPos + me.maxError >= lastPos){
-                                std::cout << "Close!!!\n";
+//                                 std::cout << "Close!!!\n";
                                 uint32_t cHitLength = getMember(*matchIt, ContigEnd()) - getMember(*matchIt, ContigBegin());
                                 if(lastHitLength < cHitLength){
                                     lastHitLength = cHitLength;
                                     setInvalid(*largematch);
                                     largematch = matchIt;
-                                    std::cout << "CurrentLargest Interval" << "\n";
+//                                     std::cout << "CurrentLargest Interval" << "\n";
                                 }else{
-                                    std::cout << "smaller set Invalid" << "\n";
+//                                     std::cout << "smaller set Invalid" << "\n";
                                     setInvalid(*matchIt);
                                 }
                                 ++wrong;
@@ -1074,7 +1074,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     }
 
                     if(getMember(*largematch, Errors()) <= me.maxError){
-                        std::cout << "already Confirmed!!\n";
+//                         std::cout << "already Confirmed!!\n";
                         ++oss;
                         largematch = matchIt;
                         ++matchIt;
@@ -1083,22 +1083,22 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
                     uint32_t readId = getReadIdOSS(*largematch);
                     bool valid = inTextVerification(me, *largematch, readSeqs[readId], me.maxError);
-                    if(valid)
-                        std::cout << "Accepted: " << "\t";
+//                     if(valid)
+//                         std::cout << "Accepted: " << "\t";
                     if(valid){
-                        write(std::cout, *largematch);
+//                         write(std::cout, *largematch);
                         ++valids;
                     }else{
                         setInvalid(*largematch);
                     }
-                    std::cout << "finished Interval" << "\n";
+//                     std::cout << "finished Interval" << "\n";
                     largematch = matchIt;
-
+/*
                     std::cout << "large Match:" << "\n";
                     if(largematch != matchEnd)
                         write(std::cout, *matchIt);
                     else
-                        std::cout << "at Match End\n";
+                        std::cout << "at Match End\n";*/
                     ++matchIt;
                 }
         }
