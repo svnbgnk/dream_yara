@@ -1080,17 +1080,17 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
                     uint32_t readId = getReadIdOSS(*largematch);
                     bool valid = inTextVerification(me, *largematch, readSeqs[readId], maxError);
-                    if(valid)
+//                     if(valid)
 //                         std::cout << "Accepted: " << "\t";
                     if(valid){
-                        write(std::cout, *largematch);
+//                         write(std::cout, *largematch);
                         ++valids;
                     }else{
                         setInvalid(*largematch);
                     }
 //                     std::cout << "finished Interval" << "\n";
                     largematch = matchIt;
-                    /*
+/*
                     std::cout << "large Match:" << "\n";
                     if(largematch != matchEnd)
                         write(std::cout, *matchIt);
@@ -1170,7 +1170,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         }*/
     }
 
-    exit(0);
+//     exit(0);
     rankMatches(me, me.reads.seqs);
     if (me.options.verifyMatches)
         verifyMatches(me);
