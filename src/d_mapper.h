@@ -915,8 +915,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     disOptions.readLength = len;
 
-    uint16_t maxError = me.options.errorRate * len;
-    uint16_t strata = disOptions.strataRate * len;
+    me.maxError = me.options.errorRate * len;
+    me.strata = disOptions.strataRate * len;
     Mapper<void, TConfig> me2(disOptions);
 
     if(!disOptions.ossOff){
@@ -941,7 +941,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
 
     if(disOptions.verbose > 1){
-        std::cout << "maxError: " << maxError << "\t" << strata << "\n";
+        std::cout << "maxError: " << me.maxError << "\t" << me.strata << "\n";
     }
 
     if(!disOptions.noMappability){
@@ -968,7 +968,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     // copy parameters to ossContext
     bool mscheme = true;
-    ossContext.setReadContextOSS(maxError, strata, mscheme);
+    ossContext.setReadContextOSS(me.maxError, me.strata, mscheme);
     ossContext.readLength = len;
     ossContext.numberOfSequences = length(me.contigs.seqs);
     ossContext.itv = true;
@@ -977,9 +977,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     start(me.timer);
     if(mscheme){
-        find(0, maxError, strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
     }else{
-        find(0, maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+        find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
     }
     stop(me.timer);
     me.stats.optimumSearch += getValue(me.timer);
@@ -1044,7 +1044,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //                         write(std::cout, *matchIt);
                         if(lastContig == getMember(*matchIt, ContigId())){
                             TContigsLen currentPos = getMember(*matchIt, ContigBegin());
-                            if(lastPos + maxError >= currentPos && currentPos + maxError >= lastPos){
+                            if(lastPos + me.maxError >= currentPos && currentPos + me.maxError >= lastPos){
 //                                 std::cout << "Close!!!\n";
                                 uint32_t cHitLength = getMember(*matchIt, ContigEnd()) - getMember(*matchIt, ContigBegin());
                                 if(lastHitLength < cHitLength){
@@ -1070,7 +1070,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         lastHitLength = getMember(*matchIt, ContigEnd()) - getMember(*matchIt, ContigBegin());
                     }
 
-                    if(getMember(*largematch, Errors()) <= maxError){
+                    if(getMember(*largematch, Errors()) <= me.maxError){
 //                         std::cout << "already Confirmed!!\n";
                         ++oss;
                         largematch = matchIt;
@@ -1079,7 +1079,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     }
 
                     uint32_t readId = getReadIdOSS(*largematch);
-                    bool valid = inTextVerification(me, *largematch, readSeqs[readId], maxError);
+                    bool valid = inTextVerification(me, *largematch, readSeqs[readId], me.maxError);
 //                     if(valid)
 //                         std::cout << "Accepted: " << "\t";
                     if(valid){

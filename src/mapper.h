@@ -307,6 +307,8 @@ struct Mapper
     Timer<double>                       timer;
     Stats<double>                       stats;
 
+    uint8_t                             maxError;
+    uint8_t                             strata;
     unsigned                            libraryLength;
     unsigned                            libraryDev;
 
@@ -1306,13 +1308,13 @@ inline void alignMatches(Mapper<TSpec, TConfig> & me)
 
     TConcatenator matchesConcat = concat(me.matchesSet);
     if (me.options.rabema && me.options.alignSecondary)
-        TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options);
+        TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
     else if (me.options.rabema && !me.options.alignSecondary)
-        TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options);
+        TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
     else if (!me.options.rabema && me.options.alignSecondary)
-        TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options);
+        TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
     else
-        TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options);
+        TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
 
     setHost(me.primaryCigars, me.cigars);
     setCargo(me.primaryCigars, me.primaryCigarPositions);

@@ -425,10 +425,10 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
             intIns = needleRightPos - needleLeftPos - 1 - repLength(iter);
         else
             intDel = repLength(iter) - (needleRightPos - needleLeftPos - 1);
-        /*
-        uint8_t overlap_l = max_e;
-        uint8_t overlap_r = max_e;*/
 
+        uint8_t overlap_l = max_e;
+        uint8_t overlap_r = max_e;
+/*
         uint8_t overlap_l;
         uint8_t overlap_r;
         if(s.pi[0] == 1){overlap_l = 0;}
@@ -437,7 +437,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 
         if(s.pi[s.pi.back()] == s.pi.size()){overlap_r = 0;}
         else if(needleRightPos == needleL + 1){overlap_r = intDel;}
-        else{overlap_r = max_e;}
+        else{overlap_r = max_e;}*/
 
         for(TContigsSum r = 0; r < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++r)
         {

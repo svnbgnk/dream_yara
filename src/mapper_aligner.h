@@ -74,19 +74,22 @@ struct MatchesAligner
     TContigSeqs const &     contigSeqs;
     TReadSeqs const &       readSeqs;
     Options const &         options;
+    uint8_t const           maxError;
 
     MatchesAligner(TCigars & cigarSet,
                    TCigarLimits & cigarLimits,
                    TMatches & matches,
                    TContigSeqs const & contigSeqs,
                    TReadSeqs const & readSeqs,
-                   Options const & options) :
+                   Options const & options,
+                   uint8_t maxError) :
         cigarSet(cigarSet),
         cigarLimits(cigarLimits),
         matches(matches),
         contigSeqs(contigSeqs),
         readSeqs(readSeqs),
-        options(options)
+        options(options),
+        maxError(maxError)
     {
         _alignMatches(*this);
     }
@@ -159,6 +162,16 @@ inline int _align(TContigGaps & contigGaps, TReadGaps & readGaps, TErrors errors
     return -globalAlignment(contigGaps, readGaps, Score<short, EditDistance>(), -(int)errors, (int)errors);
 }
 
+
+template< typename TCigarString>
+void print_cigar(TCigarString const cigar)
+{
+    for(int i = 0; i < length(cigar); ++i){
+        std::cout << cigar[i].count << cigar[i].operation;
+    }
+    std::cout << "\n";
+}
+
 // ----------------------------------------------------------------------------
 // Function _alignMatchImpl()
 // ----------------------------------------------------------------------------
@@ -185,7 +198,6 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     TMatch & match = value(matchIt);
     TSize matchId = matchIt - begin(me.matches, Standard());
 
-
     if (isInvalid(match)) return;
 
     unsigned errors = getMember(match, Errors());
@@ -193,6 +205,12 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     TContigInfix const & contigInfix = infix(me.contigSeqs[getMember(match, ContigId())],
                                              getMember(match, ContigBegin()),
                                              getMember(match, ContigEnd()));
+/*
+     std::cout << "Errors: " << (int)errors << "\n";
+     write(std::cout, *matchIt);
+    std::cout << "   " << readSeq << "\n";
+    std::cout << contigInfix << "\n";*/
+
 
     clear(me.contigAnchors);
     clear(me.readAnchors);
@@ -201,14 +219,21 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
 
     // Do not align if the match contains no gaps.
     // TODO(esiragusa): reuse DP matrix.
-    if (!(errors == 0 || (errors == 1 && length(contigInfix) == length(readSeq))))
+    //TODO write algorithm to align with 0 errors (only gaps at start and end)
+    if (true/*!(errors == 0 || (errors == 1 && length(contigInfix) == length(readSeq)))*/)
     {
-        int dpErrors = _align(contigGaps, readGaps, errors, TSpec());
+//         std::cout  << "Before alignment: "<< length(readGaps)  << "\t" << length(contigGaps) << "\n";
+
+        int dpErrors = _align(contigGaps, readGaps, 2 * me.maxError + errors, TSpec());
 
         SEQAN_ASSERT_LEQ(dpErrors, (int)errors);
         ignoreUnusedVariableWarning(dpErrors);
 
+//         std::cout << length(readGaps)  << "\t" << length(contigGaps) << "\n\n";
+//         std::cout << readGaps  << "\n" << contigGaps<< "\n\n";
         clipSemiGlobal(contigGaps, readGaps);
+
+//         std::cout << readGaps << "\n" << contigGaps << "\n";
 
         // Shrink the match after realigning and clipping.
         TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
@@ -217,6 +242,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         contigEnd = posAdd(contigEnd, endPosition(contigGaps));
         setContigPosition(match, contigBegin, contigEnd);
     }
+
 
 #ifdef YARA_PRINT_ALIGN
         write(std::cerr, match);
@@ -240,6 +266,15 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     // Copy cigar to set.
     // TODO(esiragusa): use assign if possible.
 //    me.cigarSet[getReadId(match)] = me.cigar;
+
+
+//     std::cout << "Length " << length(me.cigar) << "\t" << length(me.cigarSet[matchId]) << "\n";
+//     print_cigar(me.cigar);
+//     std::cout << "Set: \n";
+//     print_cigar(me.cigarSet[matchId]);
+
+//     std::cout << me.cigar << "\t" << "\n";
+
     SEQAN_CHECK(length(me.cigar) <= length(me.cigarSet[matchId]), "CIGAR error.");
 //    SEQAN_ASSERT_LEQ(length(me.cigar), length(me.cigarSet[getMember(match, ReadId())]));
     std::copy(begin(me.cigar, Standard()), end(me.cigar, Standard()), begin(me.cigarSet[matchId], Standard()));
