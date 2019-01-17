@@ -712,7 +712,7 @@ struct OSSContext
         strata = instrata;
 
 //         initReadsContext(ctx, readCount);
-        std::cout << "maxError: " << (int)nerrors << "\tStrata: " << (int)strata << "\n";
+        std::cout << "maxError: " << (int)nerrors << "\tStrata: " << (int)strata << "\n";/*
         if(!mScheme){
             clear(ctxOSS);
             resize(ctxOSS, readSeqs);
@@ -722,11 +722,10 @@ struct OSSContext
             std::vector<TTState> v;
             for(int i = 0; i < maxError + 1; ++i)
                 states.push_back(v);
-    //         states.reserve(maxError);
-        }else{
+        }else{*/
             std::cout << "Using multiple Schemes" << "\n";
             bestXMapper = true;
-        }
+//         }
     }
 
     template <typename TIter>

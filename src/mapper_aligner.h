@@ -205,11 +205,11 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     TContigInfix const & contigInfix = infix(me.contigSeqs[getMember(match, ContigId())],
                                              getMember(match, ContigBegin()),
                                              getMember(match, ContigEnd()));
-/*
+
      std::cout << "Errors: " << (int)errors << "\n";
      write(std::cout, *matchIt);
     std::cout << "   " << readSeq << "\n";
-    std::cout << contigInfix << "\n";*/
+    std::cout << contigInfix << "\n";
 
 
     clear(me.contigAnchors);
@@ -224,16 +224,16 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     {
 //         std::cout  << "Before alignment: "<< length(readGaps)  << "\t" << length(contigGaps) << "\n";
 
-        int dpErrors = _align(contigGaps, readGaps, 2 * me.maxError + errors, TSpec());
+        int dpErrors = _align(contigGaps, readGaps, 2 * me.maxError + 2 * errors, TSpec()); //TODO check this //2*maxError == Overlap + 2*errors since insertion cause an additional overlap error
 
         SEQAN_ASSERT_LEQ(dpErrors, (int)errors);
         ignoreUnusedVariableWarning(dpErrors);
 
 //         std::cout << length(readGaps)  << "\t" << length(contigGaps) << "\n\n";
-//         std::cout << readGaps  << "\n" << contigGaps<< "\n\n";
+        std::cout << readGaps  << "\n" << contigGaps<< "\n\n";
         clipSemiGlobal(contigGaps, readGaps);
 
-//         std::cout << readGaps << "\n" << contigGaps << "\n";
+        std::cout << readGaps << "\n" << contigGaps << "\n";
 
         // Shrink the match after realigning and clipping.
         TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
@@ -269,7 +269,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
 
 
 //     std::cout << "Length " << length(me.cigar) << "\t" << length(me.cigarSet[matchId]) << "\n";
-//     print_cigar(me.cigar);
+    print_cigar(me.cigar);
 //     std::cout << "Set: \n";
 //     print_cigar(me.cigarSet[matchId]);
 
