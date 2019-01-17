@@ -111,7 +111,7 @@ inline void find(const int minErrors,
                  StringSet<TNeedle, TStringSetSpec> const & needles,
                  TDistanceTag const & )
 {
-    if(strata == 99 || ossContext.oneSSBestXMapper)
+    if(strata == 99)
         strata = maxErrors;
 
     switch (maxErrors)
@@ -283,7 +283,7 @@ inline void findChris(const int minErrors,
                  StringSet<TNeedle, TStringSetSpec> const & needles,
                  TDistanceTag const & )
 {
-    if(strata == 99 || ossContext.oneSSBestXMapper)
+    if(strata == 99)
         strata = maxErrors;
 
     switch (maxErrors)
@@ -646,7 +646,7 @@ struct OSSContext
     bool trackReadCount = false;
     bool itv = true;
     bool bestXMapper = false; //still needed multiple searches
-    bool oneSSBestXMapper = false;
+//     bool oneSSBestXMapper = false;
 
     uint8_t maxError;
     uint8_t strata;
