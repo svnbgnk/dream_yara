@@ -57,6 +57,7 @@ public:
 
     CharString              MappabilityDirectory;
     bool                    ossOff = false;
+    bool                    noDelayITV = false;
     bool                    noMappability = false;
     bool                    compare = false;
     uint32_t                threshold = 11;
@@ -213,6 +214,7 @@ inline void appendStats(Mapper<TSpec, TMainConfig> & mainMapper, Mapper<TSpec, T
     mainMapper.stats.extendHits     += childMapper.stats.extendHits;
     mainMapper.stats.loadingBitvectors += childMapper.stats.loadingBitvectors;
     mainMapper.stats.optimumSearch +=  childMapper.stats.optimumSearch;
+    mainMapper.stats.inTextVerification +=  childMapper.stats.inTextVerification;
     mainMapper.stats.sortMatches    += childMapper.stats.sortMatches;
     mainMapper.stats.compactMatches += childMapper.stats.compactMatches;
     mainMapper.stats.selectPairs    += childMapper.stats.selectPairs;
@@ -977,6 +979,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.numberOfSequences = length(me.contigs.seqs);
     ossContext.itv = true;
     ossContext.normal.suspectunidirectional = false; //TODO reverse
+    ossContext.delayITV = !disOptions.noDelayITV;
 
     start(me.timer);
     if(mscheme){
@@ -991,36 +994,42 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         std::cerr << "\nOptimum Search time:\t\t" << me.timer << std::endl;
         std::cerr << "Matches count:\t\t\t" << lengthSum(me.matchesByCoord) << std::endl;
     }
-/*
+
     //save OSS hits
-    if(disOptions.compare){
+    if(disOptions.compare && !ossContext.delayITV){
         me2.matchesByCoord = me.matchesByCoord;
         me2.matchesSetByCoord = me.matchesSetByCoord;
         clear(me.matchesSetByCoord);
         clear(me.matchesByCoord);
         aggregateMatchesOSS(me2, readSeqs);
-
-        if(disOptions.verbose > 0)
-            std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me2.matchesSetByCoord) << std::endl;
-
-    }else{*/
+    }
+    else if(!ossContext.delayITV)
     {
-
-
-        std::cout << "Number of hits: " << length(me.matchesByCoord) << "\n";
-        if(disOptions.compare){
-            aggregateMatchesOSS(me, readSeqs);
-        }
-        else
-        {
-            aggregateMatchesITV(me, readSeqs);
-        }
+        std::cout << "ITV during Search\n";
+        aggregateMatchesOSS(me, readSeqs);
+/*
+        for(int i = 0; i < length(me.matchesSetByCoord); ++i){
+            auto const & matches = me.matchesSetByCoord[i];
+            auto matchIt = begin(matches, Standard());
+            auto matchEnd = end(matches, Standard());
+            while(matchIt != matchEnd){
+                write(std::cout, *matchIt);
+                ++matchIt;
+            }
+        }*/
+    }
+    else
+    {
+         //ITV after filtering
+        //filtering after cordinates + Intervalsize
+        aggregateMatchesITV(me, readSeqs);
 
         std::cout << "Hits after filtering: " << lengthSum(me.matchesSetByCoord) << "\n";
 
         typedef typename TConfig::TContigsLen                       TContigsLen;
         typedef typename TConfig::TContigsSize                      TContigsSize;
 
+        start(me.timer);
         uint32_t valids = 0;
         uint32_t oss = 0;
         uint32_t wrong = 0;
@@ -1102,15 +1111,17 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     ++matchIt;
                 }
         }
+
+        stop(me.timer);
+        me.stats.inTextVerification += getValue(me.timer);
         std::cout << "Hits accepted: " << valids << " OSS: " << oss << " dups: " << wrong << " from: " << lengthSum(me.matchesSetByCoord) << "\n";
 
-        if(disOptions.verbose > 0)
-            std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
     }
+    if(disOptions.verbose > 0)
+        std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord) << std::endl;
 
     }
-
-    if(disOptions.ossOff /*|| disOptions.compare*/)
+    if(disOptions.ossOff || disOptions.compare)
     {
         std::cout << "Using Seed and Extension: \n";
         initReadsContext(me, readSeqs);
@@ -1167,13 +1178,12 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         }
 
         //TODO use optimal Search Schemes again to get "correct Positions"
-        /*
+
         if(disOptions.compare){
-            compareHits(me, me2, maxError, strata, disOptions);
-        }*/
+//             compareHits(me, me2, me.maxError, me.strata, disOptions);
+        }
     }
 
-//     exit(0);
     rankMatches(me, me.reads.seqs);
     if (me.options.verifyMatches)
         verifyMatches(me);

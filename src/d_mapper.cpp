@@ -148,6 +148,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("nM", "noMappability", "Do not use Mappability in Search Schemes"));
 
+    addOption(parser, ArgParseOption("nD", "noDelayITV", "Use In Text Verification right after finding a a potential Position"));
+
     addOption(parser, ArgParseOption("th", "threshold", "Occurrence was filtered when below this threshold", ArgParseOption::INTEGER));
     hideOption(getOption(parser, "threshold"));
 
@@ -332,6 +334,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "ossOff")) disOptions.ossOff = true;
     if (isSet(parser, "compare")) disOptions.compare = true;
     if (isSet(parser, "noMappability")) disOptions.noMappability = true;
+    if (isSet(parser, "noDelayITV")) disOptions.noDelayITV = true;
 
     getOptionValue(disOptions.readLength, parser, "length");
 

@@ -367,6 +367,105 @@ inline void alignmentMyersBitvector(TContex & ossContext,
     }
 }
 
+template <typename TContex,
+          typename TDelegateD,
+          typename TString,
+          typename TContigsLen,
+          typename TSAValue,
+          typename TNeedle>
+inline void inTextVerificationN(TContex & ossContext,
+                                TDelegateD & delegateDirect,
+                                TNeedle & needle,
+                                uint32_t needleId,
+                                TString & ex_infix,
+                                TContigsLen const genomelength,
+                                TSAValue const & sa_info,
+                                uint8_t max_e,
+                                bool usingReverseText)
+{
+    typedef ModifiedString<TNeedle, ModReverse>           TNeedleInfixRev;
+    typedef ModifiedString<TString, ModReverse>           TStringInfixRev;
+    typedef Finder<TString>                               TFinder;
+    typedef Finder<TStringInfixRev>                       TFinder2;
+    typedef AlignTextBanded<FindInfix,
+                            NMatchesNone_,
+                            NMatchesNone_>                    TMyersSpecInfix;
+    typedef Myers<TMyersSpecInfix, True, void>                TAlgorithmInfix;
+    typedef PatternState_<TNeedle, TAlgorithmInfix>  TPatternInfix;
+    TPatternInfix patternInfix;
+
+    typedef AlignTextBanded<FindPrefix,
+                            NMatchesNone_,
+                            NMatchesNone_>               TMyersSpec;
+    typedef Myers<TMyersSpec, True, void>                TAlgorithm;
+    typedef PatternState_<TNeedle, TAlgorithm>  TPattern;
+    TPattern pattern;
+    typedef PatternState_<TNeedleInfixRev, TAlgorithm>  TPatternRev;
+    TPatternRev patternRev;
+
+
+    //calc Score:
+    uint8_t minErrors = max_e + 1;
+    TFinder finderInfix(ex_infix);
+
+//     std::cout << "Score from: \n" << ex_infix << "\n" << needle << "\n";
+    while (find(finderInfix, needle, patternInfix, -static_cast<int>(max_e + 1))) //TODO check
+    {
+        uint16_t currentErrors = -getScore(patternInfix);
+        if(minErrors > currentErrors)
+            minErrors = currentErrors;
+    }
+    if(minErrors > max_e)
+        return;
+
+    TFinder finder(ex_infix);
+    uint8_t mErrors = max_e * 4;
+    uint32_t endPos = 0;
+    while (find(finder, needle, pattern, -static_cast<int>(max_e * 4))) //TODO choose correct value
+    {
+        int currentEnd = position(finder) + 1;
+        uint16_t currentErrors = -getScore(pattern);
+//         std::cout << currentErrors << "\t" << currentEnd << "\n";
+        if (currentErrors < mErrors)
+        {
+            mErrors = currentErrors;
+            endPos = currentEnd;
+        }
+    }
+    TString infixPrefix = infix(ex_infix, 0, endPos);
+
+//     std::cout << "Cut one: " << "\n" << infixPrefix << "\n";
+
+
+    TStringInfixRev infixRev(infixPrefix);
+    TNeedleInfixRev needleRev(needle);
+    TFinder2 finder2(infixRev);
+
+    mErrors = max_e * 3;
+    uint32_t startPos = endPos;
+
+    while (find(finder2, needleRev, patternRev, -static_cast<int>(max_e * 3))) //TODO choose correct value
+    {
+        int currentEnd = position(finder2) + 1;
+        uint16_t currentErrors = -getScore(patternRev);
+//         std::cout << currentErrors << "\t" << currentEnd << "\n";
+        if (currentErrors < mErrors)
+        {
+            mErrors = currentErrors;
+            startPos = currentEnd;
+        }
+    }
+//     std::cout << "final cut\n";
+//     std::cout << infix(ex_infix, endPos - startPos, endPos) << "\n\n";
+
+    TSAValue sa_info_tmp = sa_info;
+    if(usingReverseText){
+            saPosOnFwd(sa_info_tmp, genomelength, length(needle));
+    }
+
+    delegateDirect(ossContext, posAdd(sa_info_tmp, endPos - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
+}
+
 template <typename TSpec, typename TConfig,
           typename TDelegateD,
           typename TIndex,
@@ -419,14 +518,6 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         //TODO if we are only interested in the best hit call return after delegate calls
         uint32_t needleL = length(needle);
         uint32_t max_e = s.u[s.u.size() - 1];
-        uint8_t intIns = 0;
-        uint8_t intDel = 0;
-        //calculate net sum of internal Insertions - Deletions
-/*
-        if(repLength(iter) < needleRightPos - needleLeftPos - 1)
-            intIns = needleRightPos - needleLeftPos - 1 - repLength(iter);
-        else
-            intDel = repLength(iter) - (needleRightPos - needleLeftPos - 1);*/
 
 //         uint8_t overlap_l = max_e;
 //         uint8_t overlap_r = max_e;
@@ -434,19 +525,24 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 //         std::cout << "NLP: " << needleLeftPos << "\tNRP: " << needleRightPos << "\trepL: " << (int)repLength(iter) << "\trange: " <<  (int)needleRightPos - needleLeftPos - 1 << "\n";
 //         std::cout << "Off: " << (int)limOffsets.i1 - max_e << ", " << (int)limOffsets.i2 - max_e << "\n";
 
-        uint8_t overlap_l = limOffsets.i1;
-        uint8_t overlap_r = limOffsets.i2;
-
-/*
         uint8_t overlap_l;
         uint8_t overlap_r;
-        if(s.pi[0] == 1){overlap_l = 0;}
-        else if(needleLeftPos == 0){overlap_l = intDel;}
-        else{overlap_l = max_e;}
 
-        if(s.pi[s.pi.back()] == s.pi.size()){overlap_r = 0;}
-        else if(needleRightPos == needleL + 1){overlap_r = intDel;}
-        else{overlap_r = max_e;}*/
+        if(ossContext.delayITV)
+        {
+            overlap_l = limOffsets.i1;
+            overlap_r = limOffsets.i2;
+        }
+        else
+        {
+            if(s.pi[0] == 1){overlap_l = 0;}
+            else if(needleLeftPos == 0){overlap_l = max_e - errors;}
+            else{overlap_l = max_e;}
+
+            if(s.pi[s.pi.back()] == s.pi.size()){overlap_r = 0;}
+            else if(needleRightPos == needleL + 1){overlap_r = max_e - errors;}
+            else{overlap_r = max_e;}
+        }
 
         for(TContigsSum r = 0; r < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++r)
         {
@@ -483,7 +579,15 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 TContigSeqsInfix n_infix = infix(genome[getSeqNo(sa_info)], seqOffset, seqOffset + needleL);
                 alignmentMyersBitvector(ossContext, delegateDirect, needle, needleId, n_infix, ex_infix, chromlength, sa_info, max_e, overlap_l, overlap_r, intDel, false);
                 */
-                delegateDirect(ossContext, posAdd(sa_info, -overlap_l), posAdd(sa_info, needleL + overlap_r), needleId, 127);
+                if(ossContext.delayITV)
+                {
+                    delegateDirect(ossContext, posAdd(sa_info, -overlap_l), posAdd(sa_info, needleL + overlap_r), needleId, 127);
+                }
+                else
+                {
+                    TContigSeqsInfix ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
+                    inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, -overlap_l), max_e, false);
+                }
 //                 std::cout << posAdd(sa_info, -overlap_l) << "\t" << posAdd(sa_info, needleL + overlap_r) << "\n";
             }
         }

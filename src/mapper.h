@@ -259,6 +259,7 @@ struct Stats
     TValue extendHits;
     TValue loadingBitvectors;
     TValue optimumSearch;
+    TValue inTextVerification;
     TValue sortMatches;
     TValue compactMatches;
     TValue selectPairs;
@@ -281,6 +282,7 @@ struct Stats
         extendHits(0),
         loadingBitvectors(0),
         optimumSearch(0),
+        inTextVerification(0),
         sortMatches(0),
         compactMatches(0),
         selectPairs(0),
@@ -1481,6 +1483,7 @@ inline void printStats(Mapper<TSpec, TConfig> const & me, Timer<TValue> const & 
     std::cerr << "Extension time:\t\t\t" << me.stats.extendHits << " sec" << "\t\t" << me.stats.extendHits / total << " %" << std::endl;
     std::cerr << "Bitvector loading time:\t\t" << me.stats.loadingBitvectors << " sec" << "\t\t" << me.stats.loadingBitvectors/ total << " %" << std::endl;
     std::cerr << "Optimum Search time:\t\t" << me.stats.optimumSearch << " sec" << "\t\t" << me.stats.optimumSearch / total << " %" << std::endl;
+    std::cerr << "In Text Verifi time:\t\t" << me.stats.inTextVerification << " sec" << "\t\t" << me.stats.inTextVerification / total << " %" << std::endl;
     std::cerr << "Sorting time:\t\t\t" << me.stats.sortMatches << " sec" << "\t\t" << me.stats.sortMatches / total << " %" << std::endl;
     std::cerr << "Compaction time:\t\t" << me.stats.compactMatches << " sec" << "\t\t" << me.stats.compactMatches / total << " %" << std::endl;
     if (IsSameType<typename TConfig::TSequencing, PairedEnd>::VALUE)

@@ -646,6 +646,7 @@ struct OSSContext
     bool trackReadCount = false;
     bool itv = true;
     bool bestXMapper = false; //still needed multiple searches
+    bool delayITV = false; //TODO add as option
 //     bool oneSSBestXMapper = false;
 
     uint8_t maxError;
