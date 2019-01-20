@@ -158,9 +158,12 @@ struct Delegate
 
 
     TMatches &          matches;
+    bool const          noOverlap;
 
-    Delegate(TMatches & matches) :
-        matches(matches)
+    Delegate(TMatches & matches,
+             bool noOverlap) :
+        matches(matches),
+        noOverlap(noOverlap)
     {}
 
     template <typename TContext, typename TNeedleId, typename TMatchErrors>
@@ -176,8 +179,11 @@ struct Delegate
 //             TSAValue saPos = iter.fwdIter.index->sa[i];
 //              std::cout << occ << "\n";
             TMatch hit;
-//             setContigPosition(hit, occ, posAdd(occ, occLength));
-            setContigPosition(hit, posAdd(occ, 0 - overlap_l), posAdd(occ, occLength + overlap_r));
+            if(noOverlap){
+                setContigPosition(hit, occ, posAdd(occ, occLength));
+            }else{
+                setContigPosition(hit, posAdd(occ, 0 - overlap_l), posAdd(occ, occLength + overlap_r));
+            }
             hit.errors = errors;
             setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
@@ -942,7 +948,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     reserve(me.matchesByCoord, countHits(me) / 3); //some formula includding distance errors and mappability
 
     TMatchesAppender appender(me.matchesByCoord);
-    Delegate delegate(appender);
+    bool noOverlap = disOptions.noDelayITV || disOptions.hammingDistance;
+    Delegate delegate(appender, noOverlap);
     DelegateDirect delegateDirect(appender);
     TContigSeqs & contigSeqs = me.contigs.seqs;
 
@@ -985,9 +992,15 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     start(me.timer);
     if(mscheme){
-        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+        if(disOptions.hammingDistance)
+            find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
+        else
+            find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
     }else{
-        find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+        if(disOptions.hammingDistance)
+            find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
+        else
+            find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
     }
     stop(me.timer);
     me.stats.optimumSearch += getValue(me.timer);

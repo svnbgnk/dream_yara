@@ -143,6 +143,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("of", "ossOff", "Turn Optimal Search Schemes off."));
 
+    addOption(parser, ArgParseOption("HD", "hammingD", "Use Hamming Distance to Search for reads."));
+
     addOption(parser, ArgParseOption("c", "compare", "Compare hits between OSS and the original Yara seed + extention."));
     hideOption(getOption(parser, "compare"));
 
@@ -334,6 +336,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     getOptionValue(disOptions.threshold, parser, "threshold");
 
     if (isSet(parser, "ossOff")) disOptions.ossOff = true;
+    if (isSet(parser, "hammingD")) disOptions.hammingDistance = true;
     if (isSet(parser, "compare")) disOptions.compare = true;
     if (isSet(parser, "noMappability")) disOptions.noMappability = true;
     if (isSet(parser, "noITV")) disOptions.noITV = true;

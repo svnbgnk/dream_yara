@@ -162,6 +162,15 @@ inline int _align(TContigGaps & contigGaps, TReadGaps & readGaps, TErrors errors
     return -globalAlignment(contigGaps, readGaps, Score<short, EditDistance>(), -(int)errors, (int)errors);
 }
 
+template <typename TContigGaps, typename TReadGaps, typename TErrors>
+inline int _align(TContigGaps & contigGaps, TReadGaps & readGaps, TErrors errors)
+{
+    Score<short, Simple> scoringScheme(1, -1, -999);
+    return -globalAlignment(contigGaps, readGaps, scoringScheme, -(int)errors, (int)errors);
+//     return -globalAlignment(contigGaps, readGaps, Score<short, HammingDistance>(), -(int)errors, (int)errors);
+}
+
+
 
 template< typename TCigarString>
 void print_cigar(TCigarString const cigar)
@@ -223,7 +232,12 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     {
 //         std::cout  << "Before alignment: "<< length(readGaps)  << "\t" << length(contigGaps) << "\n";
 
-        int dpErrors = _align(contigGaps, readGaps, 2 * me.maxError + 2 * errors, TSpec()); //TODO check this //2*maxError == Overlap + 2*errors since insertion cause an additional overlap error
+        int dpErrors;
+        if(!me.options.hammingDistance)
+            dpErrors = _align(contigGaps, readGaps, 2 * me.maxError + 2 * errors, TSpec());
+        //TODO check this //2*maxError == Overlap + 2*errors since insertion cause an additional overlap error
+        else
+            dpErrors = _align(contigGaps, readGaps, 2*errors);
 
         SEQAN_ASSERT_LEQ(dpErrors, (int)errors);
         ignoreUnusedVariableWarning(dpErrors);

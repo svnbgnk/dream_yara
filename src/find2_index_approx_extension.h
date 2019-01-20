@@ -148,7 +148,7 @@ inline void genomeSearch(OSSContext<TSpec, TConfig> & ossContext,
             return;
         }
     }
-    delegateDirect(ossContext, sa_info, posAdd(sa_info, length(needle)), errors, needleId);
+    delegateDirect(ossContext, sa_info, posAdd(sa_info, length(needle)), needleId, errors);
 }
 
 template<typename TBitvectorPair,

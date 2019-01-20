@@ -61,6 +61,7 @@ struct Options
     Pair<CharString>    readsFile;
     CharString          outputFile;
     TOutputFormat       outputFormat;
+    bool                hammingDistance;
     SecondaryAlignments secondaryMatches;
     TList               secondaryMatchesList;
     bool                uncompressedBam;
@@ -95,6 +96,7 @@ struct Options
         contigsSize(),
         contigsMaxLength(),
         contigsSum(),
+        hammingDistance(false),
         secondaryMatches(TAG),
         uncompressedBam(false),
         readGroup("none"),
