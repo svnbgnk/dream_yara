@@ -57,6 +57,7 @@ public:
 
     CharString              MappabilityDirectory;
     bool                    ossOff = false;
+    bool                    noITV = false;
     bool                    noDelayITV = false;
     bool                    noMappability = false;
     bool                    compare = false;
@@ -978,7 +979,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.setReadContextOSS(me.maxError, me.strata, mscheme);
     ossContext.readLength = len;
     ossContext.numberOfSequences = length(me.contigs.seqs);
-    ossContext.itv = true;
+    ossContext.itv = !disOptions.noITV;
     ossContext.normal.suspectunidirectional = false; //TODO reverse
     ossContext.delayITV = !disOptions.noDelayITV;
 

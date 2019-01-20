@@ -536,13 +536,15 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         }
         else
         {
-            if(s.pi[0] == 1){overlap_l = 0;}
-            else if(needleLeftPos == 0){overlap_l = max_e - errors;}
-            else{overlap_l = max_e;}
+            overlap_l = max_e;
+            overlap_r = max_e;
+/*
+            //
+            if(s.pi[0] == 1 || needleLeftPos == 0){overlap_l = 0;}
+            else{overlap_l = max_e - errors;}
 
-            if(s.pi[s.pi.back()] == s.pi.size()){overlap_r = 0;}
-            else if(needleRightPos == needleL + 1){overlap_r = max_e - errors;}
-            else{overlap_r = max_e;}
+            if(s.pi[s.pi.back()] == s.pi.size() || needleRightPos == needleL + 1){overlap_r = 0;}
+            else{overlap_r = max_e - errors;}*/
         }
 
         for(TContigsSum r = 0; r < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++r)
