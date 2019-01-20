@@ -137,6 +137,7 @@ struct DelegateDirect
 
 //         THit hit = { range(indexIt), (TSeedId)position(seedsIt), errors };
 
+//         write(std::cout, hit);
         appendValue(matches, hit, Generous(), typename Traits::TThreading());
     }
 };
@@ -161,21 +162,21 @@ struct Delegate
         matches(matches)
     {}
 
-    template <typename TContext, typename TNeedle, typename TNeedleId, typename TMatchErrors>
-    void operator() (TContext & ossContext, auto const & iter, auto & limOffsets, TNeedle const & needle, TNeedleId const needleId, TMatchErrors const errors, bool const rev)
+    template <typename TContext, typename TNeedleId, typename TMatchErrors>
+    void operator() (TContext & ossContext, auto const & iter, auto & limOffsets, TNeedleId const needleId, TMatchErrors const errors, bool const rev)
     {
         uint8_t overlap_l = limOffsets.i1;
         uint8_t overlap_r = limOffsets.i2;
 
         TReadId readId = getReadId(ossContext.readSeqs, needleId);
-//         uint32_t occLength = repLength(iter);
+        uint32_t occLength = repLength(iter);
         for (TContigsPos occ : getOccurrences(iter)){
 //         for (TSAPos i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i){
 //             TSAValue saPos = iter.fwdIter.index->sa[i];
 //              std::cout << occ << "\n";
             TMatch hit;
 //             setContigPosition(hit, occ, posAdd(occ, occLength));
-            setContigPosition(hit, posAdd(occ, -overlap_l), posAdd(occ, length(needle) + /*occLength +*/ overlap_r));
+            setContigPosition(hit, posAdd(occ, 0 - overlap_l), posAdd(occ, occLength + overlap_r));
             hit.errors = errors;
             setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 

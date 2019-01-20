@@ -455,10 +455,11 @@ inline void inTextVerificationN(TContex & ossContext,
             startPos = currentEnd;
         }
     }
-//     std::cout << "final cut\n";
-//     std::cout << infix(ex_infix, endPos - startPos, endPos) << "\n\n";
 
     TSAValue sa_info_tmp = sa_info;
+
+//     std::cout << "final cut" << needleId << "\t" << posAdd(sa_info_tmp, endPos - startPos) << "\t" << posAdd(sa_info_tmp, endPos) << "\n";
+//     std::cout << infix(ex_infix, endPos - startPos, endPos) << "\n\n";
     if(usingReverseText){
             saPosOnFwd(sa_info_tmp, genomelength, length(needle));
     }
@@ -1140,13 +1141,11 @@ inline void _optimalSearchSchemeExact(TContex & ossContext,
 template <typename TSpec, typename TConfig,
           typename TDelegate,
           typename TIndex,
-          typename TNeedle,
           typename TBitvectorPair>
 inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
                              TDelegate & delegate,
                              Iter<TIndex, VSTree<TopDown<> > > iter,
                              Pair <int8_t, int8_t> limOffsets,
-                             TNeedle const & needle,
                              uint32_t needleId,
                              std::vector<TBitvectorPair > & bitvectors,
                              uint8_t const errors)
@@ -1167,7 +1166,7 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
             if(i != lastStart){
                 iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
                 iter.fwdIter.vDesc.range.i2 = rangeStart + i - 1;
-                delegate(ossContext, iter, limOffsets, needle, needleId, errors, false);
+                delegate(ossContext, iter, limOffsets, needleId, errors, false);
             }
             lastStart = i + 1;
         }
@@ -1175,7 +1174,7 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
     if(lastStart < rangeEnd - rangeStart){
         iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
         iter.fwdIter.vDesc.range.i2 = rangeStart + rangeEnd - rangeStart;
-        delegate(ossContext, iter, limOffsets, needle, needleId, errors, false);
+        delegate(ossContext, iter, limOffsets, needleId, errors, false);
     }
 }
 
@@ -1218,12 +1217,12 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
         //last input only matters for unidirectional searches (has to be false in this case)
         if(!lastEdit/*true*/){
             if(checkMappa){
-                filteredDelegate(ossContext, delegate, iter, limOffsets, needle, needleId, bitvectors, errors);
+                filteredDelegate(ossContext, delegate, iter, limOffsets, needleId, bitvectors, errors);
             }
             else
             {
 //                 std::cout << "Calling delegate" << "\n";
-                delegate(ossContext, iter, limOffsets, needle, needleId, errors, false);
+                delegate(ossContext, iter, limOffsets, needleId, errors, false);
             }
         }
         return;

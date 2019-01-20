@@ -167,7 +167,7 @@ template< typename TCigarString>
 void print_cigar(TCigarString const cigar)
 {
     for(int i = 0; i < length(cigar); ++i){
-        std::cout << cigar[i].count << cigar[i].operation;
+        std::cout << (int)cigar[i].count << (char)cigar[i].operation;
     }
     std::cout << "\n";
 }
@@ -271,7 +271,6 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
 //     std::cout << "Set: \n";
 //     print_cigar(me.cigarSet[matchId]);
 
-//     std::cout << me.cigar << "\t" << "\n";
 
     SEQAN_CHECK(length(me.cigar) <= length(me.cigarSet[matchId]), "CIGAR error.");
 //    SEQAN_ASSERT_LEQ(length(me.cigar), length(me.cigarSet[getMember(match, ReadId())]));
