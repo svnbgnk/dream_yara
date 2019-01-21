@@ -214,6 +214,10 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     TContigInfix const & contigInfix = infix(me.contigSeqs[getMember(match, ContigId())],
                                              getMember(match, ContigBegin()),
                                              getMember(match, ContigEnd()));
+
+        TContigInfix const & contigInfix2 = infix(me.contigSeqs[getMember(match, ContigId())],
+                                             getMember(match, ContigBegin()) - 3,
+                                             getMember(match, ContigEnd()) + 3);
 /*
     std::cout << "Errors: " << (int)errors << "\n";
     write(std::cout, *matchIt);
@@ -224,6 +228,9 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     clear(me.readAnchors);
     TContigGaps contigGaps(contigInfix, me.contigAnchors);
     TReadGaps readGaps(readSeq, me.readAnchors);
+
+    auto contigGaps2 = contigGaps;
+    auto readGaps2 = readGaps;
 
     // Do not align if the match contains no gaps.
     // TODO(esiragusa): reuse DP matrix.
@@ -279,7 +286,9 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         write(std::cout, *matchIt);
         std::cout << readSeq << "\n";
         std::cout << contigInfix << "\n";
-
+        std::cout << contigInfix2 << "\n";
+        std::cout << readGaps2 << "\n";
+        std::cout << contigGaps2 << "\n\n";
         std::cout << readGaps << "\n" << contigGaps << "\n";
         print_cigar(me.cigar);
     }

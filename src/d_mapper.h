@@ -1110,7 +1110,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
 //                     uint32_t readId = getReadIdOSS(*largematch);
                     uint32_t readSeqId = getReadSeqId(*largematch, readSeqs);
-                    TReadId readId = getReadId(readSeqs, readSeqId);
+                    uint32_t readId = getReadId(readSeqs, readSeqId);
 
                     if(getMember(*largematch, Errors()) <= me.maxError){
 //                         std::cout << "already Confirmed!!\n";
