@@ -507,6 +507,9 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
     typedef typename InfixOnValue<TNeedle const>::Type       TNeedleInfix;
 //      typedef ModifiedString<TNeedleInfix, ModReverse>     TNeedleInfixRev;
 
+    typedef typename TTraits::TReadSeqs                                                 TReadSeqs;
+    typedef typename Size<TReadSeqs>::Type                                              TReadId;
+
     TContigSeqs const & genome = ossContext.contigSeqs;
 
 //     auto const & genome = indexText(*iter.fwdIter.index);
@@ -561,7 +564,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                     if(!(needleLeftPos + overlap_l <= seqOffset && chromlength - 1 >= seqOffset - needleLeftPos + needleL - 1 + overlap_r))
                         continue;
 //                     sa_info.i2 = sa_info.i2 - needleLeftPos;
-                    setSeqOffset(sa_info, seqOffset - needleLeftPos); //maybe -1
+                    setSeqOffset(sa_info, seqOffset - needleLeftPos);
                 }
                 else
                 {
@@ -582,7 +585,12 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 TContigSeqsInfix n_infix = infix(genome[getSeqNo(sa_info)], seqOffset, seqOffset + needleL);
                 alignmentMyersBitvector(ossContext, delegateDirect, needle, needleId, n_infix, ex_infix, chromlength, sa_info, max_e, overlap_l, overlap_r, intDel, false);
                 */
-                if(ossContext.delayITV)
+
+                TReadId readId = getReadId(ossContext.readSeqs, needleId);
+
+//                 std::cout << ossContext.strata + s.l[s.l.size() - 1] << "\t" << ossContext.maxError << "\n";
+                //TODO search <0, 2> need to search till 0 is found or 1
+                if(ossContext.delayITV && isMapped(ossContext.ctx, readId) || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError)
                 {
                     delegateDirect(ossContext, posAdd(sa_info, -overlap_l), posAdd(sa_info, needleL + overlap_r), needleId, 127);
                 }

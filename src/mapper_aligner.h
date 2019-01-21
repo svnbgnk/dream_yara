@@ -234,7 +234,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
 
         int dpErrors;
         if(!me.options.hammingDistance)
-            dpErrors = _align(contigGaps, readGaps, 2 * me.maxError + 2 * errors, TSpec());
+            dpErrors = _align(contigGaps, readGaps, 4 * me.maxError, TSpec());
         //TODO check this //2*maxError == Overlap + 2*errors since insertion cause an additional overlap error
         else
             dpErrors = _align(contigGaps, readGaps, 2*errors);
@@ -272,6 +272,18 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     // Compute cigar.
     clear(me.cigar);
     getCigarString(me.cigar, contigGaps, readGaps, length(contigInfix));
+
+    if(length(me.cigar) > length(me.cigarSet[matchId])){
+        std::cout << "Errors: " << (int)errors << "\n";
+        std::cout << "K-band " << (int)(4 * me.maxError) << "\n";
+        write(std::cout, *matchIt);
+        std::cout << readSeq << "\n";
+        std::cout << contigInfix << "\n";
+
+        std::cout << readGaps << "\n" << contigGaps << "\n";
+        print_cigar(me.cigar);
+    }
+
     SEQAN_CHECK(_getQueryLength(me.cigar) == length(readSeq), "CIGAR error.");
 //    SEQAN_ASSERT_EQ(_getQueryLength(me.cigar), length(readSeq));
 

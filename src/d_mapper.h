@@ -128,8 +128,10 @@ struct DelegateDirect
         setReadId(hit, ossContext.readSeqs, needleId);
 
         TReadId readId = getReadId(ossContext.readSeqs, needleId);
-        setMapped(ossContext.ctx, readId);
-        setMinErrors(ossContext.ctx, readId, errors);
+        if(errors < 127){
+            setMapped(ossContext.ctx, readId);
+            setMinErrors(ossContext.ctx, readId, errors);
+        }
 
 
 //         std::cout << "Direct hit" << start << "end" << end << " (" << (int)getSeqOffset(end) - getSeqOffset(start) << ")" << "\t" << needleId << "\terrors" << (int) errors << "\n";
@@ -893,17 +895,26 @@ inline bool inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNee
     uint8_t minErrors = maxErrors + 1;
     TFinder finder(text);
 
-    while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 2))) //TODO choose correct value
+    while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 4))) //TODO choose correct value
     {
         uint16_t currentErrors = -getScore(pattern);
         if(minErrors > currentErrors)
             minErrors = currentErrors;
+
 //         std::cout << "cScore: " << currentErrors << "\t";
     }
 
 //     std::cout << "\nScore: " << (int)minErrors << "\n";
     if(minErrors <= maxErrors)
         match.errors = minErrors;
+/*
+    if(14668 == match.readId){
+        write(std::cout, match);
+        std::cout << "Needle: \n" << needle << "\n";
+        std::cout << text << "\n";
+
+        std::cout << "E: " << match.errors << "\n";
+    }*/
 
     return(minErrors <= maxErrors);
 }
@@ -1097,6 +1108,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         lastHitLength = getMember(*matchIt, ContigEnd()) - getMember(*matchIt, ContigBegin());
                     }
 
+//                     uint32_t readId = getReadIdOSS(*largematch);
+                    uint32_t readSeqId = getReadSeqId(*largematch, readSeqs);
+                    TReadId readId = getReadId(readSeqs, readSeqId);
+
                     if(getMember(*largematch, Errors()) <= me.maxError){
 //                         std::cout << "already Confirmed!!\n";
                         ++oss;
@@ -1105,16 +1120,17 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         continue;
                     }
 
-                    uint32_t readId = getReadIdOSS(*largematch);
-                    bool valid = inTextVerification(me, *largematch, readSeqs[readId], me.maxError);
+                    bool valid = inTextVerification(me, *largematch, readSeqs[readSeqId], me.maxError);
 //                     if(valid)
 //                         std::cout << "Accepted: " << "\t";
                     if(valid){
 //                         write(std::cout, *largematch);
+                        setMapped(me.ctx, readId);
                         ++valids;
                     }else{
                         setInvalid(*largematch);
                     }
+
 //                     std::cout << "finished Interval" << "\n";
                     largematch = matchIt;
 /*

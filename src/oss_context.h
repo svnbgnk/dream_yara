@@ -608,8 +608,8 @@ public:
         step = 0b11;
         distancetoblockend = 2;
 
-        directsearchblockoffset = 0;
-        directsearch_th = 2;
+        directsearchblockoffset = 2;
+        directsearch_th = 4;
         filter_th = 0.5;
 
         invflipdensity = 0.5;
