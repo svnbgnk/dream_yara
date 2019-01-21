@@ -420,7 +420,7 @@ inline void inTextVerificationN(TContex & ossContext,
 
     TFinder finder(ex_infix);
     uint8_t mErrors = max_e * 4;
-    uint32_t endPos = 0;
+    TContigsLen endPos = 0;
     while (find(finder, needle, pattern, -static_cast<int>(max_e * 4))) //TODO choose correct value
     {
         int currentEnd = position(finder) + 1;
@@ -442,7 +442,7 @@ inline void inTextVerificationN(TContex & ossContext,
     TFinder2 finder2(infixRev);
 
     mErrors = max_e * 3;
-    uint32_t startPos = endPos;
+    TContigsLen startPos = endPos;
 
     while (find(finder2, needleRev, patternRev, -static_cast<int>(max_e * 3))) //TODO choose correct value
     {

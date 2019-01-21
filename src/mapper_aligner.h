@@ -291,9 +291,14 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         std::cout << contigGaps2 << "\n\n";
         std::cout << readGaps << "\n" << contigGaps << "\n";
         print_cigar(me.cigar);
+        setInvalid(match);
+        return;
     }
 
-    SEQAN_CHECK(_getQueryLength(me.cigar) == length(readSeq), "CIGAR error.");
+//     SEQAN_CHECK(_getQueryLength(me.cigar) == length(readSeq), "CIGAR error.");
+
+
+
 //    SEQAN_ASSERT_EQ(_getQueryLength(me.cigar), length(readSeq));
 
     // Copy cigar to set.
