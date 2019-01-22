@@ -409,7 +409,7 @@ inline void inTextVerificationN(TContex & ossContext,
     TFinder finderInfix(ex_infix);
 
 //     std::cout << "Score from: \n" << ex_infix << "\n" << needle << "\n";
-    while (find(finderInfix, needle, patternInfix, -static_cast<int>(max_e + 1))) //TODO check
+    while (find(finderInfix, needle, patternInfix, -static_cast<int>(length(needle)))) //TODO check
     {
         uint16_t currentErrors = -getScore(patternInfix);
         if(minErrors > currentErrors)
@@ -521,7 +521,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         //TODO put this into a function
         //TODO if we are only interested in the best hit call return after delegate calls
         uint32_t needleL = length(needle);
-        uint32_t max_e = s.u[s.u.size() - 1];
+        uint32_t max_e = ossContext.maxError;
 
 //         uint8_t overlap_l = max_e;
 //         uint8_t overlap_r = max_e;
@@ -1325,7 +1325,7 @@ inline void _optimalSearchScheme(TContex & ossContext,
                                  TDistanceTag const &)
 {
     bool initialDirection = s.pi[1] > s.pi[0];
-    uint32_t max_e = s.u[s.u.size() - 1];
+    uint32_t max_e = ossContext.maxError; //unify overlap between all used schemes
     if(initialDirection)
         _optimalSearchScheme(ossContext, delegate, delegateDirect, it, Pair<int8_t, int8_t>(max_e, max_e), needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Rev(), TDistanceTag());
     else

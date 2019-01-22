@@ -895,7 +895,7 @@ inline bool inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNee
     uint8_t minErrors = maxErrors + 1;
     TFinder finder(text);
 
-    while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 4))) //TODO choose correct value
+    while (find(finder, needle, pattern, -static_cast<int>(length(needle)))) //TODO choose correct value
     {
         uint16_t currentErrors = -getScore(pattern);
         if(minErrors > currentErrors)
