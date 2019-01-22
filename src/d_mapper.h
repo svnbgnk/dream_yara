@@ -108,9 +108,10 @@ public:
 template <typename TSpec, typename TConfig>
 struct DelegateDirect
 {
-    typedef MapperTraits<TSpec, TConfig>                    Traits;
+    typedef MapperTraits<TSpec, TConfig>                   Traits;
     typedef typename Traits::TMatch                        TMatch;
     typedef typename Traits::TMatchesAppender              TMatches;
+    typedef typename Traits::TContigsPos                  TContigsPos;
 
 
     TMatches &          matches;
@@ -119,7 +120,7 @@ struct DelegateDirect
         matches(matches)
     {}
 
-    template <typename TContext, typename TContigsPos, typename TReadId, typename TMatchErrors>
+    template <typename TContext, typename TReadId, typename TMatchErrors>
     void operator() (TContext & ossContext, TContigsPos const & start, TContigsPos const & end, TReadId const needleId, TMatchErrors errors)
     {
         TMatch hit;

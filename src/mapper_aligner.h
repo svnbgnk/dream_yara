@@ -231,6 +231,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
 
     auto contigGaps2 = contigGaps;
     auto readGaps2 = readGaps;
+    int dpErrors;
 
     // Do not align if the match contains no gaps.
     // TODO(esiragusa): reuse DP matrix.
@@ -239,7 +240,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     {
 //         std::cout  << "Before alignment: "<< length(readGaps)  << "\t" << length(contigGaps) << "\n";
 
-        int dpErrors;
+//         int dpErrors;
         if(!me.options.hammingDistance)
             dpErrors = _align(contigGaps, readGaps, 4 * me.maxError, TSpec());
         //TODO check this //2*maxError == Overlap + 2*errors since insertion cause an additional overlap error
@@ -281,7 +282,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     getCigarString(me.cigar, contigGaps, readGaps, length(contigInfix));
 
     if(length(me.cigar) > length(me.cigarSet[matchId])){
-        std::cout << "Errors: " << (int)errors << "\n";
+        std::cout << "Errors: " << (int)errors << "\t dpErrors: " << dpErrors << "\n";
         std::cout << "K-band " << (int)(4 * me.maxError) << "\n";
         write(std::cout, *matchIt);
         std::cout << readSeq << "\n";

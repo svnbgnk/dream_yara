@@ -496,6 +496,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
     typedef typename TTraits::TSA                            TSA;
     typedef typename Size<TSA>::Type                         TSAPos;
     typedef typename Value<TSA>::Type                        TSAValue;
+    typedef typename TTraits::TContigsPos                    TContigsPos;
     typedef typename TConfig::TContigsLen                    TContigsLen; //sa.i2
     typedef typename TConfig::TContigsSize                   TContigsSize; //sa.i1
     typedef typename TConfig::TContigsSum                    TContigsSum; //SAVALUE
