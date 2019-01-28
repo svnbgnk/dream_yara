@@ -129,6 +129,7 @@ struct DelegateDirect
         setReadId(hit, ossContext.readSeqs, needleId);
 
         TReadId readId = getReadId(ossContext.readSeqs, needleId);
+
         if(errors < 127){
             setMapped(ossContext.ctx, readId);
             setMinErrors(ossContext.ctx, readId, errors);
@@ -1003,6 +1004,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.delayITV = !disOptions.noDelayITV;
 
     start(me.timer);
+
     if(mscheme){
         if(disOptions.hammingDistance)
             find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
@@ -1014,6 +1016,17 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         else
             find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
     }
+
+    if (me.options.verbose > 0)
+    {
+        typedef MapperTraits<TSpec, TMainConfig>                    TTraits2;
+        unsigned long mappedReads = count(me.ctx.mapped, true, typename TTraits2::TThreading());
+        me.stats.mappedReads += mappedReads;
+
+        if (me.options.verbose > 0)
+            std::cerr << "1Mapped reads:\t\t\t" << mappedReads << std::endl;
+    }
+
     stop(me.timer);
     me.stats.optimumSearch += getValue(me.timer);
     if(disOptions.verbose > 0)
@@ -1153,6 +1166,17 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord) << std::endl;
 
     }
+
+    if (me.options.verbose > 0)
+    {
+        typedef MapperTraits<TSpec, TMainConfig>                    TTraits2;
+        unsigned long mappedReads = count(me.ctx.mapped, true, typename TTraits2::TThreading());
+        me.stats.mappedReads += mappedReads;
+
+        if (me.options.verbose > 0)
+            std::cerr << "2Mapped reads:\t\t\t" << mappedReads << std::endl;
+    }
+
     if(disOptions.ossOff || disOptions.compare)
     {
         std::cout << "Using Seed and Extension: \n";

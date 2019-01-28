@@ -784,24 +784,6 @@ struct OSSContext
         bool enoughDistanceToBlockEnds = step + normal.distancetoblockend < nextBlocklength && step - normal.distancetoblockend > prevBlocklength;
         return(((step & normal.step) == 0) && enoughDistanceToBlockEnds);
     }
-
-    void delegate(auto const & iter, uint32_t const needleId, uint8_t errors, bool const rev){
-        std::cout << "Trying to report occ" << "\n";
-        uint32_t occLength = repLength(iter);
-        for (auto occ : getOccurrences(iter)){
-            TMatch hit;
-            setContigPosition(hit, occ, posAdd(occ, occLength));
-            hit.errors = errors;
-            setReadId(hit, readSeqs, needleId);
-            setMapped(ctx, needleId);
-//             setMinErrors(ctx, needleId, errors);
-    //         hit.readId = needleId;
-//TODO to du maybe use this form
-    //         THit hit = { range(indexIt), (TSeedId)position(seedsIt), errors };
-
-            appendValue(matches, hit, Generous(), typename TTraits::TThreading());
-        }
-    }
 };
 
 #endif
