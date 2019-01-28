@@ -60,15 +60,16 @@ bool checkForElem(TVector const & v, TElem const & e)
 
 template <typename TContigsSum>
 bitvectors create_all_bit_vectors(const vector <uint8_t> & mappability,
-                                  uint32_t const len, uint32_t const threshold, uint8_t const errors, uint8_t const strata,  uint32_t const mythreads, bool const verbose){
+                                  uint32_t const len, uint32_t const threshold, uint8_t const errors, uint8_t const strata, bool const indels,  uint32_t const mythreads, bool const verbose){
 
     //TODO switch left and right in the moment they discribe in which direction the k-mere is
     bitvectors b;
     sdsl::bit_vector righti (mappability.size() + len - 1, 0);
     sdsl::bit_vector lefti (mappability.size() + len - 1, 0);
+    uint32_t anchored_shift = (indels) ? (len + errors) : (len);
     #pragma omp parallel for schedule(static) //num_threads(mythreads)
     for(TContigsSum i = 0; i < mappability.size(); ++i){
-        lefti[i + len - 1] = (mappability[i] <= threshold);
+        lefti[i + anchored_shift - 1] = (mappability[i] <= threshold);
         righti[i] = (mappability[i] <= threshold);
     }
     if(verbose)

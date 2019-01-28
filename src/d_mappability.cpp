@@ -267,6 +267,7 @@ inline void runMappability(OptionsM & options)
         std::cerr << "Cannot find mappability file" << "\n";
         exit(0);
     }
+
     if(options.indels)
         options.k_length -= options.errors;
 
@@ -280,7 +281,7 @@ inline void runMappability(OptionsM & options)
 
     if(options.verbose)
         std::cout << "Loaded Mappability vector. Size: " << mappability.size() << "\n";
-    bitvectors result = create_all_bit_vectors<TContigsSum>(mappability, options.k_length, options.threshold, options.errors, options.strata, options.threads, options.verbose);
+    bitvectors result = create_all_bit_vectors<TContigsSum>(mappability, options.k_length, options.threshold, options.errors, options.strata, options.indels, options.threads, options.verbose);
     if(options.verbose)
         std::cout << "Finished bit vectors." << "\n";
 
