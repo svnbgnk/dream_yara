@@ -154,6 +154,9 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("nD", "noDelayITV", "Use In Text Verification right after finding a a potential Position"));
 
+    addOption(parser, ArgParseOption("Ith", "itvOccThreshold", "Start In Text Verification when search Interval on Index is smaller", ArgParseOption::INTEGER));
+    hideOption(getOption(parser, "itvOccThreshold"));
+
     addOption(parser, ArgParseOption("th", "threshold", "Occurrence was filtered when below this threshold", ArgParseOption::INTEGER));
     hideOption(getOption(parser, "threshold"));
 
@@ -334,6 +337,8 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     getOptionValue(disOptions.MappabilityDirectory, parser, "mappability");
 
     getOptionValue(disOptions.threshold, parser, "threshold");
+
+    getOptionValue(disOptions.itvOccThreshold, parser, "itvOccThreshold");
 
     if (isSet(parser, "ossOff")) disOptions.ossOff = true;
     if (isSet(parser, "hammingD")) disOptions.hammingDistance = true;

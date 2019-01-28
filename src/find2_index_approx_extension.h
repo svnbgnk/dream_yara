@@ -381,6 +381,8 @@ inline void inTextVerificationN(TContex & ossContext,
                                 TContigsLen const genomelength,
                                 TSAValue const & sa_info,
                                 uint8_t max_e,
+                                uint8_t upper,
+                                uint8_t lower,
                                 bool usingReverseText)
 {
     typedef ModifiedString<TNeedle, ModReverse>           TNeedleInfixRev;
@@ -405,7 +407,7 @@ inline void inTextVerificationN(TContex & ossContext,
 
 
     //calc Score:
-    uint8_t minErrors = max_e + 1;
+    uint8_t minErrors = upper + 1;
     TFinder finderInfix(ex_infix);
 
 //     std::cout << "Score from: \n" << ex_infix << "\n" << needle << "\n";
@@ -415,7 +417,7 @@ inline void inTextVerificationN(TContex & ossContext,
         if(minErrors > currentErrors)
             minErrors = currentErrors;
     }
-    if(minErrors > max_e)
+    if(minErrors > upper || minErrors < lower)
         return;
 
     TFinder finder(ex_infix);
@@ -522,7 +524,9 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         //TODO put this into a function
         //TODO if we are only interested in the best hit call return after delegate calls
         uint32_t needleL = length(needle);
-        uint32_t max_e = ossContext.maxError;
+        uint8_t max_e = ossContext.maxError;
+        uint8_t upper = s.u[s.u.size() - 1];
+        uint8_t lower = s.l[s.l.size() - 1];
 
 //         uint8_t overlap_l = max_e;
 //         uint8_t overlap_r = max_e;
@@ -598,7 +602,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 else
                 {
                     TContigSeqsInfix ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
-                    inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, -overlap_l), max_e, false);
+                    inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, -overlap_l), max_e, upper, lower, false);
                 }
 //                 std::cout << posAdd(sa_info, -overlap_l) << "\t" << posAdd(sa_info, needleL + overlap_r) << "\n";
             }

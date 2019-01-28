@@ -62,6 +62,7 @@ public:
     bool                    noMappability = false;
     bool                    compare = false;
     uint32_t                threshold = 11;
+    uint32_t                itvOccThreshold = 10;
     uint32_t                startBin = 0;
     uint32_t                readLength = 0;
 
@@ -410,31 +411,6 @@ inline void transferCigars(Mapper<TSpec, TMainConfig> & mainMapper, DisOptions &
     stop(mainMapper.timer);
     disOptions.moveCigars += getValue(mainMapper.timer);
 }
-
-
-/*
-struct SHit{
-    Pair <uint64_t, uint64_t> occ;
-    template <typename TOcc>
-    SHit(TOcc & inOcc):
-        occ(inOcc)
-    {}
-};
-
-bool sHit_smaller(const SHit & x, const SHit & y)
-{
-    if(getSeqNo(x.occ) == getSeqNo(y.occ))
-        return getSeqOffset(x.occ) < getSeqOffset(y.occ);
-    else
-        return getSeqNo(x.occ) < getSeqNo(y.occ);
-
-}
-
-template<int disT>
-bool sHit_similar(const SHit & x, const SHit & y)
-{
-    return(getSeqNo(x.occ) == getSeqNo(y.occ) && getSeqOffset(x.occ) + disT >= getSeqOffset(y.occ) && getSeqOffset(x.occ) <= getSeqOffset(y.occ) + disT);
-}*/
 
 
 
@@ -1002,6 +978,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.itv = !disOptions.noITV;
     ossContext.normal.suspectunidirectional = false; //TODO reverse
     ossContext.delayITV = !disOptions.noDelayITV;
+    ossContext.itvOccThreshold = disOptions.itvOccThreshold;
 
     start(me.timer);
 

@@ -610,6 +610,7 @@ public:
 
         directsearchblockoffset = 2;
         directsearch_th = 4;
+
         filter_th = 0.5;
 
         invflipdensity = 0.5;
@@ -648,6 +649,7 @@ struct OSSContext
     bool bestXMapper = false; //still needed multiple searches
     bool delayITV = false; //TODO add as option
 //     bool oneSSBestXMapper = false;
+    uint32_t itvOccThreshold = 10;
 
     uint8_t maxError;
     uint8_t strata;
@@ -743,7 +745,7 @@ struct OSSContext
                       uint8_t const blockIndex,
                       TSALength ivalOne)
     {
-        return(itv && ivalOne < (static_cast<int>(s.pi.size()) - blockIndex - 1 + normal.directsearchblockoffset) * normal.directsearch_th);
+        return(itv && ivalOne < itvOccThreshold/*(static_cast<int>(s.pi.size()) - blockIndex - 1 + normal.directsearchblockoffset) * normal.directsearch_th*/);
     }
 
 
@@ -756,7 +758,7 @@ struct OSSContext
                           OptimalSearch<nbrBlocks> const & s,
                           uint8_t const blockIndex)
     {
-        return(itv && iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 < (s.pi.size() - blockIndex - 1 + comp.directsearchblockoffset) * comp.directsearch_th);
+        return(itv && iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 < itvOccThreshold/*< (s.pi.size() - blockIndex - 1 + comp.directsearchblockoffset) * comp.directsearch_th*/);
     }
 
     template <typename TSALength>
@@ -764,7 +766,7 @@ struct OSSContext
                          uint8_t const blockIndex,
                          TSALength ivalOne)
     {
-        return(itv && ivalOne < (static_cast<int>(blockSize) - blockIndex - 1 + uni.directsearchblockoffset) * uni.directsearch_th);
+        return(itv && ivalOne < itvOccThreshold/*(static_cast<int>(blockSize) - blockIndex - 1 + uni.directsearchblockoffset) * uni.directsearch_th*/);
     }
 
     template<size_t nbrBlocks>
