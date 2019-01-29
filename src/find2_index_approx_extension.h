@@ -830,7 +830,6 @@ inline ReturnCode checkInterval(TContex & ossContext,
     if(ossContext.normal.nomappability && ivalOne == 0)
         return ReturnCode::NOMAPPABILITY;
 
-//     ivalOne < (s.pi.size() - blockIndex - 1 + ossContext.normal.directsearchblockoffset) * ossContext.normal.directsearch_th
     if(ossContext.normal.directsearch && ossContext.itvCondition(s, blockIndex, ivalOne))
         return ReturnCode::DIRECTSEARCH;
 
@@ -1249,12 +1248,12 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
         }
         return;
     }
-/*
+
     if(atBlockEnd && checkMappa){
         ReturnCode rcode = checkMappability(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
         if(rcode == ReturnCode::FINISHED)
             return;
-    }*/
+    }
 
     // Exact search in current block.
     if (maxErrorsLeftInBlock == 0)
@@ -1305,14 +1304,14 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                 _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, newlimOffsets, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + 1, s, blockIndex, true, TDir(), TDistanceTag());
             }
         }
-/*
+
         //checkCurrentMappability (inside a Block)
         if(!atBlockEnd && checkMappa && ossContext.inBlockCheckMappabilityCondition(needleLeftPos, needleRightPos, s, blockIndex))
         {
             ReturnCode rcode = checkCurrentMappability(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
             if(rcode == ReturnCode::FINISHED)
                 return;
-        }*/
+        }
 
         _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
     }
@@ -1436,8 +1435,7 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     {
         bool skip = false;
         TReadRef it = value(readIt);
-        if(ossContext.bestXMapper){
-            TReadId readId = getReadId(ossContext.readSeqs, position(readIt));
+        TReadId readId = getReadId(ossContext.readSeqs, position(readIt));
 //             std::cout << "ReadId: " << readId << "\n";
 
             //advance condition for multiple SearchSchemes
@@ -1446,12 +1444,11 @@ find(OSSContext<TSpec, TConfig> & ossContext,
             uint8_t minE = getMinErrors(ossContext.ctx, readId);
             bool search = (maxErrors == ossContext.maxError ||  maxErrors - minErrors == ossContext.strata) && !m ||
                              m && std::min(minE + ossContext.strata, ossContext.maxError) == maxErrors;*/
-            if(isMapped(ossContext.ctx, readId)){
+        if(isMapped(ossContext.ctx, readId)){
 //                 std::cout << "MinErrors: " << (int)getMinErrors(ossContext.ctx, readId) << "\n";
-                if(static_cast<uint8_t>(getMinErrors(ossContext.ctx, readId)) + ossContext.strata < minErrors){
+            if(static_cast<uint8_t>(getMinErrors(ossContext.ctx, readId)) + ossContext.strata < minErrors){
 //                     std::cout << "Skip" << "\n";
-                    skip = true;
-                }
+                skip = true;
             }
         }
 
@@ -1459,7 +1456,6 @@ find(OSSContext<TSpec, TConfig> & ossContext,
 //             std::cout << "Search\n";
             find(ossContext, delegate, delegateDirect, index, bitvectors, it, position(readIt), scheme, TDistanceTag());
         }
-//         k++;
     }, Rooted(), typename TTraits::TThreading());
 }
 

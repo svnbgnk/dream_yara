@@ -646,7 +646,7 @@ struct OSSContext
     bool filterDelegate = true;
     bool trackReadCount = false;
     bool itv = true;
-    bool bestXMapper = false; //still needed multiple searches
+//     bool bestXMapper = false; //still needed multiple searches
     bool delayITV = false; //TODO add as option
 //     bool oneSSBestXMapper = false;
     uint32_t itvOccThreshold = 10;
@@ -709,27 +709,26 @@ struct OSSContext
         std::cout << "Uni: ";
         uni.print();
     }
-
-    void setReadContextOSS(uint8_t nerrors, uint8_t instrata, bool mScheme = false){
+/*
+    void setReadContextOSS(uint8_t nerrors, bool mScheme = false){
         maxError = nerrors;
-        strata = instrata;
 
 //         initReadsContext(ctx, readCount);
-        std::cout << "maxError: " << (int)nerrors << "\tStrata: " << (int)strata << "\n";/*
-        if(!mScheme){
-            clear(ctxOSS);
-            resize(ctxOSS, readSeqs);
-            std::cout << "Using one Scheme" << "\n";
-            oneSSBestXMapper = true;
-
-            std::vector<TTState> v;
-            for(int i = 0; i < maxError + 1; ++i)
-                states.push_back(v);
-        }else{*/
+//         std::cout << "maxError: " << (int)nerrors << "\tStrata: " << (int)strata << "\n";
+//         if(!mScheme){
+//             clear(ctxOSS);
+//             resize(ctxOSS, readSeqs);
+//             std::cout << "Using one Scheme" << "\n";
+//             oneSSBestXMapper = true;
+//
+//             std::vector<TTState> v;
+//             for(int i = 0; i < maxError + 1; ++i)
+//                 states.push_back(v);
+//         }else{
             std::cout << "Using multiple Schemes" << "\n";
             bestXMapper = true;
 //         }
-    }
+    }*/
 
     template <typename TIter>
     inline void saveState(TIter & iter, uint32_t nlp, uint32_t nrp, uint8_t sid, uint8_t blockIndex, bool right, uint8_t errors){

@@ -972,8 +972,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     }
 
     // copy parameters to ossContext
-    bool mscheme = true;
-    ossContext.setReadContextOSS(me.maxError, me.strata, mscheme);
+//     bool mscheme = true;
+//     ossContext.setReadContextOSS(me.maxError, mscheme);
     ossContext.readLength = len;
     ossContext.numberOfSequences = length(me.contigs.seqs);
     ossContext.itv = !disOptions.noITV;
@@ -983,17 +983,16 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     start(me.timer);
 
-    if(mscheme){
-        if(disOptions.hammingDistance)
-            find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
-        else
-            find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
-    }else{
+    if(disOptions.hammingDistance)
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
+    else
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+/*
         if(disOptions.hammingDistance)
             find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
         else
-            find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
-    }
+            find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());*/
+
 
     if (me.options.verbose > 0)
     {
