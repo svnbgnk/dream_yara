@@ -5,95 +5,6 @@
 
 using namespace seqan;
 
-struct SparseVDesc{
-    seqan::Pair<uint32_t, uint32_t> range;
-    uint32_t smaller;
-    uint32_t repLen;
-    Dna lastChar;
-};
-
-
-struct SparseIter{
-    seqan::Pair<uint32_t, uint32_t> fwdRange;
-    uint32_t revRangeStart;
-    uint32_t repLen;
-    /*
-    SparseVDesc fwd;
-    SparseVDesc rev;
-    SparseVDesc fwdp;
-    SparseVDesc revp;*/
-};
-
-template<typename TIter2>
-struct State{
-    TIter2 it;
-    uint32_t nlp;
-    uint32_t nrp;
-    uint8_t sId;
-    uint8_t blockIndex;
-    bool fwdDirection;
-
-
-    //TODO use this only when TIter2 == MyIter
-    template<typename TIter>
-    State(TIter inIt,
-          uint32_t nlp,
-          uint32_t nrp,
-          uint8_t sId,
-          uint8_t blockIndex,
-          bool fwdDirection) :
-        it(inIt),
-        nlp(nlp),
-        nrp(nrp),
-        sId(sId),
-        blockIndex(blockIndex),
-        fwdDirection(fwdDirection)
-    {}
-    /*
-    State(TIter inIt,
-          uint32_t nlp,
-          uint32_t nrp,
-          uint8_t sId,
-          uint8_t blockIndex,
-          bool fwdDirection) :
-//         it(inIt),
-        nlp(nlp),
-        nrp(nrp),
-        sId(sId),
-        blockIndex(blockIndex),
-        fwdDirection(fwdDirection)
-    {
-
-
-
-        it.fwdRange = inIt.fwdIter.vDesc.range;
-        it.revRangeStart = inIt.revIter.vDesc.range.i1;
-        it.repLen = inIt.fwdIter.vDesc.repLen;
-    }*/
-};
-
-/*
-        it.fwd.range = inIt.fwdIter.vDesc.range;
-        it.fwd.smaller = inIt.fwdIter.vDesc.smaller;
-        it.fwd.repLen = inIt.fwdIter.vDesc.repLen;
-        it.fwd.lastChar = inIt.fwdIter.vDesc.lastChar;
-
-        it.rev.range = inIt.revIter.vDesc.range;
-        it.rev.smaller = inIt.revIter.vDesc.smaller;
-        it.rev.repLen = inIt.revIter.vDesc.repLen;
-        it.rev.lastChar = inIt.revIter.vDesc.lastChar;
-
-        it.fwdp.range = inIt.fwdIter._parentDesc.range;
-        it.fwdp.smaller = inIt.fwdIter._parentDesc.smaller;
-        it.fwdp.repLen = inIt.fwdIter._parentDesc.repLen;
-        it.fwdp.lastChar = inIt.fwdIter._parentDesc.lastChar;
-
-        it.revp.range = inIt.revIter._parentDesc.range;
-        it.revp.smaller = inIt.revIter._parentDesc.smaller;
-        it.revp.repLen = inIt.revIter._parentDesc.repLen;
-        it.revp.lastChar = inIt.revIter._parentDesc.lastChar;*/
-
-
 template <typename TContex,
           typename TDelegate, typename TDelegateD,
           typename TText, typename TIndexSpec,
@@ -662,9 +573,7 @@ struct OSSContext
     typedef typename TTraits::TMatch            TMatch;
     typedef typename TTraits::TContigSeqs       TContigSeqs;
     typedef typename TTraits::TReadSeqs         TReadSeqs;
-    typedef typename TTraits::TSparseIter       TSparseIter;
 //     typedef typename TTraits::TBiIter           MySparseIter;
-    typedef State<TSparseIter>                  TTState;
     typedef typename TTraits::TBitvectorsMeta   TBitvectorsMeta;
 
 
@@ -672,10 +581,9 @@ struct OSSContext
     TReadsContext &     ctx;
     TMatches &          matches;
     ReadsContextOSS<TSpec, TConfig>     ctxOSS;
-    std::vector<std::vector<TTState> > states;
 
     //track occ count per read
-    std::vector<uint32_t> /*&*/ readOccCount;
+//     std::vector<uint32_t> /*&*/ readOccCount;
 
     // Shared-memory read-only data.
     TReadSeqs & readSeqs;
@@ -715,35 +623,6 @@ struct OSSContext
         strata = inStrata;
         readLength = inReadLength;
         numberOfSequences = inNumberOfSequences;
-    }
-/*
-    void setReadContextOSS(uint8_t nerrors, bool mScheme = false){
-        maxError = nerrors;
-
-//         initReadsContext(ctx, readCount);
-//         std::cout << "maxError: " << (int)nerrors << "\tStrata: " << (int)strata << "\n";
-//         if(!mScheme){
-//             clear(ctxOSS);
-//             resize(ctxOSS, readSeqs);
-//             std::cout << "Using one Scheme" << "\n";
-//             oneSSBestXMapper = true;
-//
-//             std::vector<TTState> v;
-//             for(int i = 0; i < maxError + 1; ++i)
-//                 states.push_back(v);
-//         }else{
-            std::cout << "Using multiple Schemes" << "\n";
-            bestXMapper = true;
-//         }
-    }*/
-
-    template <typename TIter>
-    inline void saveState(TIter & iter, uint32_t nlp, uint32_t nrp, uint8_t sid, uint8_t blockIndex, bool right, uint8_t errors){
-        TTState state(iter, nlp, nrp, sid, blockIndex, right);
-        states[errors].push_back(state);
-//         int sizee = states[errors].size() - 1;
-//         std::cout << (int)states[errors][sizee].blockIndex << "\n";
-//         std::cout << "saved State" << "\n";
     }
 
     template <size_t nbrBlocks, typename TSALength>
@@ -786,8 +665,6 @@ struct OSSContext
             return false;
         uint32_t prevBlocklength = (blockIndex > 0) ? s.blocklength[blockIndex - 1] : 0;
         uint32_t nextBlocklength = s.blocklength[blockIndex];
-
-//         std::cout << "Step: " << step << "\t" << prevBlocklength << "\t" << nextBlocklength << "\n";
 
         bool enoughDistanceToBlockEnds = step + normal.distancetoblockend < nextBlocklength && step - normal.distancetoblockend > prevBlocklength;
         return(((step & normal.step) == 0) && enoughDistanceToBlockEnds);

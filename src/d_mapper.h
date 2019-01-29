@@ -971,18 +971,11 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
             std::cerr << "Loading Bitvectors time:\t\t\t" << me.timer << std::endl;
     }
 
-    // copy parameters to ossContext
-//     bool mscheme = true;
-//     ossContext.setReadContextOSS(me.maxError, mscheme);
-/*
-    ossContext.maxError = me.maxError;
-    ossContext.strata = me.strata;
-    ossContext.readLength = len;
-    ossContext.numberOfSequences = length(me.contigs.seqs);*/
+// copy parameters to ossContext
     ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs));
 
     ossContext.itv = !disOptions.noITV;
-    ossContext.normal.suspectunidirectional = false; //TODO reverse
+    ossContext.normal.suspectunidirectional = false;
     ossContext.delayITV = !disOptions.noDelayITV;
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
 
@@ -1059,6 +1052,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         TContigsLen lastPos;
         uint32_t lastHitLength = 0;
 
+//         #pragma omp parallel for schedule(dynamic) num_threads(mainMapper.threadsCount)
         for(int i = 0; i < length(me.matchesSetByCoord); ++i){
 //                 std::cout << "New read" << i << "\n";
                 auto const & matches = me.matchesSetByCoord[i];
