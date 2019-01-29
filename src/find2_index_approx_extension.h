@@ -381,8 +381,8 @@ inline void inTextVerificationN(TContex & ossContext,
                                 TContigsLen const genomelength,
                                 TSAValue const & sa_info,
                                 uint8_t max_e,
-                                uint8_t upper,
-                                uint8_t lower,
+//                                 uint8_t upper,
+//                                 uint8_t lower,
                                 bool usingReverseText)
 {
     typedef ModifiedString<TNeedle, ModReverse>           TNeedleInfixRev;
@@ -407,7 +407,7 @@ inline void inTextVerificationN(TContex & ossContext,
 
 
     //calc Score:
-    uint8_t minErrors = upper + 1;
+    uint8_t minErrors = max_e + 1;
     TFinder finderInfix(ex_infix);
 
 //     std::cout << "Score from: \n" << ex_infix << "\n" << needle << "\n";
@@ -417,8 +417,15 @@ inline void inTextVerificationN(TContex & ossContext,
         if(minErrors > currentErrors)
             minErrors = currentErrors;
     }
-    if(minErrors > upper || minErrors < lower)
+
+    if(minErrors > max_e)
         return;
+
+//     if(minErrors > upper)
+//         return;
+
+//     if(minErrors > upper || minErrors < lower)
+//         return;
 
     TFinder finder(ex_infix);
     uint8_t mErrors = max_e * 4;
@@ -602,7 +609,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 else
                 {
                     TContigSeqsInfix ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
-                    inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, -overlap_l), max_e, upper, lower, false);
+                    inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, -overlap_l), max_e, /*upper, lower,*/ false);
                 }
 //                 std::cout << posAdd(sa_info, -overlap_l) << "\t" << posAdd(sa_info, needleL + overlap_r) << "\n";
             }

@@ -124,14 +124,15 @@ struct DelegateDirect
     template <typename TContext, typename TReadId, typename TMatchErrors>
     void operator() (TContext & ossContext, TContigsPos const & start, TContigsPos const & end, TReadId const needleId, TMatchErrors errors)
     {
+
+        TReadId readId = getReadId(ossContext.readSeqs, needleId);
+
         TMatch hit;
         setContigPosition(hit, start, end);
         hit.errors = errors;
         setReadId(hit, ossContext.readSeqs, needleId);
 
-        TReadId readId = getReadId(ossContext.readSeqs, needleId);
-
-        if(errors < 127){
+        if(errors <= ossContext.maxError){
             setMapped(ossContext.ctx, readId);
             setMinErrors(ossContext.ctx, readId, errors);
         }
