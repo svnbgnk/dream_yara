@@ -541,8 +541,8 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 //         std::cout << "NLP: " << needleLeftPos << "\tNRP: " << needleRightPos << "\trepL: " << (int)repLength(iter) << "\trange: " <<  (int)needleRightPos - needleLeftPos - 1 << "\n";
 //         std::cout << "Off: " << (int)limOffsets.i1 - max_e << ", " << (int)limOffsets.i2 - max_e << "\n";
 
-        uint8_t overlap_l;
-        uint8_t overlap_r;
+        int8_t overlap_l;
+        int8_t overlap_r;
 
         if(ossContext.delayITV)
         {
@@ -553,13 +553,6 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         {
             overlap_l = max_e;
             overlap_r = max_e;
-/*
-            //
-            if(s.pi[0] == 1 || needleLeftPos == 0){overlap_l = 0;}
-            else{overlap_l = max_e - errors;}
-
-            if(s.pi[s.pi.back()] == s.pi.size() || needleRightPos == needleL + 1){overlap_r = 0;}
-            else{overlap_r = max_e - errors;}*/
         }
 
         for(TContigsSum r = 0; r < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1; ++r)

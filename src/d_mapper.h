@@ -974,8 +974,13 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     // copy parameters to ossContext
 //     bool mscheme = true;
 //     ossContext.setReadContextOSS(me.maxError, mscheme);
+/*
+    ossContext.maxError = me.maxError;
+    ossContext.strata = me.strata;
     ossContext.readLength = len;
-    ossContext.numberOfSequences = length(me.contigs.seqs);
+    ossContext.numberOfSequences = length(me.contigs.seqs);*/
+    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs));
+
     ossContext.itv = !disOptions.noITV;
     ossContext.normal.suspectunidirectional = false; //TODO reverse
     ossContext.delayITV = !disOptions.noDelayITV;

@@ -709,6 +709,13 @@ struct OSSContext
         std::cout << "Uni: ";
         uni.print();
     }
+
+    void loadInputParameters(uint8_t inMaxError, uint8_t inStrata, uint32_t inReadLength, uint32_t inNumberOfSequences){
+        maxError = inMaxError;
+        strata = inStrata;
+        readLength = inReadLength;
+        numberOfSequences = inNumberOfSequences;
+    }
 /*
     void setReadContextOSS(uint8_t nerrors, bool mScheme = false){
         maxError = nerrors;
