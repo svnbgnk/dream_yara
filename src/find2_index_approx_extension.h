@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <sdsl/bit_vectors.hpp>
+#include <numeric>
+#include <limits>
 // #include "find2_index_approx_unidirectional.h"
 
 
@@ -10,6 +12,151 @@
 
 
 namespace seqan{
+
+template<typename TContigsPos>
+struct SARange
+{
+    Pair<TContigsPos, TContigsPos> range;
+    Pair<int8_t, int8_t> limOffsets;
+    uint32_t repLength;
+//     uint32_t shift = 0; //for itv
+};
+
+template<typename TContex,
+         typename TDelegate,
+         typename TIndex,
+         typename TContigsSum,
+         size_t numberBlocks>
+void locateSARanges(TContex & ossContext,
+                    TDelegate & delegate,
+                    Iter<TIndex, VSTree<TopDown<> > > iter,
+//                     std::vector<seqan::SARange<TContigsSum> > allRanges[],
+                    std::array<std::vector<seqan::SARange<TContigsSum> >, numberBlocks> & allRanges,
+//                     std::vector<std::vector<seqan::SARange<TContigsSum> > > & allRanges,
+                    uint32_t const needleId,
+                    uint8_t sMax)
+{
+    //Sort Ranges
+    for(uint8_t e = 0; e <= sMax; ++e){
+        std::sort(allRanges[e].begin(), allRanges[e].end(), [](SARange<TContigsSum> & x, SARange<TContigsSum> & y){
+            if(x.range.i1 == y.range.i1)
+            {
+                return(x.range.i2 > y.range.i2);
+            }
+            else
+            {
+                return(x.range.i1 < y.range.i1);
+            }
+        });
+    }
+
+    TContigsSum mymax = std::numeric_limits<TContigsSum>::max();
+
+    // intialize cEnd containing the current interval ends
+    // ita contain an iterator pointing to the current interval
+//     uint64_t cEnds[sMax + 1] = { 0 };
+    std::array<uint64_t, numberBlocks> cEnds = {};
+    typedef typename std::vector<SARange<TContigsSum> >::iterator TSARangeIter;
+//     typedef typename TContainer::iterator TSARangeIter;
+
+
+
+//     TSARangeIter ita[sMax + 1];
+    std::array<TSARangeIter, numberBlocks> ita = {};
+//     std::vector<seqan::SARange<TContigsSum> >::iterator ita [sMax + 1];
+    for(uint8_t e = 0; e <= sMax; ++e){
+        ita[e] = allRanges[e].begin();
+        if(ita[e] != allRanges[e].end())
+            cEnds[e] = (*(ita[e])).range.i2;
+    }
+
+    //call each SA-Value once with the lowest error
+    while(true){
+/*
+        std::cout << "En ";
+        for(uint8_t e = 0; e <= sMax; ++e){
+            if(ita[e] != allRanges[e].end())
+                std::cout << cEnds[e] << "\t";
+            else
+                std::cout << "NA" << "\t";
+        }
+        std::cout << "\n";*/
+
+        for(uint8_t e = 0; e <= sMax; ++e){
+
+            //check if we finished current interval
+            if(ita[e] != allRanges[e].end() && (*ita[e]).range.i1 == (*ita[e]).range.i2){
+                ++ita[e];
+                while(ita[e] != allRanges[e].end()){
+                    //new Interval
+                    if(cEnds[e] < (*ita[e]).range.i1){
+                        cEnds[e] = (*ita[e]).range.i2;
+                        break;
+                    }
+                    //going into an overlapping Interval
+                    else if(cEnds[e] < (*ita[e]).range.i2){
+                        //already reported up to that end point
+                        (*ita[e]).range.i1 = cEnds[e];
+                        cEnds[e] = (*ita[e]).range.i2;
+                        break;
+                    }
+                    //already checked Interval
+                    else
+                    {
+                        ++ita[e];
+                    }
+                }
+            }
+        };
+
+        //TODO improve this
+        bool con = false;
+        for(uint8_t e = 0; e <= sMax; ++e){
+            if((ita[e]) != allRanges[e].end()){
+//                 std::cout << "Con: " << e << "\n";
+                con = true;
+            }
+        }
+        if(!con)
+            break;
+
+
+        //select smallest SAValue with smallest error
+        uint8_t sel = 255;
+        TContigsSum value = mymax;
+        for(uint8_t e = 0; e <= sMax; ++e){
+            if(ita[e] != allRanges[e].end() && (*ita[e]).range.i1 < value){
+                value = (*ita[e]).range.i1;
+                sel = e;
+            }
+        }
+        SEQAN_ASSERT_LEQ(sel, 100);
+/*
+        for(uint8_t e = 0; e <= sMax; ++e){
+            if(ita[e] != allRanges[e].end())
+                std::cout << (*ita[e]).range.i1 << "\t";
+            else
+                std::cout << "na\t";
+        }*/
+//         std::cout << "\n" << "Sel: " << (int)sel << "\n";
+
+        //report SA-Value
+        delegate(ossContext, iter, (*ita[sel]), needleId, sel, false);
+        //Skip same SA-Value with higher error
+//         std::cout << "Reported Value: " << (*ita[sel]).range.i1 << "\n";
+
+        for(uint8_t e = sel + 1; e <= sMax; ++e){
+            if(ita[e] != allRanges[e].end() && (*ita[sel]).range.i1 == (*ita[e]).range.i1){
+                ++(*ita[e]).range.i1;
+            }
+        }
+
+
+
+        ++(*ita[sel]).range.i1;
+    }
+}
+
 
 template<typename TVector, typename TVSupport,
          typename TSALength>
@@ -532,8 +679,9 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         //TODO if we are only interested in the best hit call return after delegate calls
         uint32_t needleL = length(needle);
         uint8_t max_e = ossContext.maxError;
-        uint8_t upper = s.u[s.u.size() - 1];
-        uint8_t lower = s.l[s.l.size() - 1];
+        //there are different search with different upper and lower -> something goes wrong?
+//         uint8_t upper = s.u[s.u.size() - 1];
+//         uint8_t lower = s.l[s.l.size() - 1];
 
 //         uint8_t overlap_l = max_e;
 //         uint8_t overlap_r = max_e;
@@ -595,7 +743,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 
 //                 std::cout << ossContext.strata + s.l[s.l.size() - 1] << "\t" << ossContext.maxError << "\n";
                 //TODO search <0, 2> need to search till 0 is found or 1
-                if(ossContext.delayITV && isMapped(ossContext.ctx, readId) || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError)
+                if(ossContext.delayITV && (isMapped(ossContext.ctx, readId) || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError))
                 {
                     delegateDirect(ossContext, posAdd(sa_info, -overlap_l), posAdd(sa_info, needleL + overlap_r), needleId, 127);
                 }
@@ -1217,6 +1365,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                  TDir const & ,
                                  TDistanceTag const &)
 {
+//     std::cout << "OSS" << "\t" << needleLeftPos << "\t" << needleRightPos << "\t" << (int)errors << "\n";
     uint8_t const maxErrorsLeftInBlock = s.u[blockIndex] - errors;
     uint8_t const minErrorsLeftInBlock = (s.l[blockIndex] > errors) ? (s.l[blockIndex] - errors) : 0;
     bool const done = minErrorsLeftInBlock == 0 && needleLeftPos == 0 && needleRightPos == length(needle) + 1;
@@ -1226,7 +1375,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     // Done. (Last step)
     if (done)
     {
-        auto newlimOffsets = limOffsets;
 //         std::cout << "Done" << "\n";
         //last input only matters for unidirectional searches (has to be false in this case)
         if(!lastEdit/*true*/){
@@ -1235,7 +1383,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             }
             else
             {
-//                 std::cout << "Calling delegate" << "\n";
                 delegate(ossContext, iter, limOffsets, needleId, errors, false);
             }
         }
@@ -1335,6 +1482,12 @@ inline void _optimalSearchScheme(TContex & ossContext,
     else
         _optimalSearchScheme(ossContext, delegate, delegateDirect, it, Pair<int8_t, int8_t>(max_e, max_e), needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Fwd(), TDistanceTag());
 }
+/*
+struct SAFilter;
+typedef Tag<SAFilter_> const UseSAFilter;
+
+struct Unfiltered;
+typedef Tag<Unfiltered_> const ReportAllRanges;*/
 
 template <typename TSpec, typename TConfig,
           typename TDelegate, typename TDelegateD,
@@ -1353,13 +1506,81 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                  std::array<OptimalSearch<nbrBlocks>, N> const & ss,
                                  TDistanceTag const &)
 {
-    typedef MapperTraits<TSpec, TConfig>                      TTraits;
-    typedef typename TTraits::TBiIter                         TIter;
-    typedef typename TTraits::TSparseIter                     TSparseIter;
+    typedef MapperTraits<TSpec, TConfig>                     TTraits;
+//     typedef typename TTraits::TContigsPos                    TContigsPos;
+    typedef typename TConfig::TContigsSum                    TContigsSum;
 
+    //maximum Error of the Search Scheme
+    uint8_t sMax = 0;
+    for (auto & s : ss){
+        if(s.u[nbrBlocks - 1] > sMax)
+            sMax = s.u[nbrBlocks - 1];
+    }
+//         std::cout << "sMax " << (int)sMax << "\n";
+
+
+    //switch delegate
+    std::array<std::vector<seqan::SARange<TContigsSum> >, nbrBlocks> allRanges;
+
+    auto delegateRange = [&allRanges](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto limOffsets, auto const needleId, uint8_t const errors, bool const rev)
+    {
+    //         std::cout << "Using new delegate: \n";
+        uint32_t readId = getReadId(ossContext.readSeqs, needleId);
+        SARange<TContigsSum> range;
+    //             range.errors = cerrors;
+        range.range = Pair<TContigsSum, TContigsSum> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
+        range.repLength = repLength(iter);
+        range.limOffsets = limOffsets;
+        allRanges[errors].push_back(range);
+        //TODO do Context here
+
+    //       std::cout << needleId << "\t" << range.range << "\t" << range.repLength << "\t" << limOffsets << "  e: " << (int)errors << "\n";
+    //
+        setMapped(ossContext.ctx, readId);
+        setMinErrors(ossContext.ctx, readId, errors);
+
+    };
+
+    for (auto & s : ss){
+        _optimalSearchScheme(ossContext, delegateRange, delegateDirect, it, bitvectors, needle, needleId, s, TDistanceTag());
+    }
+
+    bool empty = true;
+    for(int e = 0; e < nbrBlocks; ++e){
+//         std::cout << allRanges[e].size() << "\t";
+        if(!allRanges[e].empty())
+            empty = false;
+    }
+//     std::cout << "\n";
+
+
+    if(!empty){
+        locateSARanges(ossContext, delegate, it, allRanges, needleId, sMax);
+    }
+}
+
+/*
+template <typename TSpec, typename TConfig,
+          typename TDelegate, typename TDelegateD,
+          typename TIndex,// typename TIndexSpec,
+          typename TBitvectorPair,
+          typename TNeedle,
+          size_t nbrBlocks, size_t N,
+          typename TDistanceTag>
+inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
+                                 TDelegate & delegate,
+                                 TDelegateD & delegateDirect,
+                                 Iter<TIndex, VSTree<TopDown<> > > it,
+                                 std::vector<TBitvectorPair > & bitvectors,
+                                 TNeedle const & needle,
+                                 uint32_t needleId,
+                                 std::array<OptimalSearch<nbrBlocks>, N> const & ss,
+                                 TDistanceTag const &)
+{
     for (auto & s : ss)
         _optimalSearchScheme(ossContext, delegate, delegateDirect, it, bitvectors, needle, needleId, s, TDistanceTag());
-}
+}*/
+
 
 
 template <typename TContex,
@@ -1387,6 +1608,7 @@ find(TContex & ossContext,
 //     Iter<Index<TText, BidirectionalIndex<TIndexSpec> >, VSTree<TopDown<> > > it(index);
     Iter<TIndex, VSTree<TopDown<> > > it(index);
     _optimalSearchScheme(ossContext, delegate, delegateDirect, it, bitvectors, needle, needleId, scheme, TDistanceTag());
+
 }
 
 

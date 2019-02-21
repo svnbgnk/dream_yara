@@ -559,6 +559,7 @@ struct OSSContext
     bool itv = true;
 //     bool bestXMapper = false; //still needed multiple searches
     bool delayITV = false; //TODO add as option
+    bool saFilter = false;
 //     bool oneSSBestXMapper = false;
     uint32_t itvOccThreshold = 10;
 

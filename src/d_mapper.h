@@ -121,14 +121,14 @@ struct DelegateDirect
         matches(matches)
     {}
 
-    template <typename TContext, typename TReadId, typename TMatchErrors>
-    void operator() (TContext & ossContext, TContigsPos const & start, TContigsPos const & end, TReadId const needleId, TMatchErrors errors)
+    template <typename TReadId, typename TMatchErrors>
+    void operator() (OSSContext<TSpec, TConfig> & ossContext, TContigsPos const & start, TContigsPos const & end, TReadId const needleId, TMatchErrors errors)
     {
-
         TReadId readId = getReadId(ossContext.readSeqs, needleId);
 
         TMatch hit;
         setContigPosition(hit, start, end);
+//         SEQAN_ASSERT_LEQ(5, getSeqOffset(end) - getSeqOffset(start));
         hit.errors = errors;
         setReadId(hit, ossContext.readSeqs, needleId);
 
@@ -149,37 +149,39 @@ struct DelegateDirect
     }
 };
 
-template <typename TTraits>
-struct Delegate
+
+template <typename TSpec, typename TConfig>
+struct DelegateUnfiltered
 {
-//     typedef MapperTraits<TSpec, TConfig>                   Traits;
-    typedef typename TTraits::TMatch                        TMatch;
-    typedef typename TTraits::TMatchesAppender              TMatches;
-    typedef typename TTraits::TContigsPos                   TContigsPos;
-//     typedef typename TTraits::TSA                           TSA;
+    typedef MapperTraits<TSpec, TConfig>                   Traits;
+    typedef typename Traits::TMatch                        TMatch;
+    typedef typename Traits::TMatchesAppender              TMatches;
+    typedef typename Traits::TContigsPos                   TContigsPos;
+//     typedef typename Traits::TSA                           TSA;
 //     typedef typename Size<TSA>::Type                        TSAPos;
 //     typedef typename Value<TSA>::Type                       TSAValue;
-    typedef typename TTraits::TReadSeqs                     TReadSeqs;
+    typedef typename Traits::TReadSeqs                     TReadSeqs;
     typedef typename Size<TReadSeqs>::Type                  TReadId;
 
 
     TMatches &          matches;
     bool const          noOverlap;
 
-    Delegate(TMatches & matches,
-             bool noOverlap) :
+    DelegateUnfiltered(TMatches & matches,
+                       bool noOverlap) :
         matches(matches),
         noOverlap(noOverlap)
     {}
 
-    template <typename TContext, typename TNeedleId, typename TMatchErrors>
-    void operator() (TContext & ossContext, auto const & iter, auto & limOffsets, TNeedleId const needleId, TMatchErrors const errors, bool const rev)
+    template <typename TNeedleId, typename TMatchErrors>
+    void operator() (OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, TNeedleId const needleId, TMatchErrors const errors, bool const rev)
     {
         uint8_t overlap_l = limOffsets.i1;
         uint8_t overlap_r = limOffsets.i2;
 
         TReadId readId = getReadId(ossContext.readSeqs, needleId);
         uint32_t occLength = repLength(iter);
+//         SEQAN_ASSERT_LEQ(5, occLength);
         for (TContigsPos occ : getOccurrences(iter)){
 //         for (TSAPos i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i){
 //             TSAValue saPos = iter.fwdIter.index->sa[i];
@@ -204,8 +206,65 @@ struct Delegate
 //TODO maybe use this form
     //         THit hit = { range(indexIt), (TSeedId)position(seedsIt), errors };
 
-            appendValue(matches, hit, Generous(), typename TTraits::TThreading()); //does this make any sense (always single occ)
+            appendValue(matches, hit, Generous(), typename Traits::TThreading()); //does this make any sense (always single occ)
         }
+    }
+};
+
+
+template <typename TSpec, typename TConfig>
+struct Delegate
+{
+    typedef MapperTraits<TSpec, TConfig>                    Traits;
+    typedef typename Traits::TMatch                        TMatch;
+    typedef typename Traits::TMatchesAppender              TMatches;
+    typedef typename Traits::TContigsPos                   TContigsPos;
+
+//     typedef typename TConfig::TContigsSum                       TContigsSum;
+
+
+    typedef typename Traits::TReadSeqs                     TReadSeqs;
+    typedef typename Size<TReadSeqs>::Type                  TReadId;
+
+
+    TMatches &          matches;
+    bool const          noOverlap;
+
+    Delegate(TMatches & matches,
+             bool noOverlap) :
+        matches(matches),
+        noOverlap(noOverlap)
+    {}
+
+    template <typename TSARange, typename TNeedleId, typename TMatchErrors>
+    void operator() (OSSContext<TSpec, TConfig> & ossContext, auto const & iter, TSARange & saRange, TNeedleId const needleId, TMatchErrors const errors, bool const rev)
+    {
+        uint8_t overlap_l = saRange.limOffsets.i1;
+        uint8_t overlap_r = saRange.limOffsets.i2;
+
+
+//         setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
+        uint32_t occLength = saRange.repLength;
+//         SEQAN_ASSERT_LEQ(5, occLength);
+//         for (auto saValue = saRange.range.i1; saValue < saRange.range.i2; ++saValue){
+            auto saValue = saRange.range.i1;
+            TContigsPos occ = iter.fwdIter.index->sa[saValue];
+            TMatch hit;
+            if(noOverlap){
+                setContigPosition(hit, occ, posAdd(occ, occLength));
+            }else{
+                setContigPosition(hit, posAdd(occ, 0 - overlap_l), posAdd(occ, occLength + overlap_r));
+            }
+            hit.errors = errors;
+            setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
+
+            //read Context is done as soon as a range is reported
+//             TReadId readId = getReadId(ossContext.readSeqs, needleId);
+//             setMapped(ossContext.ctx, readId);
+//             setMinErrors(ossContext.ctx, readId, errors);
+
+            appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
+//         }
     }
 };
 
@@ -910,6 +969,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           StringSet<TReadSeqs, TSeqsSpec> & readSeqs,
                           DisOptions & disOptions)
 {
+    bool saFilter = true;
 
     uint32_t len;
     if(disOptions.readLength != 0)
@@ -929,24 +989,25 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     typedef MapperTraits<TSpec, TConfig>                        TTraits;
     typedef typename TTraits::TMatchesAppender                  TMatchesAppender;
-    typedef Delegate<TTraits>                                   Delegate;
+    typedef Delegate<TSpec, TConfig>                            Delegate;
     typedef DelegateDirect<TSpec, TConfig>                      DelegateDirect;
+    typedef DelegateUnfiltered<TSpec, TConfig>                  DelegateUnfiltered;
 
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
 
-
-//     reserve(me.matchesByCoord, countHits(me) / 3); //some formula includding distance errors and mappability
 
     TMatchesAppender appender(me.matchesByCoord);
     bool noOverlap = disOptions.noDelayITV || disOptions.hammingDistance;
     Delegate delegate(appender, noOverlap);
     DelegateDirect delegateDirect(appender);
+    DelegateUnfiltered delegateUnfiltered(appender, noOverlap);
     TContigSeqs & contigSeqs = me.contigs.seqs;
 
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
 
     if(disOptions.verbose > 1){
         std::cout << "maxError: " << me.maxError << "\t" << me.strata << "\n";
+        std::cout << "Using Delayed In Text Verification:  " << !disOptions.noDelayITV << "\n";
     }
 
     if(!disOptions.noMappability){
@@ -976,15 +1037,29 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     ossContext.itv = !disOptions.noITV;
     ossContext.normal.suspectunidirectional = false;
+
+    ossContext.saFilter = saFilter;
     ossContext.delayITV = !disOptions.noDelayITV;
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
 
     start(me.timer);
 
-    if(disOptions.hammingDistance)
-        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
-    else
-        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+
+
+        if(disOptions.hammingDistance)
+            find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
+        else
+            find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+
+/*
+        if(disOptions.hammingDistance)
+            find(0, me.maxError, me.strata, ossContext, delegateUnfiltered, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
+        else
+            find(0, me.maxError, me.strata, ossContext, delegateUnfiltered, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+*/
+
+
+
 /*
         if(disOptions.hammingDistance)
             find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
@@ -1024,6 +1099,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         aggregateMatchesOSS(me, readSeqs);
 /*
         for(int i = 0; i < length(me.matchesSetByCoord); ++i){
+//             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
+//             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
             auto const & matches = me.matchesSetByCoord[i];
             auto matchIt = begin(matches, Standard());
             auto matchEnd = end(matches, Standard());
@@ -1031,6 +1108,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 write(std::cout, *matchIt);
                 ++matchIt;
             }
+
         }*/
     }
     else
@@ -1361,12 +1439,12 @@ inline void _mapReadsImplOSS(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCon
     TContigSeqs & contigSeqs = me.contigs.seqs;
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
 
-
+/*
     typedef Delegate<TTraits>          TDelegate;
     TDelegate delegate(appender);
 
     delegate(ossContext, start, end, errors, readID);
-    std::cout << "experimental Delegate call: "<< length(me.matchesByCoord) << "\n";
+    std::cout << "experimental Delegate call: "<< length(me.matchesByCoord) << "\n";*/
 
     //does not work since i cant use templates needed for ossContext
 
@@ -1622,7 +1700,7 @@ void spawnMapper(Options const & options,
                  TThreading const & /*threading*/,
                  TSequencing const & /*sequencing*/,
                  TSeedsDistance const & /*distance*/)
-{
+{/*
     if(disOptions.mmap)
     {
         typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TConfig;
@@ -1630,11 +1708,11 @@ void spawnMapper(Options const & options,
         runMapper(mapper, mainMapper, disOptions);
     }
     else
-    {
+    {*/
         typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, Alloc<>>  TConfig;
         Mapper<void, TConfig> mapper(options);
         runMapper(mapper, mainMapper, disOptions);
-    }
+//     }
 }
 // ----------------------------------------------------------------------------
 // Function configureMapper()
@@ -1659,7 +1737,8 @@ void configureMapper(Options const & options,
     }
     else
     {
-        spawnMapper<TContigsSize, TContigsLen, uint64_t>(options, mainMapper, disOptions, threading, sequencing, distance);
+        throw RuntimeError("Maximum number of contigs exceeded. Recompile with -DYARA_LARGE_CONTIGS=ON dMapper.h.");
+//         spawnMapper<TContigsSize, TContigsLen, uint64_t>(options, mainMapper, disOptions, threading, sequencing, distance);
     }
 }
 

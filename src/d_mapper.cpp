@@ -546,10 +546,14 @@ void configureDisMapper(DisOptions & disOptions,
                         TThreading const & threading,
                         TSequencing const & sequencing)
 {
-    if (disOptions.sensitivity == FULL)
+    if (disOptions.sensitivity == FULL){
         return configureDisMapper(disOptions, threading, sequencing, EditDistance());
+//         throw RuntimeError("Maximum contig2 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+    }
     else
+    {
         return configureDisMapper(disOptions, threading, sequencing, HammingDistance());
+    }
 }
 
 template <typename TThreading>
