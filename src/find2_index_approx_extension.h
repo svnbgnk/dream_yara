@@ -595,7 +595,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 
 //                 std::cout << ossContext.strata + s.l[s.l.size() - 1] << "\t" << ossContext.maxError << "\n";
                 //TODO search <0, 2> need to search till 0 is found or 1
-                if(ossContext.delayITV && isMapped(ossContext.ctx, readId) || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError)
+                if(ossContext.delayITV && (isMapped(ossContext.ctx, readId) || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError))
                 {
                     delegateDirect(ossContext, posAdd(sa_info, -overlap_l), posAdd(sa_info, needleL + overlap_r), needleId, 127);
                 }
