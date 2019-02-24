@@ -152,6 +152,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("nI", "noITV", "Only use Optimum Search Schemes to find and verify occurrences"));
 
+    addOption(parser, ArgParseOption("nS", "noSAfilter", "Do not filter suffix array values before reporting them"));
+
     addOption(parser, ArgParseOption("nD", "noDelayITV", "Use In Text Verification right after finding a a potential Position"));
 
     addOption(parser, ArgParseOption("Ith", "itvOccThreshold", "Start In Text Verification when search Interval on Index is smaller", ArgParseOption::INTEGER));
@@ -345,6 +347,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "compare")) disOptions.compare = true;
     if (isSet(parser, "noMappability")) disOptions.noMappability = true;
     if (isSet(parser, "noITV")) disOptions.noITV = true;
+    if (isSet(parser, "noSAfilter")) disOptions.noSAfilter = true;
     if (isSet(parser, "noDelayITV")) disOptions.noDelayITV = true;
 
     getOptionValue(disOptions.readLength, parser, "length");

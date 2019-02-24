@@ -1482,22 +1482,16 @@ inline void _optimalSearchScheme(TContex & ossContext,
     else
         _optimalSearchScheme(ossContext, delegate, delegateDirect, it, Pair<int8_t, int8_t>(max_e, max_e), needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Fwd(), TDistanceTag());
 }
-/*
-struct SAFilter;
-typedef Tag<SAFilter_> const UseSAFilter;
-
-struct Unfiltered;
-typedef Tag<Unfiltered_> const ReportAllRanges;*/
 
 template <typename TSpec, typename TConfig,
-          typename TDelegate, typename TDelegateD,
+          typename TDelegateD,
           typename TIndex,// typename TIndexSpec,
           typename TBitvectorPair,
           typename TNeedle,
           size_t nbrBlocks, size_t N,
           typename TDistanceTag>
 inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
-                                 TDelegate & delegate,
+                                 Delegate<TSpec, TConfig> & delegate,
                                  TDelegateD & delegateDirect,
                                  Iter<TIndex, VSTree<TopDown<> > > it,
                                  std::vector<TBitvectorPair > & bitvectors,
@@ -1532,10 +1526,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
         range.repLength = repLength(iter);
         range.limOffsets = limOffsets;
         allRanges[errors].push_back(range);
-        //TODO do Context here
 
-    //       std::cout << needleId << "\t" << range.range << "\t" << range.repLength << "\t" << limOffsets << "  e: " << (int)errors << "\n";
-    //
         setMapped(ossContext.ctx, readId);
         setMinErrors(ossContext.ctx, readId, errors);
 
@@ -1559,16 +1550,16 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     }
 }
 
-/*
+
 template <typename TSpec, typename TConfig,
-          typename TDelegate, typename TDelegateD,
+          typename TDelegateD,
           typename TIndex,// typename TIndexSpec,
           typename TBitvectorPair,
           typename TNeedle,
           size_t nbrBlocks, size_t N,
           typename TDistanceTag>
 inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
-                                 TDelegate & delegate,
+                                 DelegateUnfiltered<TSpec, TConfig> & delegate,
                                  TDelegateD & delegateDirect,
                                  Iter<TIndex, VSTree<TopDown<> > > it,
                                  std::vector<TBitvectorPair > & bitvectors,
@@ -1579,7 +1570,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 {
     for (auto & s : ss)
         _optimalSearchScheme(ossContext, delegate, delegateDirect, it, bitvectors, needle, needleId, s, TDistanceTag());
-}*/
+}
 
 
 
@@ -1645,7 +1636,6 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     linkBitvectors(ossContext, scheme, bitvectors, lbitvectors);
 
     // Iterate over all reads.
-//     uint32_t k = 0;
     iterate(needles, [&](TReadIt const & readIt)
     {
         bool skip = false;
@@ -1653,12 +1643,6 @@ find(OSSContext<TSpec, TConfig> & ossContext,
         TReadId readId = getReadId(ossContext.readSeqs, position(readIt));
 //             std::cout << "ReadId: " << readId << "\n";
 
-            //advance condition for multiple SearchSchemes
-            /*
-            bool m = isMapped(ossContext.ctx, readId);
-            uint8_t minE = getMinErrors(ossContext.ctx, readId);
-            bool search = (maxErrors == ossContext.maxError ||  maxErrors - minErrors == ossContext.strata) && !m ||
-                             m && std::min(minE + ossContext.strata, ossContext.maxError) == maxErrors;*/
         if(isMapped(ossContext.ctx, readId)){
 //                 std::cout << "MinErrors: " << (int)getMinErrors(ossContext.ctx, readId) << "\n";
             if(static_cast<uint8_t>(getMinErrors(ossContext.ctx, readId)) + ossContext.strata < minErrors){
