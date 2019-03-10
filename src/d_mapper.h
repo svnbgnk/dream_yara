@@ -134,8 +134,13 @@ struct DelegateDirect
         setReadId(hit, ossContext.readSeqs, needleId);
 
         if(errors <= ossContext.maxError){
+            ++ossContext.itvOccs;
             setMapped(ossContext.ctx, readId);
             setMinErrors(ossContext.ctx, readId, errors);
+        }
+        else
+        {
+            ++ossContext.itvJobs;
         }
 
 
@@ -184,6 +189,7 @@ struct DelegateUnfiltered
         uint32_t occLength = repLength(iter);
 //         SEQAN_ASSERT_LEQ(5, occLength);
         for (TContigsPos occ : getOccurrences(iter)){
+            ++ossContext.delegateOcc;
 //         for (TSAPos i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i){
 //             TSAValue saPos = iter.fwdIter.index->sa[i];
 //              std::cout << occ << "\n";
@@ -240,6 +246,8 @@ struct Delegate
     template <typename TSARange, typename TNeedleId, typename TMatchErrors>
     void operator() (OSSContext<TSpec, TConfig> & ossContext, auto const & iter, TSARange & saRange, TNeedleId const needleId, TMatchErrors const errors, bool const rev)
     {
+        ++ossContext.delegateFilteredOcc;
+
         uint8_t overlap_l = saRange.limOffsets.i1;
         uint8_t overlap_r = saRange.limOffsets.i2;
 
@@ -984,6 +992,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     me.strata = disOptions.strataRate * len;
     Mapper<void, TConfig> me2(disOptions);
 
+    //tracking
+    uint32_t itvJobsDone = 0;
+
     if(!disOptions.ossOff){
 
     initReadsContext(me, readSeqs);
@@ -1007,7 +1018,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
 
     if(disOptions.verbose > 1){
-        std::cout << "maxError: " << me.maxError << "\t" << me.strata << "\n";
+        std::cout << "maxError: " << (int)me.maxError << "\t" << (int)me.strata << "\n";
         std::cout << "Using Delayed In Text Verification:  " << !disOptions.noDelayITV << "\n";
     }
 
@@ -1088,6 +1099,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         std::cerr << "Matches count:\t\t\t" << lengthSum(me.matchesByCoord) << std::endl;
     }
 
+
     //save OSS hits
     if(disOptions.compare && !ossContext.delayITV){
         me2.matchesByCoord = me.matchesByCoord;
@@ -1120,7 +1132,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         //filtering after cordinates + Intervalsize
         aggregateMatchesITV(me, readSeqs);
 
-        std::cout << "Hits after filtering: " << lengthSum(me.matchesSetByCoord) << "\n";
+        std::cout << "Hits after filtering: " << lengthSum(me.matchesSetByCoord) << "\n\n";
 
         typedef typename TConfig::TContigsLen                       TContigsLen;
         typedef typename TConfig::TContigsSize                      TContigsSize;
@@ -1192,6 +1204,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     }
 
                     bool valid = inTextVerification(me, *largematch, readSeqs[readSeqId], me.maxError);
+                    ++itvJobsDone;
 //                     if(valid)
 //                         std::cout << "Accepted: " << "\t";
                     if(valid)
@@ -1220,22 +1233,34 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
         stop(me.timer);
         me.stats.inTextVerification += getValue(me.timer);
-        std::cout << "Hits accepted: " << valids << " OSS: " << oss << " dups: " << wrong << " from: " << lengthSum(me.matchesSetByCoord) << "\n";
 
+        if(disOptions.verbose > 1){
+            std::cout << "Hits accepted: " << valids << " OSS: " << oss << " dups: " << wrong << " from: " << lengthSum(me.matchesSetByCoord) << "\n";
+        }
     }
-    if(disOptions.verbose > 0)
+    if(disOptions.verbose > 1){
         std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord) << std::endl;
 
+        std::cout << "filtered Occs of read on suffix array: \t" << ossContext.filteredOccsOfRead << "\n";
+        std::cout << "OSS Matches: \t\t\t\t" << ossContext.delegateOcc << "\n";
+        std::cout << "filtered OSS Matches: \t\t\t" << ossContext.delegateFilteredOcc << "\n";
+        std::cout << "itv Attemps: \t\t\t\t" << ossContext.itvAttemps << "\n";
+        std::cout << "itv Matches: \t\t\t\t" << ossContext.itvOccs << "\n";
+        std::cout << "itv Jobs: \t\t\t\t" << ossContext.itvJobs << "\n";
+        std::cout << "itv Jobs done: \t\t\t\t" << itvJobsDone << "\n\n";
     }
 
-    if (me.options.verbose > 0)
+    }
+
+
+
+    if (me.options.verbose > 1)
     {
         typedef MapperTraits<TSpec, TMainConfig>                    TTraits2;
         unsigned long mappedReads = count(me.ctx.mapped, true, typename TTraits2::TThreading());
         me.stats.mappedReads += mappedReads;
 
-        if (me.options.verbose > 0)
-            std::cerr << "2Mapped reads:\t\t\t" << mappedReads << std::endl;
+        std::cerr << "2Mapped reads:\t\t\t" << mappedReads << "\n";
     }
 
     if(disOptions.ossOff || disOptions.compare)

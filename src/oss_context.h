@@ -567,6 +567,14 @@ struct OSSContext
     uint32_t readLength;
     uint32_t numberOfSequences;
 
+    //tracking
+    uint32_t itvOccs = 0;
+    uint32_t itvJobs = 0;
+    uint64_t itvAttemps = 0;
+    uint64_t delegateOcc = 0;
+    uint32_t delegateFilteredOcc = 0;
+    uint32_t filteredOccsOfRead = 0;
+
     typedef MapperTraits<TSpec, TConfig>        TTraits;
     typedef typename TTraits::TReadsContext     TReadsContext;
     typedef typename TTraits::TMatchesAppender  TMatches;

@@ -553,6 +553,8 @@ inline void inTextVerificationN(TContex & ossContext,
     TPatternRev patternRev;
 
 
+    ++ossContext.itvAttemps;
+
     //calc Score:
     uint8_t minErrors = max_e + 1;
     TFinder finderInfix(ex_infix);
@@ -1519,6 +1521,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 
     auto delegateRange = [&allRanges](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto limOffsets, auto const needleId, uint8_t const errors, bool const rev)
     {
+        ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
     //         std::cout << "Using new delegate: \n";
         uint32_t readId = getReadId(ossContext.readSeqs, needleId);
         SARange<TContigsSum> range;
@@ -1547,6 +1550,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 
 
     if(!empty){
+        ++ossContext.filteredOccsOfRead;
         locateSARanges(ossContext, delegate, it, allRanges, needleId, sMax);
     }
 }
