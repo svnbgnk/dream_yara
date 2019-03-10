@@ -1194,11 +1194,15 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     bool valid = inTextVerification(me, *largematch, readSeqs[readSeqId], me.maxError);
 //                     if(valid)
 //                         std::cout << "Accepted: " << "\t";
-                    if(valid){
+                    if(valid)
+                    {
 //                         write(std::cout, *largematch);
                         setMapped(me.ctx, readId);
+                        setMinErrors(me.ctx, readId, getMember(*largematch, Errors()));
                         ++valids;
-                    }else{
+                    }
+                    else
+                    {
                         setInvalid(*largematch);
                     }
 

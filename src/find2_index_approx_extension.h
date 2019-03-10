@@ -528,8 +528,8 @@ inline void inTextVerificationN(TContex & ossContext,
                                 TContigsLen const genomelength,
                                 TSAValue const & sa_info,
                                 uint8_t max_e,
-//                                 uint8_t upper,
-//                                 uint8_t lower,
+                                uint8_t upper,
+                                uint8_t lower,
                                 bool usingReverseText)
 {
     typedef ModifiedString<TNeedle, ModReverse>           TNeedleInfixRev;
@@ -571,8 +571,9 @@ inline void inTextVerificationN(TContex & ossContext,
 //     if(minErrors > upper)
 //         return;
 
-//     if(minErrors > upper || minErrors < lower)
-//         return;
+    // check if match is outside of current search -> other search will find it no reason to report it now
+    if(minErrors > upper || minErrors < lower)
+        return;
 
     TFinder finder(ex_infix);
     uint8_t mErrors = max_e * 4;
@@ -680,8 +681,8 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
         uint32_t needleL = length(needle);
         uint8_t max_e = ossContext.maxError;
         //there are different search with different upper and lower -> something goes wrong?
-//         uint8_t upper = s.u[s.u.size() - 1];
-//         uint8_t lower = s.l[s.l.size() - 1];
+        uint8_t upper = s.u[s.u.size() - 1];
+        uint8_t lower = s.l[s.l.size() - 1];
 
 //         uint8_t overlap_l = max_e;
 //         uint8_t overlap_r = max_e;
@@ -743,14 +744,14 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 
 //                 std::cout << ossContext.strata + s.l[s.l.size() - 1] << "\t" << ossContext.maxError << "\n";
                 //TODO search <0, 2> need to search till 0 is found or 1
-                if(ossContext.delayITV && (isMapped(ossContext.ctx, readId) || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError))
+                if(ossContext.delayITV && (isMapped(ossContext.ctx, readId && getMinErrors(ossContext.ctx, readId) + ossContext.strata <= upper) || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError))
                 {
                     delegateDirect(ossContext, posAdd(sa_info, -overlap_l), posAdd(sa_info, needleL + overlap_r), needleId, 127);
                 }
                 else
                 {
                     TContigSeqsInfix ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
-                    inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, -overlap_l), max_e, /*upper, lower,*/ false);
+                    inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, -overlap_l), max_e, upper, lower, false);
                 }
 //                 std::cout << posAdd(sa_info, -overlap_l) << "\t" << posAdd(sa_info, needleL + overlap_r) << "\n";
             }
