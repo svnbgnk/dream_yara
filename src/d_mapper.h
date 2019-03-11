@@ -1041,7 +1041,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         stop(me.timer);
         me.stats.loadingBitvectors += getValue(me.timer);
         if(disOptions.verbose > 1)
-            std::cerr << "Loading Bitvectors time:\t\t\t" << me.timer << std::endl;
+            std::cout << "Loading Bitvectors time:\t\t\t" << me.timer << std::endl;
     }
 
 // copy parameters to ossContext
@@ -1088,15 +1088,15 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         me.stats.mappedReads += mappedReads;
 
         if (me.options.verbose > 0)
-            std::cerr << "1Mapped reads:\t\t\t" << mappedReads << std::endl;
+            std::cout << "1Mapped reads:\t\t\t" << mappedReads << std::endl;
     }
 
     stop(me.timer);
     me.stats.optimumSearch += getValue(me.timer);
     if(disOptions.verbose > 0)
     {
-        std::cerr << "\nOptimum Search time:\t\t" << me.timer << std::endl;
-        std::cerr << "Matches count:\t\t\t" << lengthSum(me.matchesByCoord) << std::endl;
+        std::cout << "\nOptimum Search time:\t\t" << me.timer << std::endl;
+        std::cout << "Matches count:\t\t\t" << lengthSum(me.matchesByCoord) << std::endl;
     }
 
 
@@ -1239,7 +1239,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         }
     }
     if(disOptions.verbose > 1){
-        std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord) << std::endl;
+        std::cout << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord) << std::endl;
 
         std::cout << "filtered Occs of read on suffix array: \t" << ossContext.filteredOccsOfRead << "\n";
         std::cout << "OSS Matches: \t\t\t\t" << ossContext.delegateOcc << "\n";
@@ -1260,7 +1260,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         unsigned long mappedReads = count(me.ctx.mapped, true, typename TTraits2::TThreading());
         me.stats.mappedReads += mappedReads;
 
-        std::cerr << "2Mapped reads:\t\t\t" << mappedReads << "\n";
+        std::cout << "2Mapped reads:\t\t\t" << mappedReads << "\n";
     }
 
     if(disOptions.ossOff || disOptions.compare)
@@ -1861,7 +1861,7 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
     mainMapper.stats.loadContigs += getValue(mainMapper.timer);
 
     if (mainMapper.options.verbose > 1)
-        std::cerr << "Loading reference:\t\t\t" << mainMapper.timer << std::endl;
+        std::cout << "Loading reference:\t\t\t" << mainMapper.timer << std::endl;
 }
 
 // ----------------------------------------------------------------------------
@@ -1952,7 +1952,7 @@ inline void rankMatches2(Mapper<TSpec, TConfig> & me, TReadSeqs const & readSeqs
     stop(me.timer);
     me.stats.sortMatches += getValue(me.timer);
     if (me.options.verbose > 1)
-        std::cerr << "Sorting time:\t\t\t" << me.timer << std::endl;
+        std::cout << "Sorting time:\t\t\t" << me.timer << std::endl;
 
     // Update mapped reads.
     transform(me.ctx.mapped, me.primaryMatches, isValid<typename TTraits::TMatchSpec>, typename TTraits::TThreading());
@@ -1963,7 +1963,7 @@ inline void rankMatches2(Mapper<TSpec, TConfig> & me, TReadSeqs const & readSeqs
         me.stats.mappedReads += mappedReads;
 
         if (me.options.verbose > 1)
-            std::cerr << "Mapped reads:\t\t\t" << mappedReads << std::endl;
+            std::cout << "Mapped reads:\t\t\t" << mappedReads << std::endl;
     }
 
     if (IsSameType<typename TConfig::TSequencing, SingleEnd>::VALUE) return;
@@ -2023,7 +2023,7 @@ inline void openOutputFile(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
     mainMapper.stats.loadContigs += getValue(mainMapper.timer);
 
     if (mainMapper.options.verbose > 1)
-        std::cerr << "Loading reference:\t\t\t" << mainMapper.timer << std::endl;
+        std::cout << "Loading reference:\t\t\t" << mainMapper.timer << std::endl;
 
     bool opened = false;
 
@@ -2131,7 +2131,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
 
     while (true)
     {
-        if (mainMapper.options.verbose > 1) printRuler(std::cerr);
+        if (mainMapper.options.verbose > 1) printRuler(std::cout);
         loadReads(mainMapper);
         if (empty(mainMapper.reads.seqs)) break;
         prepairMainMapper(mainMapper, filter, disOptions);
@@ -2228,14 +2228,14 @@ inline void spawnDisMapper(DisOptions & disOptions,
     {
         double total = getValue(timer) / 100.0;
 
-        std::cerr << "\nFilter loading time:\t\t" << disOptions.loadFilter << " sec" << "\t\t" << disOptions.loadFilter / total << " %" << std::endl;
-        std::cerr << "Reads filtering time:\t\t" << disOptions.filterReads << " sec" << "\t\t" << disOptions.filterReads / total << " %" << std::endl;
-        std::cerr << "Reads copying time:\t\t" << disOptions.copyReads << " sec" << "\t\t" << disOptions.copyReads / total << " %" << std::endl;
-        std::cerr << "Alignments copying time:\t" << disOptions.copyAlignments << " sec" << "\t\t" << disOptions.copyAlignments / total << " %" << std::endl;
-        std::cerr << "Cigars moving time:\t\t" << disOptions.moveCigars << " sec" << "\t\t" << disOptions.moveCigars / total << " %" << std::endl;
+        std::cout << "\nFilter loading time:\t\t" << disOptions.loadFilter << " sec" << "\t\t" << disOptions.loadFilter / total << " %" << std::endl;
+        std::cout << "Reads filtering time:\t\t" << disOptions.filterReads << " sec" << "\t\t" << disOptions.filterReads / total << " %" << std::endl;
+        std::cout << "Reads copying time:\t\t" << disOptions.copyReads << " sec" << "\t\t" << disOptions.copyReads / total << " %" << std::endl;
+        std::cout << "Alignments copying time:\t" << disOptions.copyAlignments << " sec" << "\t\t" << disOptions.copyAlignments / total << " %" << std::endl;
+        std::cout << "Cigars moving time:\t\t" << disOptions.moveCigars << " sec" << "\t\t" << disOptions.moveCigars / total << " %" << std::endl;
 
         printStats(disMapper, timer);
-		std::cerr << "Avg reads per bin:\t\t" << (double)disOptions.filteredReads / disOptions.numberOfBins << std::endl;
+		std::cout << "Avg reads per bin:\t\t" << (double)disOptions.filteredReads / disOptions.numberOfBins << std::endl;
 	}
 }
 
