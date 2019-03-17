@@ -151,8 +151,6 @@ void locateSARanges(TContex & ossContext,
             }
         }
 
-
-
         ++(*ita[sel]).range.i1;
     }
 }
@@ -1368,6 +1366,10 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                  TDir const & ,
                                  TDistanceTag const &)
 {
+//     std::cout << "OSS:" << needleId << "\t" << needleLeftPos << "\t" << needleRightPos << "\t" << (int)blockIndex << "\t" << (int)errors << "\n";
+//     std::cout << "\t" << (int)s.u[blockIndex] << "\t" << iter.fwdIter.vDesc.range.i1 << "\t" << iter.fwdIter.vDesc.range.i2 << "\n";
+
+
 //     std::cout << "OSS" << "\t" << needleLeftPos << "\t" << needleRightPos << "\t" << (int)errors << "\n";
     uint8_t const maxErrorsLeftInBlock = s.u[blockIndex] - errors;
     uint8_t const minErrorsLeftInBlock = (s.l[blockIndex] > errors) ? (s.l[blockIndex] - errors) : 0;
@@ -1378,8 +1380,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     // Done. (Last step)
     if (done)
     {
-//         std::cout << "Done" << "\n";
-        //last input only matters for unidirectional searches (has to be false in this case)
         if(!lastEdit/*true*/){
             if(checkMappa){
                 filteredDelegate(ossContext, delegate, iter, limOffsets, needleId, bitvectors, errors);
