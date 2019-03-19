@@ -232,6 +232,11 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     // Setup performance disOptions.
     addSection(parser, "Performance Options");
 
+    addOption(parser, ArgParseOption("al", "allocate",
+        "Turns of memory-mapping on, i.e. the index is not loaded into RAM."
+        "This makes the search only slightly faster, but the index does have to be loaded into main memory "
+        "(which takes some time)."));
+
     addOption(parser, ArgParseOption("t", "threads", "Specify the number of threads to use.", ArgParseOption::INTEGER));
     setMinValue(parser, "threads", "1");
     setMaxValue(parser, "threads", "2048");
@@ -358,6 +363,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     // Parse performance disOptions.
     getOptionValue(disOptions.threadsCount, parser, "threads");
+    if (isSet(parser, "allocate")) disOptions.allocate = true;
     getOptionValue(disOptions.readsCount, parser, "reads-batch");
 
     // Parse contigs index prefix.

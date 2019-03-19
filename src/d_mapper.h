@@ -482,6 +482,20 @@ void spawnMapper(Options const & options,
     typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TConfig;
     Mapper<void, TConfig> mapper(options);
     runMapper(mapper, mainMapper, disOptions);
+
+    if(!disOptions.allocate)
+    {
+        typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TConfig;
+        Mapper<void, TConfig> mapper(options);
+        runMapper(mapper, mainMapper, disOptions);
+    }
+    else
+    {
+        typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, Alloc<>>  TConfig;
+        Mapper<void, TConfig> mapper(options);
+        runMapper(mapper, mainMapper, disOptions);
+    }
+
 }
 // ----------------------------------------------------------------------------
 // Function configureMapper()

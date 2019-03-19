@@ -81,6 +81,7 @@ struct Options
 
     unsigned            readsCount;
     unsigned            threadsCount;
+    bool                allocate;
     unsigned            hitsThreshold;
     bool                rabema;
     bool                alignSecondary;
@@ -108,6 +109,7 @@ struct Options
         verifyMatches(true),
         readsCount(100000),
         threadsCount(1),
+        allocate(false),
         hitsThreshold(300),
         rabema(false),
         alignSecondary(false),
