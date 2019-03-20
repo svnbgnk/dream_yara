@@ -28,7 +28,7 @@ template<typename TContex,
          typename TContigsSum,
          size_t numberBlocks>
 void locateSARanges(TContex & ossContext,
-                    TDelegate & delegate,
+                    TDelegate & normaldelegate,
                     Iter<TIndex, VSTree<TopDown<> > > iter,
 //                     std::vector<seqan::SARange<TContigsSum> > allRanges[],
                     std::array<std::vector<seqan::SARange<TContigsSum> >, numberBlocks> & allRanges,
@@ -141,7 +141,7 @@ void locateSARanges(TContex & ossContext,
 //         std::cout << "\n" << "Sel: " << (int)sel << "\n";
 
         //report SA-Value
-        delegate(ossContext, iter, (*ita[sel]), needleId, sel, false);
+        normaldelegate(ossContext, iter, (*ita[sel]), needleId, sel, false);
         //Skip same SA-Value with higher error
 //         std::cout << "Reported Value: " << (*ita[sel]).range.i1 << "\n";
 
@@ -1381,13 +1381,13 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     if (done)
     {
         if(!lastEdit/*true*/){
-            if(checkMappa){
-                filteredDelegate(ossContext, delegate, iter, limOffsets, needleId, bitvectors, errors);
-            }
-            else
-            {
+//             if(checkMappa){
+//                 filteredDelegate(ossContext, delegate, iter, limOffsets, needleId, bitvectors, errors);
+//             }
+//             else
+//             {
                 delegate(ossContext, iter, limOffsets, needleId, errors, false);
-            }
+//             }
         }
         return;
     }
