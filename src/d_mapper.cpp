@@ -167,6 +167,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     // Setup output disOptions.
     addSection(parser, "Output Options");
+    
+    addOption(parser, ArgParseOption("z", "bioSeqZip", "BioSeqZip fastq format."));
 
     addOption(parser, ArgParseOption("o", "output-file", "Specify an output file. Default: write the file to standard output.",
                                      ArgParseOption::OUTPUT_FILE));
@@ -349,6 +351,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "noITV")) disOptions.noITV = true;
     if (isSet(parser, "noSAfilter")) disOptions.noSAfilter = true;
     if (isSet(parser, "noDelayITV")) disOptions.noDelayITV = true;
+    if (isSet(parser, "bioSeqZip")) disOptions.zipFastq = true;
 
     getOptionValue(disOptions.readLength, parser, "length");
 

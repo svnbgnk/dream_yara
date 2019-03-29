@@ -59,6 +59,7 @@ struct Options
     CharString          contigsIndexFile;
     CharString          mappabilitySubDirectory;
     Pair<CharString>    readsFile;
+    bool                zipFastq;
     CharString          outputFile;
     TOutputFormat       outputFormat;
     bool                hammingDistance;
@@ -96,6 +97,7 @@ struct Options
         contigsSize(),
         contigsMaxLength(),
         contigsSum(),
+        zipFastq(false),
         hammingDistance(false),
         secondaryMatches(TAG),
         uncompressedBam(false),

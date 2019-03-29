@@ -647,24 +647,30 @@ inline void _writeRecord(MatchesWriter<TSpec, Traits> & me)
 template <typename TSpec, typename Traits, typename TThreading>
 inline void _writeRecordImpl(MatchesWriter<TSpec, Traits> & me, TThreading const & /* tag */)
 {
-    String<char> name = me.record.qName;
-    uint16_t size = length(me.record.qName);
-    int p = size - 4;
-    while ( p > 0){
-        if(name[p] == '|')
-            break;
-        --p;
+    if(me.options.zipFastq){
+        String<char> name = me.record.qName;
+        uint16_t size = length(me.record.qName);
+        int p = size - 4;
+        while ( p > 0){
+            if(name[p] == '|')
+                break;
+            --p;
+        }
+        
+        String<char> suffix = infix(name, p + 4, size);
+    //     std::cout  << "Number: " << suffix <<"\n";
+        size_t number = std::stoi(toCString(suffix));
+        name += "|RE:";
+        for(int i = 0; i < number; ++i){
+            String<char> tmp_name = name;
+            String<char> num = std::to_string(i);
+            tmp_name += num;
+            me.record.qName = tmp_name;
+            writeRecord(me.outputFile, me.record);
+        }
     }
-    
-    String<char> suffix = infix(name, p + 4, size);
-//     std::cout  << "Number: " << suffix <<"\n";
-    size_t number = std::stoi(toCString(suffix));
-    name += "|RE:";
-    for(int i = 0; i < number; ++i){
-        String<char> tmp_name = name;
-        String<char> num = std::to_string(i);
-        tmp_name += num;
-        me.record.qName = tmp_name;
+    else
+    {
         writeRecord(me.outputFile, me.record);
     }
 }
@@ -672,28 +678,33 @@ inline void _writeRecordImpl(MatchesWriter<TSpec, Traits> & me, TThreading const
 template <typename TSpec, typename Traits>
 inline void _writeRecordImpl(MatchesWriter<TSpec, Traits> & me, Parallel)
 {
-    String<char> name = me.record.qName;
-    uint16_t size = length(me.record.qName);
-    int p = size - 4;
-    while ( p > 0){
-        if(name[p] == '|')
-            break;
-        --p;
+    if(me.options.zipFastq){
+        String<char> name = me.record.qName;
+        uint16_t size = length(me.record.qName);
+        int p = size - 4;
+        while ( p > 0){
+            if(name[p] == '|')
+                break;
+            --p;
+        }
+        
+        String<char> suffix = infix(name, p + 4, size);
+    //     std::cout  << "Number: " << suffix <<"\n";
+        size_t number = std::stoi(toCString(suffix));
+        name += "|RE:";
+        for(int i = 0; i < number; ++i){
+            String<char> tmp_name = name;
+            String<char> num = std::to_string(i);
+            tmp_name += num;
+            me.record.qName = tmp_name;
+    //         writeRecord(me.outputFile, me.record);
+            write(me.recordBuffer, me.record, context(me.outputFile), me.outputFile.format);
+        }
     }
-    
-    String<char> suffix = infix(name, p + 4, size);
-//     std::cout  << "Number: " << suffix <<"\n";
-    size_t number = std::stoi(toCString(suffix));
-    name += "|RE:";
-    for(int i = 0; i < number; ++i){
-        String<char> tmp_name = name;
-        String<char> num = std::to_string(i);
-        tmp_name += num;
-        me.record.qName = tmp_name;
-//         writeRecord(me.outputFile, me.record);
+    else
+    {
         write(me.recordBuffer, me.record, context(me.outputFile), me.outputFile.format);
     }
-    
     if (length(me.recordBuffer) > Power<2, 16>::VALUE)
         _writeRecordBufferImpl(me, Parallel());
 
