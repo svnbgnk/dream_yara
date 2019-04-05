@@ -74,7 +74,7 @@ All mapping with up to 3 errors
 
 Stratified all-mapping with strata 2 and 3 errors
 ::
- $ dream_yara_mapper DATA/hg38_N_index/ DATA/reads/illumina/illumina_1.fa -t 1 -b 1 -ft none -e 3 -s 3 -o result.sam -vv
+ $ dream_yara_mapper DATA/hg38_N_index/ DATA/reads/illumina/illumina_1.fa -t 1 -b 1 -ft none -e 3 -s 2 -o result.sam -vv
 
 Mapping with sequence mappability up to 3 errors
 ::
