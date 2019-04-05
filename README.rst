@@ -1,47 +1,7 @@
-DREAM-Yara: An exact read mapper for very large databases with short update time
+MapMap: An exact read mapper for very large databases with short update time
 ===================================================================================
 
-Overview
---------
-Yara is an *exact* tool for aligning DNA sequencing reads to reference genomes.
-DREAM-Yara is an extension of Yara to support distributed read mapping.
-It works by spliting a given reference database in to smaller manageble partitions
-and this allows faster indexing and super fast updating time.
-DREAM-Yara can quickly exclude reads for parts of the databases where they cannot match.
-This allows us to keep the databases in several indices which can be easily rebuilt
-if parts are updated while maintaining a fast search time.
-Both Yara and DREAM-Yara are fully sensitive read mappers.
-
-
-Main features
-~~~~~~~~~~~~~
-
-* Exhaustive enumeration of sub-*optimal* end-to-end alignments under the edit distance.
-* Excellent speed, memory footprint and accuracy.
-* Accurate mapping quality computation.
-* Support for reference genomes consisiting of million of contigs.
-* Direct output in SAM/BAM format.
-
-Supported data
-~~~~~~~~~~~~~~
-
-DREAM-Yara has been tested on DNA reads (i.e., Whole Genome, Exome, ChIP-seq, MeDIP-seq) produced by the following sequencing platforms:
-
-* Illumina GA II, HiSeq and MiSeq (single-end and paired-end).
-* Life Technologies Ion Torrent Proton and PGM.
-
-Quality trimming is *necessary* for Ion Torrent reads and recommended for Illumina reads.
-
-Unsupported data
-~~~~~~~~~~~~~~~~
-
-* RNA-seq reads spanning splicing sites.
-* Long noisy reads (e.g., Pacific Biosciences RSII, Oxford Nanopore MinION).
-
-Installation from sources
--------------------------
-
-The following instructions assume Linux or OS X. For more information, including Windows instructions, refer to the `SeqAn getting started tutorial <http://trac.seqan.de/wiki/Tutorial/GettingStarted>`_.
+Incorparating Sequence Mappability into the read mapping process using Optimum Search Schemes. As foundation of this tool Dream-Yara was used. 
 
 Software requirements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -55,11 +15,11 @@ Software requirements
 Download
 ~~~~~~~~
 
-DREAM-Yara sources downloaded by executing:
+MapMap sources downloaded by executing:
 
 ::
 
-  $ git clone --recurse-submodules https://github.com/seqan/dream_yara.git
+  $ git clone --recurse-submodules https://github.com/svnbgnk/dream_yara.git
 
 Configuration
 ~~~~~~~~~~~~~
@@ -67,10 +27,14 @@ Configuration
 Create a build project by executing CMake as follows:
 
 ::
-
-  $ mkdir build
-  $ cd build
-  $ cmake ../dream_yara
+ $ git checkout oss
+ $ cd dream_yara/include/seqan/
+ $ git remote add upstream https://github.com/svnbgnk/seqan.git
+ $ git checkout upstream/mappa 
+ $ cd ../../..
+ $ mkdir mapmap-build
+ $ cd mapmap-build
+ $ cmake ../dream_yara
 
 Build
 ~~~~~
@@ -81,58 +45,41 @@ Invoke make as follows:
 
   $ make all
 
-Installation
-~~~~~~~~~~~~
 
-Copy the binaries to a folder in your *PATH*, e.g.:
-
+Acquiring hg38.fa
 ::
 
-  # cp bin/* /usr/local/bin
+ $ DATA/reference
+ $ wget http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+ $ gunzip hg38.fa.gz
+ $ mkdir bin
+ $ cp hg38.fa bin/0.fa
+
 
 
 Usage
 -----
 
-
-Distributed Indexer
-~~~~~~~~~~~~~~~~~~~
-
-Here we rquire a refence database splited in to many bins. This can be achieved (eg.) by using TaxSBP from https://github.com/pirovc/taxsbp
-
+Building the Index (requires 200GB of secondary memory)
 ::
+ $ dream_yara_indexer --threads 8 --output-prefix DATA/hg38_N_index/ DATA/reference/bin/*.fa -td /srv/public/svnbngk/tmp/
 
-  $ git clone https://github.com/pirovc/taxsbp
-
-
-
-Create 64 fasta files under GENOMES_DIR/ directory with names 0-63.fasta
-
+Computing sequence mappability and bit vectors with TH = 10
 ::
+ $ dream_yara_mappability DATA/hg38_N_index/ -b 1 -K 100 -E 3 -T 10 -s 0 -t 20 -o 35 -v -i -O DATA/hg38_N_index/mappability10E3
 
-  $ dream_yara_build_filter --number-of-bins 64 --threads 8 --kmer-size 18 --filter-type bloom --bloom-size 16 --num-hash 3 --output-file IBF.filter GENOMES_DIR/
-  $ dream_yara_indexer --threads 8 --output-prefix INDICES_DIR/ GENOMES_DIR/*.fasta
-
-Distributed Mapper
-~~~~~~~~~~~~~~~~~~
-
-Single-end reads
-^^^^^^^^^^^^^^^^
-
-Map single-end DNA reads on the indexed reference genome by executing:
-
+All mapping with up to 3 errors
 ::
+ $ dream_yara_mapper DATA/hg38_N_index/ DATA/reads/illumina/illumina_1.fa -t 1 -b 1 -ft none -e 3 -s 3 -o result.sam -vv 
 
-  $ dream_yara_mapper -t 8 -ft bloom -e 3 -fi IBF.filter -o READS.bam INDICES_DIR/ READS.fastq.gz
-
-Paired-end reads
-^^^^^^^^^^^^^^^^
-
-Map paired-end reads by providing two DNA read files:
-
+Stratified all-mapping with strata 2 and 3 errors
 ::
+ $ dream_yara_mapper DATA/hg38_N_index/ DATA/reads/illumina/illumina_1.fa -t 1 -b 1 -ft none -e 3 -s 3 -o result.sam -vv
 
-  $ dream_yara_mapper -t 8 -ft bloom -e 3 -fi IBF.filter -o READS.bam INDICES_DIR/ READS_1.fastq.gz READS2.fastq.gz
+Mapping with sequence mappability up to 3 errors
+::
+ $ dream_yara_mapper DATA/hg38_N_index/ DATA/reads/illumina/illumina_1.fa -t 1 -b 1 -ft none -e 3 -s 3 -m DATA/hg38_N_index/mappability10E3/ -o result.sam -vv
+
 
 
 Output format
