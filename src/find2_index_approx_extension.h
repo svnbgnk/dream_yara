@@ -1023,7 +1023,10 @@ inline ReturnCode checkCurrentMappability(OSSContext<TSpec, TConfig> & ossContex
 
         case ReturnCode::DIRECTSEARCH:
         {
-            directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
+            if(ossContext.hammingDpieces == 0)
+                directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
+            else
+                directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, bit_interval, TDir(), EditDistance());
             return ReturnCode::FINISHED;
         }
 
@@ -1080,7 +1083,10 @@ inline ReturnCode checkMappability(OSSContext<TSpec, TConfig> & ossContext,
         case ReturnCode::DIRECTSEARCH:
         {
             //search directly in Genome
-            directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
+            if(ossContext.hammingDpieces == 0)
+                directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
+            else
+                directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, bit_interval, TDir(), EditDistance());
             return ReturnCode::FINISHED;
         }
 
@@ -1366,17 +1372,15 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                  TDir const & ,
                                  TDistanceTag const &)
 {
-//     std::cout << "OSS:" << needleId << "\t" << needleLeftPos << "\t" << needleRightPos << "\t" << (int)blockIndex << "\t" << (int)errors << "\n";
-//     std::cout << "\t" << (int)s.u[blockIndex] << "\t" << iter.fwdIter.vDesc.range.i1 << "\t" << iter.fwdIter.vDesc.range.i2 << "\n";
-
-
-//     std::cout << "OSS" << "\t" << needleLeftPos << "\t" << needleRightPos << "\t" << (int)errors << "\n";
     uint8_t const maxErrorsLeftInBlock = s.u[blockIndex] - errors;
     uint8_t const minErrorsLeftInBlock = (s.l[blockIndex] > errors) ? (s.l[blockIndex] - errors) : 0;
     bool const done = minErrorsLeftInBlock == 0 && needleLeftPos == 0 && needleRightPos == length(needle) + 1;
     bool const atBlockEnd = (blockIndex > 0) ? needleRightPos - needleLeftPos - 1 == s.blocklength[blockIndex - 1] : false;        //is not true if we finished needle
     bool const checkMappa = !bitvectors.empty();
+    bool const nowEdit = atBlockEnd && !std::is_same<TDistanceTag, EditDistance>::value && ossContext.hammingDpieces >=  blockIndex;
 
+//     if(!std::is_same<TDistanceTag, EditDistance>::value)
+//         exit(0);
     // Done. (Last step)
     if (done)
     {
@@ -1393,7 +1397,11 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     }
 
     if(atBlockEnd && checkMappa){
-        ReturnCode rcode = checkMappability(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
+        ReturnCode rcode;
+        if(!nowEdit)
+            rcode = checkMappability(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
+        else
+            rcode = checkMappability(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, lastEdit, TDir(), EditDistance());
         if(rcode == ReturnCode::FINISHED)
             return;
     }
@@ -1401,6 +1409,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     // Exact search in current block.
     if (maxErrorsLeftInBlock == 0)
     {
+        //TODO change if nowEdit change to Edit even though there are no errors in the block?
         _optimalSearchSchemeExact(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, TDir(), TDistanceTag());
     }
     else if(!checkMappa && ossContext.itvConditionComp(iter, needleLeftPos, needleRightPos, errors, s, blockIndex))
@@ -1408,7 +1417,10 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
         typedef typename TConfig::TContigsSum   TContigsSum;
         //give emtpy bitvector and bitvector range sine we will not check mappability
         Pair<uint8_t, Pair<TContigsSum, TContigsSum>> dummy_bit_interval;
-         directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, dummy_bit_interval, TDir(), TDistanceTag());
+        if(ossContext.hammingDpieces == 0)
+            directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, dummy_bit_interval, TDir(), TDistanceTag());
+        else
+            directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, dummy_bit_interval, TDir(), EditDistance());
     }
 
     // Approximate search in current block.
@@ -1456,7 +1468,10 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                 return;
         }
 
-        _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
+        if(!nowEdit)
+            _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
+        else
+            _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), EditDistance());
     }
 }
 

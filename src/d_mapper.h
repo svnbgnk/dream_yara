@@ -62,6 +62,7 @@ public:
     bool                    noDelayITV = false;
     bool                    noMappability = false;
     bool                    compare = false;
+    uint32_t                hammingDpieces = 0;
     uint32_t                threshold = 11;
     uint32_t                itvOccThreshold = 10;
     uint32_t                startBin = 0;
@@ -1052,20 +1053,21 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     ossContext.saFilter = !disOptions.noSAfilter;
     ossContext.delayITV = !disOptions.noDelayITV;
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
+    ossContext.hammingDpieces = disOptions.hammingDpieces;
 
     start(me.timer);
 
 
     if(!disOptions.noSAfilter)
     {
-        if(disOptions.hammingDistance)
+        if(disOptions.hammingDistance || disOptions.hammingDpieces > 0)
             find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
         else
             find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
     }
     else
     {
-        if(disOptions.hammingDistance)
+        if(disOptions.hammingDistance || disOptions.hammingDpieces > 0)
             find(0, me.maxError, me.strata, ossContext, delegateUnfiltered, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
         else
             find(0, me.maxError, me.strata, ossContext, delegateUnfiltered, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());

@@ -561,6 +561,7 @@ struct OSSContext
     bool delayITV = false; //TODO add as option
 //     bool oneSSBestXMapper = false;
     uint32_t itvOccThreshold = 10;
+    uint32_t hammingDpieces = 0;
 
     uint8_t maxError;
     uint8_t strata;
