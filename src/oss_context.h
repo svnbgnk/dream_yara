@@ -561,11 +561,13 @@ struct OSSContext
     bool delayITV = false; //TODO add as option
 //     bool oneSSBestXMapper = false;
     uint32_t itvOccThreshold = 10;
+    uint32_t fmTreeThreshold = 0;
 
     uint8_t maxError;
     uint8_t strata;
     uint32_t readLength;
     uint32_t numberOfSequences;
+    uint32_t samplingRate;
 
     //tracking
     uint32_t itvOccs = 0;
@@ -626,11 +628,13 @@ struct OSSContext
         uni.print();
     }
 
-    void loadInputParameters(uint8_t inMaxError, uint8_t inStrata, uint32_t inReadLength, uint32_t inNumberOfSequences){
+    void loadInputParameters(uint8_t inMaxError, uint8_t inStrata, uint32_t inReadLength, uint32_t inNumberOfSequences, uint32_t inSamplingRate, uint32_t inFmTreeThreshold){
         maxError = inMaxError;
         strata = inStrata;
         readLength = inReadLength;
         numberOfSequences = inNumberOfSequences;
+        samplingRate = inSamplingRate;
+        fmTreeThreshold = inFmTreeThreshold; //pow(4, samplingRate) * 4 /
     }
 
     template <size_t nbrBlocks, typename TSALength>

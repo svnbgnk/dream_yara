@@ -64,6 +64,7 @@ public:
     bool                    compare = false;
     uint32_t                threshold = 11;
     uint32_t                itvOccThreshold = 10;
+    uint32_t                inFmTreeThreshold = 25;
     uint32_t                startBin = 0;
     uint32_t                readLength = 0;
 
@@ -243,28 +244,22 @@ struct Delegate
         noOverlap(noOverlap)
     {}
 
-    template <typename TSARange, typename TNeedleId, typename TMatchErrors>
-    void operator() (OSSContext<TSpec, TConfig> & ossContext, auto const & iter, TSARange & saRange, TNeedleId const needleId, TMatchErrors const errors, bool const rev)
+    template <typename TNeedleId, typename TSARange, typename TPos>
+    void operator() (OSSContext<TSpec, TConfig> & ossContext, TNeedleId const needleId, TSARange const & rangeInfo, TPos & pos)
     {
-        ++ossContext.delegateFilteredOcc;
-
-        uint8_t overlap_l = saRange.limOffsets.i1;
-        uint8_t overlap_r = saRange.limOffsets.i2;
+        uint8_t overlap_l = rangeInfo.limOffsets.i1;
+        uint8_t overlap_r = rangeInfo.limOffsets.i2;
 
 
 //         setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
-        uint32_t occLength = saRange.repLength;
-//         SEQAN_ASSERT_LEQ(5, occLength);
-//         for (auto saValue = saRange.range.i1; saValue < saRange.range.i2; ++saValue){
-            auto saValue = saRange.range.i1;
-            TContigsPos occ = iter.fwdIter.index->sa[saValue];
+        uint32_t occLength = rangeInfo.repLength;
             TMatch hit;
             if(noOverlap){
-                setContigPosition(hit, occ, posAdd(occ, occLength));
+                setContigPosition(hit, pos, posAdd(pos, occLength));
             }else{
-                setContigPosition(hit, posAdd(occ, 0 - overlap_l), posAdd(occ, occLength + overlap_r));
+                setContigPosition(hit, posAdd(pos, 0 - overlap_l), posAdd(pos, occLength + overlap_r));
             }
-            hit.errors = errors;
+            hit.errors = rangeInfo.errors;
             setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
             //read Context is done as soon as a range is reported
@@ -978,8 +973,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           StringSet<TReadSeqs, TSeqsSpec> & readSeqs,
                           DisOptions & disOptions)
 {
-
-
     uint32_t len;
     if(disOptions.readLength != 0)
         len = disOptions.readLength;
@@ -1045,13 +1038,19 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     }
 
 // copy parameters to ossContext
-    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs));
 
+    YaraFMConfig<uint16_t, uint32_t, uint32_t> myConfig{};
+    myConfig.SAMPLING;
+    std::cout << "SAMPLING RATE: " << myConfig.SAMPLING << "\n";
+
+    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs), myConfig.SAMPLING, disOptions.inFmTreeThreshold);
     ossContext.itv = !disOptions.noITV;
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
     ossContext.delayITV = !disOptions.noDelayITV;
+    //TODO use this after specifieng fmTreeExistenceFactor
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
+
 
     start(me.timer);
 
