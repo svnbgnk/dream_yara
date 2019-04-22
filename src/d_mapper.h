@@ -64,7 +64,7 @@ public:
     bool                    compare = false;
     uint32_t                threshold = 11;
     uint32_t                itvOccThreshold = 10;
-    uint32_t                inFmTreeThreshold = 25;
+    uint32_t                fmTreeThreshold = 25;
     uint32_t                startBin = 0;
     uint32_t                readLength = 0;
 
@@ -1043,7 +1043,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     myConfig.SAMPLING;
     std::cout << "SAMPLING RATE: " << myConfig.SAMPLING << "\n";
 
-    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs), myConfig.SAMPLING, disOptions.inFmTreeThreshold);
+    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs), myConfig.SAMPLING, disOptions.fmTreeThreshold);
     ossContext.itv = !disOptions.noITV;
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;

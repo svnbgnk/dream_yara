@@ -159,8 +159,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     addOption(parser, ArgParseOption("Ith", "itvOccThreshold", "Start In Text Verification when search Interval on Index is smaller", ArgParseOption::INTEGER));
     hideOption(getOption(parser, "itvOccThreshold"));
 
-    addOption(parser, ArgParseOption("FTh", "inFmTreeThreshold", "Use FM-Tree to locate occurrences inside intervals larger than.", ArgParseOption::INTEGER));
-    hideOption(getOption(parser, "inFmTreeThreshold"));
+    addOption(parser, ArgParseOption("FTh", "fmTreeThreshold", "Use FM-Tree to locate occurrences inside intervals larger than.", ArgParseOption::INTEGER));
+    hideOption(getOption(parser, "fmTreeThreshold"));
 
     addOption(parser, ArgParseOption("th", "threshold", "Occurrence was filtered when below this threshold", ArgParseOption::INTEGER));
     hideOption(getOption(parser, "threshold"));
@@ -347,7 +347,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     getOptionValue(disOptions.itvOccThreshold, parser, "itvOccThreshold");
 
-    getOptionValue(disOptions.inFmTreeThreshold, parser, "inFmTreeThreshold");
+    getOptionValue(disOptions.fmTreeThreshold, parser, "fmTreeThreshold");
 
     if (isSet(parser, "ossOff")) disOptions.ossOff = true;
     if (isSet(parser, "hammingD")) disOptions.hammingDistance = true;

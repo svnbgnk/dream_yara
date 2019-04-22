@@ -164,10 +164,11 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext, TDelegate & delegat
         }
     }
 
+    counter += 4;
     if(offset < ossContext.samplingRate && goDown(it)){
         do{
 //             std::cout << "recurse level: " << static_cast<int>(offset) << "\n";
-            ++counter;
+            
             fm_tree(ossContext, delegate, needleId, range, it, offset + 1, counter);
         }while(goRight(it));
     }
@@ -178,7 +179,7 @@ template<typename TSpec, typename TConfig,
          typename TDelegate,
          typename TIndex,
          typename TContigsSum>
-inline void locateSARanges(OSSContext<TSpec, TConfig> ossContext,
+inline void locateSARanges(OSSContext<TSpec, TConfig> & ossContext,
                     TDelegate & delegate,
                     Iter<TIndex, VSTree<TopDown<> > > iter,
 //                     std::vector<seqan::SARange<TContigsSum> > allRanges[],
@@ -238,7 +239,7 @@ inline void locateSARanges(OSSContext<TSpec, TConfig> ossContext,
         //TODO introduce Parameter for this
         if(ossContext.fmTreeThreshold < rs)
         {
-            std::cout << "Locate with FM-tree\n";
+//            std::cout << "Locate with FM-tree\n";
 //             Iter<TIndex, VSTree<TopDown<> > > it_tmp(index);
             auto fwdIter = iter.fwdIter;
 //             it_tmp.fwdIter.vDesc.repLen = crange.repLength;
@@ -247,7 +248,7 @@ inline void locateSARanges(OSSContext<TSpec, TConfig> ossContext,
             fwdIter.vDesc.range = crange.range;
             uint32_t counter = 0;
             fm_tree(ossContext, delegate, needleId, crange, fwdIter, 0, counter);
-            std::cout << "Edge counter: " << counter << "\n";
+//            std::cout << "Edge counter: " << counter << "\n";
         }else{
 //             std::cout << "Default Locate Default Locate Default Locate\n";
             for (uint32_t i = crange.range.i1; i < crange.range.i2; ++i)
