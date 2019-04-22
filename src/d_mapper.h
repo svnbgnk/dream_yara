@@ -187,6 +187,8 @@ struct DelegateUnfiltered
         uint8_t overlap_r = limOffsets.i2;
 
         TReadId readId = getReadId(ossContext.readSeqs, needleId);
+        setMapped(ossContext.ctx, readId);
+        setMinErrors(ossContext.ctx, readId, errors);
         uint32_t occLength = repLength(iter);
 //         SEQAN_ASSERT_LEQ(5, occLength);
         for (TContigsPos occ : getOccurrences(iter)){
@@ -203,8 +205,7 @@ struct DelegateUnfiltered
             hit.errors = errors;
             setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
-            setMapped(ossContext.ctx, readId);
-            setMinErrors(ossContext.ctx, readId, errors); //TODO move out of loop
+
 
 //             std::cout << "hit" << occ << "end" << posAdd(occ, occLength) << " (" << occLength << ")" << "\t" << needleId << "\terrors" << (int) errors << "\n";
 //             std::cout << "isMapped: "<< isMapped(ossContext.ctx, readId) << "\n";
