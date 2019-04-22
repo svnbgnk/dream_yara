@@ -557,8 +557,8 @@ struct OSSContext
     bool filterDelegate = true;
     bool trackReadCount = false;
     bool itv = true;
-//     bool bestXMapper = false; //still needed multiple searches
-    bool delayITV = false; //TODO add as option
+    bool delayITV = false;
+    bool noSAfilter = false;
 //     bool oneSSBestXMapper = false;
     uint32_t itvOccThreshold = 10;
     uint32_t fmTreeThreshold = 0;

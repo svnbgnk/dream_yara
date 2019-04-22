@@ -156,7 +156,7 @@ struct DelegateDirect
     }
 };
 
-
+/*
 template <typename TSpec, typename TConfig>
 struct DelegateUnfiltered
 {
@@ -180,45 +180,32 @@ struct DelegateUnfiltered
         noOverlap(noOverlap)
     {}
 
-    template <typename TNeedleId, typename TMatchErrors>
-    void operator() (OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, TNeedleId const needleId, TMatchErrors const errors, bool const rev)
+//     template <typename TNeedleId, typename TMatchErrors>
+    template <typename TNeedleId, typename TSARange, typename TPos>
+    void operator() (OSSContext<TSpec, TConfig> & ossContext, TNeedleId const needleId, TSARange const & rangeInfo, TPos & pos)
     {
-        uint8_t overlap_l = limOffsets.i1;
-        uint8_t overlap_r = limOffsets.i2;
 
-        TReadId readId = getReadId(ossContext.readSeqs, needleId);
-        setMapped(ossContext.ctx, readId);
-        setMinErrors(ossContext.ctx, readId, errors);
-        uint32_t occLength = repLength(iter);
-//         SEQAN_ASSERT_LEQ(5, occLength);
-        for (TContigsPos occ : getOccurrences(iter)){
-            ++ossContext.delegateOcc;
-//         for (TSAPos i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i){
-//             TSAValue saPos = iter.fwdIter.index->sa[i];
-//              std::cout << occ << "\n";
-            TMatch hit;
-            if(noOverlap){
-                setContigPosition(hit, occ, posAdd(occ, occLength));
-            }else{
-                setContigPosition(hit, posAdd(occ, 0 - overlap_l), posAdd(occ, occLength + overlap_r));
-            }
-            hit.errors = errors;
-            setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
+        //TODO move into function calls
+        uint8_t overlap_l = rangeInfo.limOffsets.i1;
+        uint8_t overlap_r = rangeInfo.limOffsets.i2;
+        uint32_t occLength = rangeInfo.repLength;
+        TMatch hit;
+        if(noOverlap)
+            setContigPosition(hit, pos, posAdd(pos, occLength));
+        else
+            setContigPosition(hit, posAdd(pos, 0 - overlap_l), posAdd(pos, occLength + overlap_r));
 
+        hit.errors = rangeInfo.errors;
+        setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
+            //read Context is done as soon as a range is reported
+//             TReadId readId = getReadId(ossContext.readSeqs, needleId);
+//             setMapped(ossContext.ctx, readId);
+//             setMinErrors(ossContext.ctx, readId, errors);
 
-//             std::cout << "hit" << occ << "end" << posAdd(occ, occLength) << " (" << occLength << ")" << "\t" << needleId << "\terrors" << (int) errors << "\n";
-//             std::cout << "isMapped: "<< isMapped(ossContext.ctx, readId) << "\n";
-//             std::cout << "MinErrors: "<< (int)getMinErrors(ossContext.ctx, readId) << "\n";
-
-    //         hit.readId = readId;
-//TODO maybe use this form
-    //         THit hit = { range(indexIt), (TSeedId)position(seedsIt), errors };
-
-            appendValue(matches, hit, Generous(), typename Traits::TThreading()); //does this make any sense (always single occ)
-        }
+        appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
     }
-};
+};*/
 
 
 template <typename TSpec, typename TConfig>
@@ -248,28 +235,25 @@ struct Delegate
     template <typename TNeedleId, typename TSARange, typename TPos>
     void operator() (OSSContext<TSpec, TConfig> & ossContext, TNeedleId const needleId, TSARange const & rangeInfo, TPos & pos)
     {
+        //TODO move into function calls
         uint8_t overlap_l = rangeInfo.limOffsets.i1;
         uint8_t overlap_r = rangeInfo.limOffsets.i2;
-
-
-//         setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
         uint32_t occLength = rangeInfo.repLength;
-            TMatch hit;
-            if(noOverlap){
-                setContigPosition(hit, pos, posAdd(pos, occLength));
-            }else{
-                setContigPosition(hit, posAdd(pos, 0 - overlap_l), posAdd(pos, occLength + overlap_r));
-            }
-            hit.errors = rangeInfo.errors;
-            setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
+        TMatch hit;
+        if(noOverlap)
+            setContigPosition(hit, pos, posAdd(pos, occLength));
+        else
+            setContigPosition(hit, posAdd(pos, 0 - overlap_l), posAdd(pos, occLength + overlap_r));
+
+        hit.errors = rangeInfo.errors;
+        setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
             //read Context is done as soon as a range is reported
 //             TReadId readId = getReadId(ossContext.readSeqs, needleId);
 //             setMapped(ossContext.ctx, readId);
 //             setMinErrors(ossContext.ctx, readId, errors);
 
-            appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
-//         }
+        appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
     }
 };
 
@@ -997,7 +981,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     typedef typename TTraits::TMatchesAppender                  TMatchesAppender;
     typedef Delegate<TSpec, TConfig>                            Delegate;
     typedef DelegateDirect<TSpec, TConfig>                      DelegateDirect;
-    typedef DelegateUnfiltered<TSpec, TConfig>                  DelegateUnfiltered;
+//     typedef DelegateUnfiltered<TSpec, TConfig>                  DelegateUnfiltered;
 
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
 
@@ -1006,7 +990,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     bool noOverlap = disOptions.noDelayITV || disOptions.hammingDistance;
     Delegate delegate(appender, noOverlap);
     DelegateDirect delegateDirect(appender);
-    DelegateUnfiltered delegateUnfiltered(appender, noOverlap);
+//     DelegateUnfiltered delegateUnfiltered(appender, noOverlap);
     TContigSeqs & contigSeqs = me.contigs.seqs;
 
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
@@ -1049,36 +1033,19 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
     ossContext.delayITV = !disOptions.noDelayITV;
-    //TODO use this after specifieng fmTreeExistenceFactor
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
+    ossContext.noSAfilter = disOptions.noSAfilter;
+
 
 
     start(me.timer);
 
 
-    if(!disOptions.noSAfilter)
-    {
-        if(disOptions.hammingDistance)
-            find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
-        else
-            find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
-    }
+
+    if(disOptions.hammingDistance)
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
     else
-    {
-        if(disOptions.hammingDistance)
-            find(0, me.maxError, me.strata, ossContext, delegateUnfiltered, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
-        else
-            find(0, me.maxError, me.strata, ossContext, delegateUnfiltered, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
-    }
-
-
-
-
-/*
-        if(disOptions.hammingDistance)
-            find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
-        else
-            find(0, me.maxError, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());*/
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
 
 
     if (me.options.verbose > 0)

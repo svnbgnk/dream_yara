@@ -44,7 +44,6 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
         if(getValue(it.index->sa.sparseString.indicators, i)){
             TContigsPos pos = posAdd(it.index->sa[i], offset);
             delegate(ossContext, needleId, saRange, pos);
-            ++ossContext.delegateFilteredOcc;
         }
     }
 
@@ -57,6 +56,51 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
         }while(goRight(it));
     }
 }
+
+/*
+template<typename TSpec, typename TConfig,
+         typename TDelegate,
+         typename TIndex>
+inline void locate(OSSContext<TSpec, TConfig> & ossContext,
+                   TDelegate & delegate,
+                   uint32_t const needleId,
+                   Iter<TIndex, VSTree<TopDown<> > > iter,
+                   Pair <int8_t, int8_t> & limOffsets,
+                   uint8_t const errors)
+{
+    typedef MapperTraits<TSpec, TConfig>                     TTraits;
+    typedef typename TTraits::TContigsPos                    TContigsPos;
+    typedef typename TConfig::TContigsSum                    TContigsSum;
+
+
+    uint32_t readId = getReadId(ossContext.readSeqs, needleId);
+    setMapped(ossContext.ctx, readId);
+    setMinErrors(ossContext.ctx, readId, errors);
+
+    if(ossContext.fmTreeThreshold < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1)
+    {
+            auto fwdIter = iter.fwdIter;
+            SARange<TContigsSum> saRange;
+            saRange.repLength = repLength(iter);
+            saRange.limOffsets = limOffsets;
+            saRange.errors = errors;
+
+            uint32_t counter = 0;
+            fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, counter);
+//            std::cout << "Edge counter: " << counter << "\n";
+    }
+    else
+    {
+//             std::cout << "Default Locate Default Locate Default Locate\n";
+        for (uint32_t i = saRange.range.i1; i < saRange.range.i2; ++i)
+        {
+//             std::cout << "Use Default\n";
+            TContigsPos pos = iter.fwdIter.index->sa[i];
+            delegate(ossContext, needleId, saRange, pos);
+            ++ossContext.delegateFilteredOcc;
+        }
+    }
+}*/
 
 template<typename TSpec, typename TConfig,
          typename TDelegate,
@@ -94,7 +138,6 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
 //             std::cout << "Use Default\n";
             TContigsPos pos = iter.fwdIter.index->sa[i];
             delegate(ossContext, needleId, saRange, pos);
-            ++ossContext.delegateFilteredOcc;
         }
     }
 }
@@ -149,6 +192,7 @@ inline void locateSARanges(TContex & ossContext,
             } // merge intervals
         }
 
+        ossContext.delegateFilteredOcc += crange.range.i2 - crange.range.i1;
         locate(ossContext, delegate, needleId, crange, iter);
     }
 }
@@ -1327,7 +1371,7 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
             if(i != lastStart){
                 iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
                 iter.fwdIter.vDesc.range.i2 = rangeStart + i - 1;
-                delegate(ossContext, iter, limOffsets, needleId, errors, false);
+                delegate(ossContext, iter, limOffsets, needleId, errors);
             }
             lastStart = i + 1;
         }
@@ -1335,7 +1379,7 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
     if(lastStart < rangeEnd - rangeStart){
         iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
         iter.fwdIter.vDesc.range.i2 = rangeStart + rangeEnd - rangeStart;
-        delegate(ossContext, iter, limOffsets, needleId, errors, false);
+        delegate(ossContext, iter, limOffsets, needleId, errors);
     }
 }
 
@@ -1379,7 +1423,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     if (done)
     {
         if(!lastEdit){
-            delegate(ossContext, iter, limOffsets, needleId, errors, false);
+            delegate(ossContext, iter, limOffsets, needleId, errors);
         }
         return;
     }
@@ -1479,6 +1523,7 @@ inline void _optimalSearchScheme(TContex & ossContext,
 }
 
 template <typename TSpec, typename TConfig,
+          typename TDelegate,
           typename TDelegateD,
           typename TIndex,// typename TIndexSpec,
           typename TBitvectorPair,
@@ -1486,7 +1531,7 @@ template <typename TSpec, typename TConfig,
           size_t nbrBlocks, size_t N,
           typename TDistanceTag>
 inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
-                                 Delegate<TSpec, TConfig> & delegate,
+                                 TDelegate & delegate,
                                  TDelegateD & delegateDirect,
                                  Iter<TIndex, VSTree<TopDown<> > > it,
                                  std::vector<TBitvectorPair > & bitvectors,
@@ -1496,63 +1541,85 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                  TDistanceTag const &)
 {
     typedef MapperTraits<TSpec, TConfig>                     TTraits;
-//     typedef typename TTraits::TContigsPos                    TContigsPos;
+    typedef typename TTraits::TContigsPos                    TContigsPos;
     typedef typename TConfig::TContigsSum                    TContigsSum;
 
+    if(!ossContext.noSAfilter){
 
-/*
-    //maximum Error of the Search Scheme
-    uint8_t sMax = 0;
-    for (auto & s : ss){
-        if(s.u[nbrBlocks - 1] > sMax)
-            sMax = s.u[nbrBlocks - 1];
+        std::vector<seqan::SARange<TContigsSum> > ranges;
+
+        auto delegateRange = [&ranges](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, auto const needleId, uint8_t const errors)
+        {
+            //only required for stats
+            ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
+        //         std::cout << "Using new delegate: \n";
+            uint32_t readId = getReadId(ossContext.readSeqs, needleId);
+            SARange<TContigsSum> range;
+            range.errors = errors;
+            range.range = Pair<TContigsSum, TContigsSum> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
+            range.repLength = repLength(iter);
+            range.limOffsets = limOffsets;
+            ranges.push_back(range);
+
+            setMapped(ossContext.ctx, readId);
+            setMinErrors(ossContext.ctx, readId, errors);
+
+        };
+
+        for (auto & s : ss){
+            _optimalSearchScheme(ossContext, delegateRange, delegateDirect, it, bitvectors, needle, needleId, s, TDistanceTag());
+        }
+
+        if(!ranges.empty()){
+            ++ossContext.filteredOccsOfRead;
+            locateSARanges(ossContext, delegate, needleId, it, ranges/*, sMax*/);
+        }
     }
-//         std::cout << "sMax " << (int)sMax << "\n";*/
-
-
-    //switch delegate
-//     std::array<std::vector<seqan::SARange<TContigsSum> >, nbrBlocks> allRanges;
-    std::vector<seqan::SARange<TContigsSum> > ranges;
-
-    auto delegateRange = [&ranges](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto limOffsets, auto const needleId, uint8_t const errors, bool const rev)
+    else
     {
-        //only required for stats
-        ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
-    //         std::cout << "Using new delegate: \n";
-        uint32_t readId = getReadId(ossContext.readSeqs, needleId);
-        SARange<TContigsSum> range;
-        range.errors = errors;
-        range.range = Pair<TContigsSum, TContigsSum> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
-        range.repLength = repLength(iter);
-        range.limOffsets = limOffsets;
-        ranges.push_back(range);
 
-        setMapped(ossContext.ctx, readId);
-        setMinErrors(ossContext.ctx, readId, errors);
+        auto delegateFMTree = [&delegate](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, auto const needleId, uint8_t const errors)
+        {
+            //only required for stats
+            ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
 
-    };
+            SARange<TContigsSum> saRange;
+            saRange.repLength = repLength(iter);
+            saRange.limOffsets = limOffsets;
+            saRange.errors = errors;
 
-    for (auto & s : ss){
-        _optimalSearchScheme(ossContext, delegateRange, delegateDirect, it, bitvectors, needle, needleId, s, TDistanceTag());
-    }
-/*
-    bool empty = true;
-    for(int e = 0; e < nbrBlocks; ++e){
-//         std::cout << allRanges[e].size() << "\t";
-        if(!allRanges[e].empty())
-            empty = false;
-    }*/
-//     std::cout << "\n";
+            uint32_t readId = getReadId(ossContext.readSeqs, needleId);
+            setMapped(ossContext.ctx, readId);
+            setMinErrors(ossContext.ctx, readId, errors);
 
 
-    if(!ranges.empty()){
-        ++ossContext.filteredOccsOfRead;
-        locateSARanges(ossContext, delegate, needleId, it, ranges/*, sMax*/);
+            if(ossContext.fmTreeThreshold < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1)
+            {
+                    auto fwdIter = iter.fwdIter;
+                    uint32_t counter = 0;
+                    fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, counter);
+        //            std::cout << "Edge counter: " << counter << "\n";
+            }
+            else
+            {
+        //             std::cout << "Default Locate Default Locate Default Locate\n";
+                for (uint32_t i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
+                {
+        //             std::cout << "Use Default\n";
+                    TContigsPos pos = iter.fwdIter.index->sa[i];
+                    delegate(ossContext, needleId, saRange, pos);
+                }
+            }
+        };
+
+        for (auto & s : ss)
+            _optimalSearchScheme(ossContext, delegateFMTree, delegateDirect, it, bitvectors, needle, needleId, s, TDistanceTag());
     }
 }
 
-
+/*
 template <typename TSpec, typename TConfig,
+          typename TDelegate,
           typename TDelegateD,
           typename TIndex,// typename TIndexSpec,
           typename TBitvectorPair,
@@ -1560,7 +1627,7 @@ template <typename TSpec, typename TConfig,
           size_t nbrBlocks, size_t N,
           typename TDistanceTag>
 inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
-                                 DelegateUnfiltered<TSpec, TConfig> & delegate,
+                                 TDelegate & delegate,
                                  TDelegateD & delegateDirect,
                                  Iter<TIndex, VSTree<TopDown<> > > it,
                                  std::vector<TBitvectorPair > & bitvectors,
@@ -1571,9 +1638,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 {
     for (auto & s : ss)
         _optimalSearchScheme(ossContext, delegate, delegateDirect, it, bitvectors, needle, needleId, s, TDistanceTag());
-}
-
-
+}*/
 
 template <typename TContex,
           typename TDelegate, typename TDelegateD,
