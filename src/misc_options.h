@@ -286,6 +286,8 @@ inline TReadSeqSize getReadStrata(TOptions const & options, TReadSeqSize readSeq
     return std::min(readStrata, (TReadSeqSize)MemberLimits<TMatch, Errors>::VALUE);
 }
 
+
+
 // ----------------------------------------------------------------------------
 // Function saveContigsLimits()
 // ----------------------------------------------------------------------------
@@ -298,6 +300,7 @@ bool saveContigsLimits(TOptions const & options)
     appendValue(limits, options.contigsMaxLength);
     appendValue(limits, options.contigsSize);
     appendValue(limits, options.contigsSum);
+    appendValue(limits, options.samplingRate);
 
     CharString contigsLimitFile(options.contigsIndexFile);
     append(contigsLimitFile, ".txt.size");
@@ -319,12 +322,14 @@ bool openContigsLimits(TOptions & options)
     if (!open(limits, toCString(contigsLimitFile), OPEN_RDONLY))
         return false;
 
-    if (length(limits) != 3)
+    if (length(limits) != 3 || length(limits) != 4)
         return false;
 
     options.contigsMaxLength = limits[0];
     options.contigsSize = limits[1];
     options.contigsSum = limits[2];
+    if(length(limits) == 4)
+        options.samplingRate = limits[3];
 
     return true;
 }

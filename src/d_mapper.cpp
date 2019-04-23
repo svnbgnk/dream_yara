@@ -518,6 +518,7 @@ void configureDisMapper(DisOptions & disOptions,
                         TSequencing const & sequencing,
                         TSeedsDistance const & distance)
 {
+
     disOptions.contigsMaxLength = 0;
     disOptions.contigsSize = 0;
     disOptions.contigsSum = 0;

@@ -1709,6 +1709,7 @@ void spawnMapper(Options const & options,
     else
     {*/
         typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, Alloc<>>  TConfig;
+
         Mapper<void, TConfig> mapper(options);
         runMapper(mapper, mainMapper, disOptions);
 //     }
@@ -2111,6 +2112,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
                 Options options = mainMapper.options;
                 appendFileName(options.contigsIndexFile, disOptions.IndicesDirectory, i);
                 appendFileName(options.mappabilitySubDirectory, disOptions.MappabilityDirectory, i);
+                // also load SamplingRate;
                 if (!openContigsLimits(options))
                     throw RuntimeError("Error while opening reference file.");
                 configureMapper<TSpec, TMainConfig>(options, mainMapper, disOptions);

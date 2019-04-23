@@ -55,6 +55,7 @@ struct Options
     uint64_t            contigsSize;
     uint64_t            contigsMaxLength;
     uint64_t            contigsSum;
+    uint64_t            samplingRate;
 
     CharString          contigsIndexFile;
     CharString          mappabilitySubDirectory;
@@ -97,6 +98,7 @@ struct Options
         contigsSize(),
         contigsMaxLength(),
         contigsSum(),
+        samplingRate(10),
         zipFastq(false),
         hammingDistance(false),
         secondaryMatches(TAG),
@@ -362,7 +364,9 @@ struct Mapper
         libraryDev(),
         readsFile(options.readsCount),
         cigars(concat(cigarsSet))
-    {};
+    {
+        MapperTraits<TSpec, TConfig>::TIndexConfig::SAMPLING = options.samplingRate;
+    };
 };
 
 // ============================================================================

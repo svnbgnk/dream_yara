@@ -81,6 +81,7 @@ struct Options
     uint64_t        contigsSize;
     uint64_t        contigsMaxLength;
     uint64_t        contigsSum;
+    uint64_t        samplingRate;
 
     unsigned        threadsCount;
 
@@ -92,6 +93,7 @@ struct Options
     contigsSize(),
     contigsMaxLength(),
     contigsSum(),
+    samplingRate(10),
     threadsCount(1),
     verbose(false)
     {}
@@ -142,6 +144,10 @@ void setupArgumentParser(ArgumentParser & parser, Options const & options)
     addArgument(parser, ArgParseArgument(ArgParseArgument::INPUT_FILE, "FASTA FILES", true));
     setValidValues(parser, 0, SeqFileIn::getFileExtensions());
     setHelpText(parser, 0, "The fasta files of the bins to updated. File names should be exactly the same us bin number (0-indexing). e.g. 0.fna");
+
+    addOption(parser, ArgParseOption("s", "sampling", "Sampling rate of suffix array", ArgParseOption::INTEGER));
+
+    setDefaultValue(parser, "sampling", options.samplingRate);
 
     addOption(parser, ArgParseOption("v", "verbose", "Displays verbose output."));
 
@@ -218,6 +224,8 @@ parseCommandLine(Options & options, ArgumentParser & parser, int argc, char cons
     }
     setEnv("TMPDIR", tmpDir);
 
+
+    if (isSet(parser, "sampling")) getOptionValue(options.samplingRate, parser, "sampling");
 //    if (isSet(parser, "number-of-bins")) getOptionValue(options.numberOfBins, parser, "number-of-bins");
     if (isSet(parser, "threads")) getOptionValue(options.threadsCount, parser, "threads");
 
@@ -271,6 +279,7 @@ void saveContigs(YaraIndexer<TSpec, TConfig> & me)
     if (!saveContigsLimits(me.options) || !save(me.contigs, toCString(me.options.contigsIndexFile)))
         throw RuntimeError("Error while saving the reference.");*/
 
+    //also saves SamplingRate
     if (!saveContigsLimits(me.options) || !saveBi(me.contigs, toCString(me.options.contigsIndexFile)))
         throw RuntimeError("Error while saving the reference.");
 
@@ -289,10 +298,13 @@ void saveContigs(YaraIndexer<TSpec, TConfig> & me)
 template <typename TContigsSize, typename TContigsLen, typename TContigsSum, typename TSpec, typename TConfig>
 void saveIndex(YaraIndexer<TSpec, TConfig> & me)
 {
-    typedef YaraFMConfig<TContigsSize, TContigsLen, TContigsSum>    TIndexConfig;
-    typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
+    using TIndexConfig = YaraFMConfig<TContigsSize, TContigsLen, TContigsSum>;
+    TIndexConfig::SAMPLING = me.options.samplingRate;
+    using TIndexSpec = FMIndex<void, TIndexConfig>;
+
     typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
     typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TIndex;
+
     if (me.options.verbose)
     {
         mtx.lock();
