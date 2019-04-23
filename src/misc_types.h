@@ -221,7 +221,7 @@ struct YaraFMConfig
     typedef TSum                                        Size;
 
     // Sparse SA sampling rate.
-    static unsigned SAMPLING =                             10;
+    static unsigned SAMPLING;
     static constexpr unsigned WORDS_PER_BLOCK =             1;
     static constexpr unsigned LEVELS =                      2;
 };
