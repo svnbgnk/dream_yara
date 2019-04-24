@@ -1377,7 +1377,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     bool const done = minErrorsLeftInBlock == 0 && needleLeftPos == 0 && needleRightPos == length(needle) + 1;
     bool const atBlockEnd = (blockIndex > 0) ? needleRightPos - needleLeftPos - 1 == s.blocklength[blockIndex - 1] : false;        //is not true if we finished needle
     bool const checkMappa = !bitvectors.empty();
-    bool const nowEdit = atBlockEnd && !std::is_same<TDistanceTag, EditDistance>::value && ossContext.hammingDpieces >=  blockIndex;
+    bool const nowEdit = !std::is_same<TDistanceTag, EditDistance>::value && ossContext.hammingDpieces <=  blockIndex;
 
 //     if(!std::is_same<TDistanceTag, EditDistance>::value)
 //         exit(0);
