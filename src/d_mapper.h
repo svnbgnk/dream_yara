@@ -64,7 +64,7 @@ public:
     bool                    compare = false;
     uint32_t                threshold = 11;
     uint32_t                itvOccThreshold = 10;
-    uint32_t                fmTreeThreshold = 25;
+    uint32_t                fmTreeThreshold = 1000;
     uint32_t                startBin = 0;
     uint32_t                readLength = 0;
 

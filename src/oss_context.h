@@ -561,7 +561,7 @@ struct OSSContext
     bool noSAfilter = false;
 //     bool oneSSBestXMapper = false;
     uint32_t itvOccThreshold = 10;
-    uint32_t fmTreeThreshold = 0;
+    uint32_t fmTreeThreshold = 1000;
 
     uint8_t maxError;
     uint8_t strata;
