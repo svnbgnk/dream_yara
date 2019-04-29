@@ -2060,6 +2060,8 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
         aggregateMatches(mainMapper, mainMapper.reads.seqs);
     else
         aggregateMatchesOSS(mainMapper, mainMapper.reads.seqs);
+    //Since we are garantued to corretly filter nearby occurrences of the same read we can use the faster
+    //aggregate function aggregateMatchesOSS
     rankMatches2(mainMapper, mainMapper.reads.seqs);
     transferCigars(mainMapper, disOptions);
 
