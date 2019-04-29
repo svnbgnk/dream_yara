@@ -64,8 +64,8 @@
 #include "d_misc_options.h"
 #include "index_fm.h"
 
-template <typename TSize, typename TLen, typename TSum>
-YaraFMConfig<TSize, TLen, TSum>::SAMPLING = 10;
+template <typename TSize, typename TLen, typename TSum, typename TAlloc>
+unsigned YaraFMConfig<TSize, TLen, TSum, TAlloc>::SAMPLING = 10;
 
 using namespace seqan;
 
