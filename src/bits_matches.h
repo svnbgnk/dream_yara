@@ -477,6 +477,12 @@ inline void setInvalid(Match<TSpec> & me)
     me.errors = MemberLimits<Match<TSpec>, Errors>::VALUE;
 }
 
+
+template <typename TSpec, typename TDelta>
+inline void shiftEnd(Match<TSpec> & me, TDelta shift){
+    me.contigEnd += shift;
+}
+
 // ============================================================================
 // Match Getters
 // ============================================================================
