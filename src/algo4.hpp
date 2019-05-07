@@ -80,9 +80,9 @@ inline void runAlgo4(TIndex & index, TText const & text, TSeqLengths const & seq
             TIter it_zero_errors[end_pos - begin_pos];
 //             std::vector<smallHit> hits[end_pos - begin_pos] = {};
             std::set<uint64_t> hits[end_pos - begin_pos] = {};
-
+            /*
             auto delegate = [&hits, &it_zero_errors, begin_pos, &opt, textLength, new_overlap, &text](
-                TIter it, auto const & /*read*/, unsigned const errors_spent)
+                TIter it, auto const & hits, auto errors_spent)
             {
                 uint64_t const bb = std::min(textLength - 1, begin_pos + opt.k_length - 1 + opt.k_length - new_overlap);
                 if (errors_spent == 0)
@@ -100,10 +100,10 @@ inline void runAlgo4(TIndex & index, TText const & text, TSeqLengths const & seq
                     );
                 }
             };
-
+             */
             auto const & needle = infix(text, begin_pos + opt.k_length - new_overlap, begin_pos + opt.k_length);
             TIter it(index);
-            _optimalSearchScheme(delegate, it, needle, scheme, TDistanceTag());
+            //_optimalSearchScheme(delegate, it, needle, scheme, TDistanceTag());
             for (uint64_t j = begin_pos; j < end_pos; ++j)
             {
                 value_type cValue = 0;
