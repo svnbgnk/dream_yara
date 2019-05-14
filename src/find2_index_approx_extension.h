@@ -129,6 +129,7 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
             fwdIter.vDesc.range = saRange.range;
             uint32_t counter = 0;
             fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, counter);
+            ossContext.fmtreeBacktrackings += 2 * counter;
 //            std::cout << "Edge counter: " << counter << "\n";
     }
     else

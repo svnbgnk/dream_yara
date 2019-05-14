@@ -578,6 +578,7 @@ struct OSSContext
     uint32_t filteredOccsOfRead = 0;
     uint64_t fmtreeLocates = 0;
     uint64_t defaultLocates = 0;
+    uint64_t fmtreeBacktrackings = 0;
 
 
     typedef MapperTraits<TSpec, TConfig>        TTraits;
