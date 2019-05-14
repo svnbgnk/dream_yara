@@ -117,6 +117,7 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
 
     if(ossContext.fmTreeThreshold < saRange.range.i2 - saRange.range.i1)
     {
+        ossContext.fmtreeLocates += saRange.range.i2 - saRange.range.i1;
         //locate Interval with fm_tree
 //            std::cout << "Locate with FM-tree\n";
 //             Iter<TIndex, VSTree<TopDown<> > > it_tmp(index);
@@ -132,6 +133,7 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
     }
     else
     {
+        ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
 //             std::cout << "Default Locate Default Locate Default Locate\n";
         for (uint32_t i = saRange.range.i1; i < saRange.range.i2; ++i)
         {
@@ -1595,13 +1597,15 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 
             if(ossContext.fmTreeThreshold < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1)
             {
-                    auto fwdIter = iter.fwdIter;
-                    uint32_t counter = 0;
-                    fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, counter);
+                ossContext.fmtreeLocates += saRange.range.i2 - saRange.range.i1;
+                auto fwdIter = iter.fwdIter;
+                uint32_t counter = 0;
+                fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, counter);
         //            std::cout << "Edge counter: " << counter << "\n";
             }
             else
             {
+                ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
         //             std::cout << "Default Locate Default Locate Default Locate\n";
                 for (uint32_t i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
                 {

@@ -1065,6 +1065,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     {
         std::cout << "\nOptimum Search time:\t\t" << me.timer << std::endl;
         std::cout << "Matches count:\t\t\t" << lengthSum(me.matchesByCoord) << std::endl;
+        std::cout << "Default Locates:\t\t" << ossContext.defaultLocates << std::endl;
+        std::cout << "FM-Tree Locates:\t\t" << ossContext.fmtreeLocates << std::endl;
     }
 
 

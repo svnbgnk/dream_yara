@@ -576,6 +576,9 @@ struct OSSContext
     uint64_t delegateOcc = 0;
     uint32_t delegateFilteredOcc = 0;
     uint32_t filteredOccsOfRead = 0;
+    uint64_t fmtreeLocates = 0;
+    uint64_t defaultLocates = 0;
+
 
     typedef MapperTraits<TSpec, TConfig>        TTraits;
     typedef typename TTraits::TReadsContext     TReadsContext;
