@@ -1118,7 +1118,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         TContigsLen maxEndPos;
 
 
-
+/*
         std::cout << "Print Matches\n";
         for(int i = 0; i < length(me.matchesSetByCoord); ++i){
 //             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
@@ -1131,7 +1131,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 ++matchIt;
             }
 
-        }
+        }*/
 
         //  #pragma omp parallel for schedule(dynamic) num_threads(mainMapper.threadsCount)
         for(int i = 0; i < length(me.matchesSetByCoord); ++i){
@@ -1151,8 +1151,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
             //check for ITV jobs here
             bool startM = true;
 
-            std::cout << "Start:\n";
-            write(std::cout, *startMatch);
+//             std::cout << "Start:\n";
+//             write(std::cout, *startMatch);
             //TODO check if startMatch is itv job
             while(matchIt != matchEnd){
 
@@ -1167,13 +1167,13 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
                     TContigsLen currentPos = getMember(*matchIt, ContigBegin());
                     //same contig? and to close? otherwise
-                    std::cout << "compare StartMatch with Current match:\n";
-                    write(std::cout, *startMatch);
-                    write(std::cout, *matchIt);
+//                     std::cout << "compare StartMatch with Current match:\n";
+//                     write(std::cout, *startMatch);
+//                     write(std::cout, *matchIt);
 
                     if(lastContig == getMember(*matchIt, ContigId()) && !(onForwardStrand(*matchIt) ^ onForwardStrand(*startMatch)) && lastStartPos + 2 * me.maxError >= currentPos){
 
-                        std::cout << "Close\n";
+//                         std::cout << "Close\n";
                         TContigsLen cEndPos = getMember(*matchIt, ContigEnd());
                         // check if current Match would influence result
                         if(maxEndPos < cEndPos || startM){
@@ -1183,34 +1183,34 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                             {
                                 uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
                                 uint32_t readId = getReadId(readSeqs, readSeqId);
-                                std::cout << "Do ITV:\n";
-                                write(std::cout, *matchIt);
+//                                 std::cout << "Do ITV:\n";
+//                                 write(std::cout, *matchIt);
                                 valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
                                 ++itvJobsDone;
                                 if(valid)
                                 {
-                                    std::cout << "Valid:\n";
+//                                     std::cout << "Valid:\n";
                                     setMapped(me.ctx, readId);
                                     setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
                                     ++valids;
                                     if(startM){
                                         startM = false;
-                                        std::cout << "Found verified Startmatch\n";
+//                                         std::cout << "Found verified Startmatch\n";
                                         ++matchIt;
                                         continue;
                                     }
                                 }
                                 else
                                 {
-                                    std::cout << "InValid:\n";
+//                                     std::cout << "InValid:\n";
                                     setInvalid(*matchIt);
                                     //if start match was itv job and invalid select next match as start match
                                     if(startM){
-                                        std::cout << "Select new Startmatch:\n";
+//                                         std::cout << "Select new Startmatch:\n";
                                         ++matchIt;
                                         startM = true;
                                         startMatch = matchIt;
-                                        write(std::cout, *startMatch);
+//                                         write(std::cout, *startMatch);
                                         lastContig = getMember(*matchIt, ContigId());
                                         lastStartPos = getMember(*matchIt, ContigBegin());
                                         maxEndPos = getMember(*matchIt, ContigEnd());
@@ -1222,27 +1222,27 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                             //if valid or oss Match merge matches together
                             if (valid || ossMatch)
                             {
-                                std::cout << "merging into start Match:\n";
-                                write(std::cout, *matchIt);
+//                                 std::cout << "merging into start Match:\n";
+//                                 write(std::cout, *matchIt);
                                 if(ossMatch)
                                     ++oss;
                                 ++merges;
 
-                                std::cout << "Before:\n";
-                                write(std::cout, *startMatch);
+//                                 std::cout << "Before:\n";
+//                                 write(std::cout, *startMatch);
                                 shiftEnd(*startMatch, cEndPos - maxEndPos);
-                                std::cout << "After:\n";
-                                write(std::cout, *startMatch);
+//                                 std::cout << "After:\n";
+//                                 write(std::cout, *startMatch);
                                 setInvalid(*matchIt);
-                                std::cout << "Merged Match:\n";
-                                write(std::cout, *matchIt);
+//                                 std::cout << "Merged Match:\n";
+//                                 write(std::cout, *matchIt);
                                 maxEndPos = cEndPos;
                             }
                         }
                         else
                         {
                             setInvalid(*matchIt);
-                            std::cout << "Duplicate:\n";
+//                             std::cout << "Duplicate:\n";
                             ++dups;
 
                         }
@@ -1252,18 +1252,18 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     }
                     else
                     {
-                        std::cout << "To far select new start match\n";
-                        std::cout << "\n";
+//                         std::cout << "To far select new start match\n";
+//                         std::cout << "\n";
                         startM = true;
                         startMatch = matchIt;
-                        write(std::cout, *matchIt);
+//                         write(std::cout, *matchIt);
                         lastContig = getMember(*matchIt, ContigId());
                         lastStartPos = getMember(*matchIt, ContigBegin());
                         maxEndPos = getMember(*matchIt, ContigEnd());
                     }
             }
         }
-
+/*
         std::cout << "Print Matches\n";
         for(int i = 0; i < length(me.matchesSetByCoord); ++i){
 //             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
@@ -1276,7 +1276,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 ++matchIt;
             }
 
-        }
+        }*/
 
         stop(me.timer);
         me.stats.inTextVerification += getValue(me.timer);
