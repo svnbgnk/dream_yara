@@ -65,6 +65,7 @@ public:
     uint32_t                threshold = 11;
     uint32_t                itvOccThreshold = 10;
     uint32_t                fmTreeThreshold = 1000;
+    uint32_t                fmTreeBreak = 10;
     uint32_t                startBin = 0;
     uint32_t                readLength = 0;
 
@@ -1026,10 +1027,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 // copy parameters to ossContext
 
     YaraFMConfig<uint16_t, uint32_t, uint32_t> myConfig{};
-    myConfig.SAMPLING;
     std::cout << "SAMPLING RATE: " << myConfig.SAMPLING << "\n";
 
-    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs), myConfig.SAMPLING, disOptions.fmTreeThreshold);
+    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs), myConfig.SAMPLING, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
     ossContext.itv = !disOptions.noITV;
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
@@ -1038,6 +1038,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.noSAfilter = disOptions.noSAfilter;
 
 
+    //set sampling rate of compressed suffix array
+//     me.biIndex->sa.samplingRate = myConfig.SAMPLING;
 
     start(me.timer);
 

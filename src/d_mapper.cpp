@@ -162,6 +162,9 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     addOption(parser, ArgParseOption("FTh", "fmTreeThreshold", "Use FM-Tree to locate occurrences inside intervals larger than.", ArgParseOption::INTEGER));
     hideOption(getOption(parser, "fmTreeThreshold"));
 
+    addOption(parser, ArgParseOption("FTb", "fmTreeBreak", "On intervals smaller than fmTreeBreak use locate function which stops after a certain amount of LF-mappings.", ArgParseOption::INTEGER));
+    hideOption(getOption(parser, "fmTreeBreak"));
+
     addOption(parser, ArgParseOption("th", "threshold", "Occurrence was filtered when below this threshold", ArgParseOption::INTEGER));
     hideOption(getOption(parser, "threshold"));
 
@@ -348,6 +351,8 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     getOptionValue(disOptions.itvOccThreshold, parser, "itvOccThreshold");
 
     getOptionValue(disOptions.fmTreeThreshold, parser, "fmTreeThreshold");
+
+    getOptionValue(disOptions.fmTreeBreak, parser, "fmTreeBreak");
 
     if (isSet(parser, "ossOff")) disOptions.ossOff = true;
     if (isSet(parser, "hammingD")) disOptions.hammingDistance = true;

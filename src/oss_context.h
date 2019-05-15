@@ -562,6 +562,7 @@ struct OSSContext
 //     bool oneSSBestXMapper = false;
     uint32_t itvOccThreshold = 10;
     uint32_t fmTreeThreshold = 1000;
+    uint32_t fmTreeBreak = 10;
 
     uint8_t maxError;
     uint8_t strata;
@@ -577,6 +578,7 @@ struct OSSContext
     uint32_t delegateFilteredOcc = 0;
     uint32_t filteredOccsOfRead = 0;
     uint64_t fmtreeLocates = 0;
+    uint64_t fmtreeBreakLocates = 0;
     uint64_t defaultLocates = 0;
     uint64_t fmtreeBacktrackings = 0;
 
@@ -632,13 +634,14 @@ struct OSSContext
         uni.print();
     }
 
-    void loadInputParameters(uint8_t inMaxError, uint8_t inStrata, uint32_t inReadLength, uint32_t inNumberOfSequences, uint32_t inSamplingRate, uint32_t inFmTreeThreshold){
+    void loadInputParameters(uint8_t inMaxError, uint8_t inStrata, uint32_t inReadLength, uint32_t inNumberOfSequences, uint32_t inSamplingRate, uint32_t inFmTreeThreshold, uint32_t infmTreeBreak){
         maxError = inMaxError;
         strata = inStrata;
         readLength = inReadLength;
         numberOfSequences = inNumberOfSequences;
         samplingRate = inSamplingRate;
         fmTreeThreshold = inFmTreeThreshold; //pow(4, samplingRate) * 4 /
+        fmTreeBreak = infmTreeBreak;
     }
 
     template <size_t nbrBlocks, typename TSALength>

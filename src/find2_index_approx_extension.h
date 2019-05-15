@@ -33,27 +33,52 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
                     uint32_t needleId,
                     seqan::SARange<TContigsSum> & saRange,
                     TUniIter it,
-                    uint8_t offset,
+                    uint32_t offset,
                     uint32_t & counter)
 {
     typedef MapperTraits<TSpec, TConfig>                     TTraits;
     typedef typename TTraits::TContigsPos                    TContigsPos;
-    for(int i = it.vDesc.range.i1; i < it.vDesc.range.i2; ++i)
-    {
-        // access bitvector containing information about SSA
-        if(getValue(it.index->sa.sparseString.indicators, i)){
-            TContigsPos pos = posAdd(it.index->sa[i], offset);
-            delegate(ossContext, needleId, saRange, pos);
+
+    if((it.vDesc.range.i2 - it.vDesc.range.i1) < ossContext.fmTreeBreak){
+        ossContext.fmtreeBreakLocates += (it.vDesc.range.i2 - it.vDesc.range.i1) * (ossContext.samplingRate - offset - 1) / 2;
+        for(TContigsSum i = it.vDesc.range.i1; i < it.vDesc.range.i2; ++i)
+        {
+            bool found = false;
+            uint32_t max = ossContext.samplingRate - offset;
+            TContigsPos pos = it.index->sa(i, max, found);
+            if(found)
+                delegate(ossContext, needleId, saRange, pos);
         }
     }
+    else
+    {
+        TContigsSum ssp = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i1);
+        TContigsSum sep = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i2);
+    //     for(int i = it.vDesc.range.i1; i < it.vDesc.range.i2; ++i)
 
-    counter += 4;
-    if(offset < ossContext.samplingRate && goDown(it)){
-        do{
-//             std::cout << "recurse level: " << static_cast<int>(offset) << "\n";
+        for(TContigsSum i = ssp; i < sep; ++i)
+        {
+            TContigsPos pos = getValue(it.index->sa.sparseString.values, i);
+            delegate(ossContext, needleId, saRange, pos);
 
-            fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
-        }while(goRight(it));
+            /*
+            // access bitvector containing information about SSA
+            if(getValue(it.index->sa.sparseString.indicators, i)){
+                TContigsPos pos = posAdd(it.index->sa[i], offset);
+                delegate(ossContext, needleId, saRange, pos);
+            }*/
+
+
+        }
+
+        counter += 4;
+        if(offset < ossContext.samplingRate && goDown(it)){
+            do{
+    //             std::cout << "recurse level: " << static_cast<int>(offset) << "\n";
+
+                fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
+            }while(goRight(it));
+        }
     }
 }
 
@@ -1608,7 +1633,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             {
                 ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
         //             std::cout << "Default Locate Default Locate Default Locate\n";
-                for (uint32_t i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
+                for (TContigsSum i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
                 {
         //             std::cout << "Use Default\n";
                     TContigsPos pos = iter.fwdIter.index->sa[i];
