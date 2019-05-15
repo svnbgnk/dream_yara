@@ -54,20 +54,25 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
     {
         TContigsSum ssp = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i1);
         TContigsSum sep = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i2);
-    //     for(int i = it.vDesc.range.i1; i < it.vDesc.range.i2; ++i)
+
+        std::cout << "SARange: " << it.vDesc.range.i1 << " : " << it.vDesc.range.i2 << "\n";
+        std::cout << "SAARange: " << ssp << " : " << sep << "\n";
+    /*
+        for(TContigsSum i = it.vDesc.range.i1; i < it.vDesc.range.i2; ++i)
+        {
+            // access bitvector containing information about SSA
+            if(getValue(it.index->sa.sparseString.indicators, i)){
+                TContigsPos pos = posAdd(it.index->sa[i], offset);
+                std::cout << "SA: " << pos << "\n";
+                delegate(ossContext, needleId, saRange, pos);
+            }
+        }*/
 
         for(TContigsSum i = ssp; i < sep; ++i)
         {
             TContigsPos pos = getValue(it.index->sa.sparseString.values, i);
-            delegate(ossContext, needleId, saRange, pos);
-
-            /*
-            // access bitvector containing information about SSA
-            if(getValue(it.index->sa.sparseString.indicators, i)){
-                TContigsPos pos = posAdd(it.index->sa[i], offset);
-                delegate(ossContext, needleId, saRange, pos);
-            }*/
-
+//             std::cout << "SAA: " << pos << "\n";
+//             delegate(ossContext, needleId, saRange, pos);
         }
 
         counter += 4;
