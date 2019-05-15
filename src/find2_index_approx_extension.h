@@ -68,7 +68,6 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
                 delegate(ossContext, needleId, saRange, pos);
             }*/
 
-
         }
 
         counter += 4;
