@@ -52,12 +52,12 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
     }
     else
     {
-        TContigsSum ssp = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i1);
-        TContigsSum sep = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i2);
-
+        TContigsSum ssp = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i1 - 1);
+        TContigsSum sep = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i2 - 1);
+/*
         std::cout << "SARange: " << it.vDesc.range.i1 << " : " << it.vDesc.range.i2 << "\n";
         std::cout << "SAARange: " << ssp << " : " << sep << "\n";
-    /*
+
         for(TContigsSum i = it.vDesc.range.i1; i < it.vDesc.range.i2; ++i)
         {
             // access bitvector containing information about SSA
@@ -70,13 +70,13 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
 
         for(TContigsSum i = ssp; i < sep; ++i)
         {
-            TContigsPos pos = getValue(it.index->sa.sparseString.values, i);
+            TContigsPos pos = posAdd(getValue(it.index->sa.sparseString.values, i), offset);
 //             std::cout << "SAA: " << pos << "\n";
-//             delegate(ossContext, needleId, saRange, pos);
+            delegate(ossContext, needleId, saRange, pos);
         }
 
-        counter += 4;
-        if(offset < ossContext.samplingRate && goDown(it)){
+        if(offset + 1 < ossContext.samplingRate && goDown(it)){
+            counter += 4;
             do{
     //             std::cout << "recurse level: " << static_cast<int>(offset) << "\n";
 
