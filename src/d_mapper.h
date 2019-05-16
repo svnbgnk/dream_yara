@@ -1069,7 +1069,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         std::cout << "Matches count:\t\t\t" << lengthSum(me.matchesByCoord) << std::endl;
         std::cout << "Default Locates:\t\t" << ossContext.defaultLocates << std::endl;
         std::cout << "FM-Tree Locates:\t\t" << ossContext.fmtreeLocates << std::endl;
-        std::cout << "FM-Tree Backtrackings:\t\t" << ossContext.fmtreeBacktrackings << std::endl;
+        std::cout << "FM-Tree FM-LF-Mappings:\t\t" << ossContext.fmtreeBacktrackings << std::endl;
+        std::cout << "FM-Tree Thres LF-Mappings:\t\t" << ossContext.fmtreeBreakLocates << std::endl;
 
     }
 
