@@ -592,6 +592,9 @@ struct OSSContext
 //     typedef typename TTraits::TBiIter           MySparseIter;
     typedef typename TTraits::TBitvectorsMeta   TBitvectorsMeta;
 
+    typedef typename TTraits::TContigsLen       TContigsLen;
+    TContigsLen allPos = 0;
+
 
     // Shared-memory read-write data.
     TReadsContext &     ctx;
