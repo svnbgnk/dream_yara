@@ -66,21 +66,22 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
 
         if(offset + 1 < ossContext.samplingRate && goDown(it)){
             counter += 4;
-/*
+
             do{
                 fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
-            }while(goRight(it));*/
-
+            }while(goRight(it));
+/*
             std::array<Pair<TContigsSum, TContigsSum>, 4> goDownAll;
             uint8_t k = 0;
             do{
-                goDownAll.push_back(it.vDesc.range);
-                ++k
+                goDownAll.push_back[i] = it.vDesc.range;
+                ++k;
             }while(goRight(it));
-            for(uint8_t i = i < k; ++i){
+            for(uint8_t i = 0; i < k; ++i){
                 it.vDesc.range = goDownAll[i];
                 fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
             }
+            */
         }
     }
 }
