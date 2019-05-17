@@ -66,11 +66,11 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
 
         if(offset + 1 < ossContext.samplingRate && goDown(it)){
             counter += 4;
-/*
+
             do{
                 fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
-            }while(goRight(it));*/
-
+            }while(goRight(it));
+/*
             std::vector<Pair<TContigsSum, TContigsSum> > goDownAll;
             do{
                 goDownAll.push_back(it.vDesc.range);
@@ -78,7 +78,7 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
             for(auto v_it = goDownAll.begin(); v_it != goDownAll.end(); ++v_it){
                 it.vDesc.range = *v_it;
                 fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
-            }
+            }*/
         }
     }
 }
