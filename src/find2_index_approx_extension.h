@@ -40,7 +40,7 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
     typedef typename TTraits::TContigsPos                    TContigsPos;
 
     if((it.vDesc.range.i2 - it.vDesc.range.i1) < ossContext.fmTreeBreak){
-        ossContext.fmtreeBreakLocates += (it.vDesc.range.i2 - it.vDesc.range.i1) * (ossContext.samplingRate - offset - 1) / 2;
+//         ossContext.fmtreeBreakLocates += (it.vDesc.range.i2 - it.vDesc.range.i1) * (ossContext.samplingRate - offset - 1) / 2;
         for(TContigsSum i = it.vDesc.range.i1; i < it.vDesc.range.i2; ++i)
         {
             bool found = false;
@@ -54,19 +54,6 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
     {
         TContigsSum ssp = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i1 - 1);
         TContigsSum sep = getRank(it.index->sa.sparseString.indicators, it.vDesc.range.i2 - 1);
-/*
-        std::cout << "SARange: " << it.vDesc.range.i1 << " : " << it.vDesc.range.i2 << "\n";
-        std::cout << "SAARange: " << ssp << " : " << sep << "\n";
-
-        for(TContigsSum i = it.vDesc.range.i1; i < it.vDesc.range.i2; ++i)
-        {
-            // access bitvector containing information about SSA
-            if(getValue(it.index->sa.sparseString.indicators, i)){
-                TContigsPos pos = posAdd(it.index->sa[i], offset);
-                std::cout << "SA: " << pos << "\n";
-                delegate(ossContext, needleId, saRange, pos);
-            }
-        }*/
 
         for(TContigsSum i = ssp; i < sep; ++i)
         {
