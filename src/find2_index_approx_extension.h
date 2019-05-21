@@ -46,8 +46,10 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
             bool found = false;
             uint32_t max = ossContext.samplingRate - offset;
             TContigsPos pos = it.index->sa(i, max, found);
-            if(found)
+            if(found){
+//                 ossContext.allPos += getSeqOffset(pos);
                 delegate(ossContext, needleId, saRange, pos);
+            }
         }
     }
     else
@@ -58,17 +60,28 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
         for(TContigsSum i = ssp; i < sep; ++i)
         {
             TContigsPos pos = posAdd(getValue(it.index->sa.sparseString.values, i), offset);
-//             std::cout << "SAA: " << pos << "\n";
+//             ossContext.allPos += getSeqOffset(pos);
             delegate(ossContext, needleId, saRange, pos);
         }
 
         if(offset + 1 < ossContext.samplingRate && goDown(it)){
             counter += 4;
-            do{
-    //             std::cout << "recurse level: " << static_cast<int>(offset) << "\n";
 
+            do{
                 fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
             }while(goRight(it));
+/*
+            std::array<Pair<TContigsSum, TContigsSum>, 4> goDownAll;
+            uint8_t k = 0;
+            do{
+                goDownAll.push_back[i] = it.vDesc.range;
+                ++k;
+            }while(goRight(it));
+            for(uint8_t i = 0; i < k; ++i){
+                it.vDesc.range = goDownAll[i];
+                fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
+            }
+            */
         }
     }
 }
@@ -135,27 +148,20 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
     {
         ossContext.fmtreeLocates += saRange.range.i2 - saRange.range.i1;
         //locate Interval with fm_tree
-//            std::cout << "Locate with FM-tree\n";
-//             Iter<TIndex, VSTree<TopDown<> > > it_tmp(index);
-//             auto fwdIter = iter.fwdIter;
-//             it_tmp.fwdIter.vDesc.repLen = saRange.repLength;
-//             it_tmp.fwdIter.vDesc.range = saRange.range;
             auto fwdIter = iter.fwdIter;
             fwdIter.vDesc.repLen = saRange.repLength;
             fwdIter.vDesc.range = saRange.range;
             uint32_t counter = 0;
             fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, counter);
             ossContext.fmtreeBacktrackings += 2 * counter;
-//            std::cout << "Edge counter: " << counter << "\n";
     }
     else
     {
         ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
-//             std::cout << "Default Locate Default Locate Default Locate\n";
         for (uint32_t i = saRange.range.i1; i < saRange.range.i2; ++i)
         {
-//             std::cout << "Use Default\n";
             TContigsPos pos = iter.fwdIter.index->sa[i];
+//             ossContext.allPos += getSeqOffset(pos);
             delegate(ossContext, needleId, saRange, pos);
         }
     }
@@ -382,46 +388,7 @@ inline void saPosOnFwd(TSAValue & sa_info,
     setSeqOffset(sa_info, genomelength - getSeqOffset(sa_info) - occLength);
 //     sa_info.i2 = genomelength - sa_info.i2 - occLength;
 }
-/*
-//skip mismatches in the start and end adjust sa_value and occlength accordingly
-template <typename TNeedle, typename TSAValue, typename TInfix>
-inline void trimHit(TNeedle const & needle, TInfix const & infix, TSAValue & sa_info, uint32_t & occlength, uint8_t errors)
-{
-    // trimming does not work everytime ex: TCCCCCCCCGCTA
-    //                                      CCCCCCCCGCTA -> only after comparing C to G it is clear we need and insertion
-    //                                                      in the beginning
-    std::cout << "Trimming: \n";
-    std::cout << "Needle" << sa_info << "\t" << occlength << "\n" << needle << "\n";
-    std::cout << infix << "\n";
-    uint32_t k = 0;
-    while(needle[k] != infix[k] && k < errors + 2)
-    {
-        ++k;
-    }
 
-    //check if edit operation was required
-    if(k == errors + 1)
-        k = 0;
-
-    uint32_t len = length(needle);
-    uint32_t l = 1;
-
-    uint32_t left_errors = errors + 2 - k;
-    while(needle[len - l] != infix[occlength - l] && l < errors + 2 - k)
-    {
-        ++l;
-    }
-    // check if edit operation was required
-    if(l == left_errors - 1)
-        l = 1;
-
-
-    auto seqOffset = getSeqOffset(sa_info);
-    setSeqOffset(sa_info, seqOffset + k);
-    occlength = occlength - k - l + 1;
-
-    std::cout << "trimmed:" << sa_info << "\t" << occlength << "\n" << infix << "\n" << k << "\t" << l - 1 << "\n";
-}*/
 
 //TODO TSAValue to TContigPos
 template <typename TContex,
