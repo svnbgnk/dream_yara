@@ -322,7 +322,7 @@ bool openContigsLimits(TOptions & options)
     if (!open(limits, toCString(contigsLimitFile), OPEN_RDONLY))
         return false;
 
-    if (length(limits) != 3 || length(limits) != 4)
+    if (length(limits) != 3 && length(limits) != 4)
         return false;
 
     options.contigsMaxLength = limits[0];
