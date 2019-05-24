@@ -1763,17 +1763,25 @@ inline void mapReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & 
 template <typename TSpec, typename TConfig, typename TMainConfig>
 inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & mainMapper, DisOptions & disOptions)
 {
+//     typedef String<TChar, TAllocConfig> TString;
+//     typedef StringSet<TString, Owner<ConcatDirect<SizeSpec_<TSeqNo, TSeqPos> > > > TStringSet;
+// 
+//     using TFMIndexConfig = TGemMapFastFMIndexConfig<TBWTLen>;
+//     TFMIndexConfig::SAMPLING = opt.sampling;
+    
     
     
     typedef MapperTraits<TSpec, TConfig>                        TTraits;
-
-    typedef typename TTraits::TIndexConfig                      TIndexConfig;
+//     typedef typename TTraits::TIndexConfig                      TIndexConfig;
+    using TIndexConfig = YaraFMConfig<typename TConfig::TContigsSize, typename TConfig::TContigsLen, typename TConfig::TContigsSum, typename TConfig::TAlloc>;
+    
+//     using TTraits::TIndexConfig                      TIndexConfig;
     TIndexConfig::SAMPLING = me.samplingRate;
 
-    typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
-    typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
-    typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
-    typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TBiIndex;
+    using TIndexSpec = FMIndex<void, TIndexConfig>;
+//     typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
+//     typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
+    using TBiIndex = Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec> >;
 
     TBiIndex mybiIndex;
 
