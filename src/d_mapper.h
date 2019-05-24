@@ -957,6 +957,7 @@ inline bool inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNee
 template <typename TSpec, typename TConfig, typename TMainConfig, typename TReadSeqs, typename TSeqsSpec>
 inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           Mapper<TSpec, TMainConfig>  & mainMapper,
+                          auto & mybiIndex,
                           StringSet<TReadSeqs, TSeqsSpec> & readSeqs,
                           DisOptions & disOptions)
 {
@@ -987,9 +988,19 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
 
+/*    
     typedef typename TTraits::TIndexConfig                      TIndexConfig;
     TIndexConfig::SAMPLING = me.samplingRate;
- 
+
+    typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
+    typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
+    typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
+    typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TBiIndex;
+
+    TBiIndex & mybiIndex = me.biIndex;
+    
+    */
+    
     TMatchesAppender appender(me.matchesByCoord);
     bool noOverlap = disOptions.noDelayITV || disOptions.hammingDistance;
     Delegate delegate(appender, noOverlap);
@@ -1045,12 +1056,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     start(me.timer);
 
-
-
     if(disOptions.hammingDistance)
-        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, mybiIndex, me.bitvectors, readSeqs, HammingDistance());
     else
-        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, mybiIndex, me.bitvectors, readSeqs, EditDistance());
 
 
     if (me.options.verbose > 0)
@@ -1741,9 +1750,9 @@ inline void loadFilteredReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCo
 // Function mapReads()
 // ----------------------------------------------------------------------------
 template <typename TSpec, typename TConfig, typename TMainConfig>
-inline void mapReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & mainMapper, DisOptions & disOptions)
+inline void mapReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & mainMapper, auto & mybiIndex, DisOptions & disOptions)
 {
-    _mapReadsImpl(me, mainMapper, me.reads.seqs, disOptions);
+    _mapReadsImpl(me, mainMapper, mybiIndex, me.reads.seqs, disOptions);
 
 //     _mapReadsImplOSS(me, mainMapper, me.biIndex, me.reads.seqs, disOptions);
 }
@@ -1754,6 +1763,27 @@ inline void mapReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & 
 template <typename TSpec, typename TConfig, typename TMainConfig>
 inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & mainMapper, DisOptions & disOptions)
 {
+//     typedef String<TChar, TAllocConfig> TString;
+//     typedef StringSet<TString, Owner<ConcatDirect<SizeSpec_<TSeqNo, TSeqPos> > > > TStringSet;
+// 
+//     using TFMIndexConfig = TGemMapFastFMIndexConfig<TBWTLen>;
+//     TFMIndexConfig::SAMPLING = opt.sampling;
+    
+    
+    
+    typedef MapperTraits<TSpec, TConfig>                        TTraits;
+//     typedef typename TTraits::TIndexConfig                      TIndexConfig;
+    using TIndexConfig = YaraFMConfig<typename TConfig::TContigsSize, typename TConfig::TContigsLen, typename TConfig::TContigsSum, typename TConfig::TAlloc>;
+    
+//     using TTraits::TIndexConfig                      TIndexConfig;
+    TIndexConfig::SAMPLING = me.samplingRate;
+
+    using TIndexSpec = FMIndex<void, TIndexConfig>;
+//     typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
+//     typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
+    using TBiIndex = Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec> >;
+
+    TBiIndex mybiIndex;
 
     loadFilteredReads(me, mainMapper, disOptions);
     std::cout << "loaded Reads"<< "\n" << length(me.reads.seqs) << "\n";
@@ -1761,10 +1791,10 @@ inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & 
     loadContigs(me);
     std::cout << "loaded Contigs" << "\n" << length(me.contigs.seqs)<< "\n";
 //     loadContigsIndex(me);
-    loadContigsBiIndex(me);
+    loadContigsBiIndex(me, mybiIndex);
     std::cout << "loaded Index" << "\nIndexSize: ";
-    std::cout << length(me.biIndex.fwd.sa) << "\n";
-    mapReads(me, mainMapper, disOptions);
+//     std::cout << length(me.biIndex.fwd.sa) << "\n";
+    mapReads(me, mainMapper, mybiIndex, disOptions);
     std::cout << "Mapped Reads" << "\n";
 }
 

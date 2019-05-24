@@ -304,9 +304,9 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
     using TIndexConfig = YaraFMConfig<TContigsSize, TContigsLen, TContigsSum>;
     TIndexConfig::SAMPLING = me.options.samplingRate;
     using TIndexSpec = FMIndex<void, TIndexConfig>;
-
+/*
     typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
-    typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TIndex;
+    typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TIndex;*/
 
     if (me.options.verbose)
     {
@@ -326,7 +326,7 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
     // IndexFM is built on the reversed contigs.
 //     reverse(me.contigs);
 
-    TIndex index; // (me.contigs.seqs)
+    Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec>> index; // (me.contigs.seqs)
 
     //info when saving reverse text separately contigs where reversed!!
     // This assignment *copies* the contigs to the index as the types differ.
@@ -341,7 +341,7 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
     try
     {
         // Iterator instantiation triggers index construction.
-        typename Iterator<TIndex, TopDown<> >::Type it(index);
+        typename Iterator<Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec> >, TopDown<> >::Type it(index);
         ignoreUnusedVariableWarning(it);
     }
     catch (BadAlloc const &)
