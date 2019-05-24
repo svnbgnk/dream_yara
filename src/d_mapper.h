@@ -987,9 +987,19 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
 
+    
     typedef typename TTraits::TIndexConfig                      TIndexConfig;
     TIndexConfig::SAMPLING = me.samplingRate;
+
+    
  
+    typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
+    typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
+    typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
+    typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TBiIndex;
+    
+    TBiIndex & mybiIndx = me.biIndex;
+    
     TMatchesAppender appender(me.matchesByCoord);
     bool noOverlap = disOptions.noDelayITV || disOptions.hammingDistance;
     Delegate delegate(appender, noOverlap);
@@ -1048,9 +1058,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
 
     if(disOptions.hammingDistance)
-        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, HammingDistance());
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, mybiIndx, me.bitvectors, readSeqs, HammingDistance());
     else
-        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, me.biIndex, me.bitvectors, readSeqs, EditDistance());
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, mybiIndx, me.bitvectors, readSeqs, EditDistance());
 
 
     if (me.options.verbose > 0)
