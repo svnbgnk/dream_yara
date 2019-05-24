@@ -1026,10 +1026,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
 // copy parameters to ossContext
 
-    YaraFMConfig<uint16_t, uint32_t, uint32_t> myConfig{};
-    std::cout << "SAMPLING RATE: " << myConfig.SAMPLING << "\n";
+//     YaraFMConfig<uint16_t, uint32_t, uint32_t> myConfig{}; //myConfig.SAMPLING
+    std::cout << "SAMPLING RATE: " << me.samplingRate << "\n";
 
-    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs), myConfig.SAMPLING, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
+    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs), me.samplingRate, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
     ossContext.itv = !disOptions.noITV;
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
@@ -1796,6 +1796,7 @@ void spawnMapper(Options const & options,
         typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, Alloc<>>  TConfig;
 
         Mapper<void, TConfig> mapper(options);
+        mapper.samplingRate = options.samplingRate;
         runMapper(mapper, mainMapper, disOptions);
 //     }
 }
