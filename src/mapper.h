@@ -361,6 +361,7 @@ struct Mapper
 
     Mapper(Options const & options) :
         options(options),
+        samplingRate(options.samplingRate),
         libraryLength(),
         libraryDev(),
         readsFile(options.readsCount),

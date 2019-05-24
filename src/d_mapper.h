@@ -987,7 +987,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
 
-
+    typedef typename TTraits::TIndexConfig                      TIndexConfig;
+    TIndexConfig::SAMPLING = me.samplingRate;
+ 
     TMatchesAppender appender(me.matchesByCoord);
     bool noOverlap = disOptions.noDelayITV || disOptions.hammingDistance;
     Delegate delegate(appender, noOverlap);
