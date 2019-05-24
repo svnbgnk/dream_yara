@@ -317,6 +317,7 @@ struct Mapper
 
     uint8_t                             maxError;
     uint8_t                             strata;
+    unsigned                            samplingRate;
     unsigned                            libraryLength;
     unsigned                            libraryDev;
 
@@ -364,9 +365,7 @@ struct Mapper
         libraryDev(),
         readsFile(options.readsCount),
         cigars(concat(cigarsSet))
-    {
-        MapperTraits<TSpec, TConfig>::TIndexConfig::SAMPLING = options.samplingRate;
-    };
+    {};
 };
 
 // ============================================================================
