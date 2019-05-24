@@ -436,21 +436,8 @@ inline void loadContigsIndex(Mapper<TSpec, TConfig> & me)
 }
 
 template <typename TSpec, typename TConfig>
-inline void loadContigsBiIndex(Mapper<TSpec, TConfig> & me)
+inline void loadContigsBiIndex(Mapper<TSpec, TConfig> & me, auto & mybiIndex)
 {
-
-    typedef MapperTraits<TSpec, TConfig>                        TTraits;
-
-    typedef typename TTraits::TIndexConfig                      TIndexConfig;
-    TIndexConfig::SAMPLING = me.samplingRate;
-
-    typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
-    typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
-    typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
-    typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TBiIndex;
-
-    TBiIndex mybiIndex;
-
     start(me.timer);
     try
     {
@@ -462,7 +449,7 @@ inline void loadContigsBiIndex(Mapper<TSpec, TConfig> & me)
         throw RuntimeError("Insufficient memory to load the reference index.");
     }
 
-    me.biIndex = mybiIndex;
+//     me.biIndex = mybiIndex;
 
     stop(me.timer);
     me.stats.loadContigs += getValue(me.timer);
