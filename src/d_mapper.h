@@ -991,14 +991,14 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     typedef typename TTraits::TIndexConfig                      TIndexConfig;
     TIndexConfig::SAMPLING = me.samplingRate;
 
-    
- 
     typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
     typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
     typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
     typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TBiIndex;
-    
+
     TBiIndex & mybiIndx = me.biIndex;
+    
+    //TODO remove
     
     TMatchesAppender appender(me.matchesByCoord);
     bool noOverlap = disOptions.noDelayITV || disOptions.hammingDistance;
