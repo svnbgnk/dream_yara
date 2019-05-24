@@ -144,7 +144,7 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
     typedef MapperTraits<TSpec, TConfig>                     TTraits;
     typedef typename TTraits::TContigsPos                    TContigsPos;
 
-    if(ossContext.fmTreeThreshold < saRange.range.i2 - saRange.range.i1)
+    if(ossContext.fmTreeThreshold < saRange.range.i2 - saRange.range.i1 && ossContext.samplingRate > 1)
     {
         ossContext.fmtreeLocates += saRange.range.i2 - saRange.range.i1;
         //locate Interval with fm_tree
