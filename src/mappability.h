@@ -47,6 +47,7 @@ struct OptionsM
     uint64_t            contigsSize;
     uint64_t            contigsMaxLength;
     uint64_t            contigsSum;
+    uint64_t            samplingRate;
     std::vector<uint32_t>   contigOffsets;
 
     OptionsM() :
@@ -54,7 +55,8 @@ struct OptionsM
     currentBinNo(0),
     threads(1),
     verbose(false),
-    trivial(false)
+    trivial(false),
+    samplingRate(10)
     {}
 };
 

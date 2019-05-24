@@ -194,7 +194,7 @@ struct YaraFMConfig3
     typedef TSum                                        Size;
 };
 
-template <typename TSize, typename TLen, typename TSum, typename TAlloc = Alloc<> >
+template <typename TSize, typename TLen, typename TSum, typename TAlloc = Alloc<>>
 struct YaraFMConfig
 {
 //     typedef YaraFMConfig2<TSize, TLen, TSum, TAlloc>     TMe;
@@ -209,7 +209,7 @@ struct YaraFMConfig
 
     // LF's RankDictionary Config.
 //    typedef Levels<void, TMe>                           Bwt;
-    typedef Levels<void, LevelsPrefixRDConfig<LengthSum, TAlloc, 2, 1> > 		  Bwt;
+    typedef Levels<void, LevelsPrefixRDConfig<LengthSum, TAlloc, 2, 1> >    Bwt;
 //    typedef Levels<void, TMe>                           Sentinels;
     typedef Levels<void, LevelsRDConfig<LengthSum, TAlloc, 2, 1> >    Sentinels;
 //    typedef typename If<IsSameType<TSize, uint8_t>,
@@ -221,7 +221,7 @@ struct YaraFMConfig
     typedef TSum                                        Size;
 
     // Sparse SA sampling rate.
-    static constexpr unsigned SAMPLING =                    10;
+    static unsigned SAMPLING;
     static constexpr unsigned WORDS_PER_BLOCK =             1;
     static constexpr unsigned LEVELS =                      2;
 };

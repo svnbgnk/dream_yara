@@ -105,6 +105,9 @@ struct Options;
 
 #include "find2_index_approx_extension.h"
 
+template <typename TSize, typename TLen, typename TSum, typename TAlloc>
+unsigned YaraFMConfig<TSize, TLen, TSum, TAlloc>::SAMPLING = 10;
+
 using namespace seqan;
 
 // ============================================================================
@@ -523,6 +526,7 @@ void configureDisMapper(DisOptions & disOptions,
                         TSequencing const & sequencing,
                         TSeedsDistance const & distance)
 {
+
     disOptions.contigsMaxLength = 0;
     disOptions.contigsSize = 0;
     disOptions.contigsSum = 0;
