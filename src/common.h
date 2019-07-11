@@ -352,6 +352,15 @@ auto getSeqLengths(TText & text){
     return sl;
 }
 
+template <typename TContigsSize, typename TContigsLen, typename TText>
+auto getSingleSeqLengths(TText & text){
+
+    std::vector<TContigsLen> sl;
+    for(TContigsSize i = 0; i < length(text); ++i){
+        sl.push_back(seqan::length(text[i]));
+    }
+    return sl;
+}
 
 enum class ReturnCode {
 	NOMAPPABILITY, DIRECTSEARCH, COMPMAPPABLE, ONEDIRECTION, MAPPABLE, FINISHED, UNIDIRECTIONAL, SUSPECTUNIDIRECTIONAL, FILTER, ERROR

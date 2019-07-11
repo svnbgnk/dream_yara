@@ -559,7 +559,7 @@ struct OSSContext
     bool itv = true;
     bool delayITV = false;
     bool noSAfilter = false;
-//     bool oneSSBestXMapper = false;
+    bool earlyLeaf = true;
     uint32_t itvOccThreshold = 10;
     uint32_t fmTreeThreshold = 1000;
     uint32_t fmTreeBreak = 10;
@@ -600,7 +600,7 @@ struct OSSContext
     TReadsContext &     ctx;
     TMatches &          matches;
     ReadsContextOSS<TSpec, TConfig>     ctxOSS;
-
+    std::vector<TContigsLen> sequenceLengths;
     //track occ count per read
 //     std::vector<uint32_t> /*&*/ readOccCount;
 
@@ -619,7 +619,7 @@ struct OSSContext
         readSeqs(readSeqs),
         contigSeqs(contigSeqs)
     {
-        ;
+        sequenceLengths = getSingleSeqLengths<uint32_t, TContigsLen>(contigSeqs);
     }
 
     void setdefault(){

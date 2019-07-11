@@ -19,6 +19,7 @@ struct SARange
     Pair<int8_t, int8_t> limOffsets;
     uint32_t repLength;
     uint8_t errors;
+    bool goRight;
 //     uint32_t shift = 0; //for itv
 };
 
@@ -30,10 +31,11 @@ template<typename TSpec, typename TConfig,
          typename TUniIter>
 inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
                     TDelegate & delegate,
-                    uint32_t needleId,
+                    uint32_t const needleId,
                     seqan::SARange<TContigsSum> & saRange,
                     TUniIter it,
                     uint32_t offset,
+                    uint8_t const skipLastLayer,
                     uint32_t & counter)
 {
     typedef MapperTraits<TSpec, TConfig>                     TTraits;
@@ -64,78 +66,24 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
             delegate(ossContext, needleId, saRange, pos);
         }
 
-        if(offset + 1 < ossContext.samplingRate && goDown(it)){
+        //stop before the last level since we used the early leaf node
+        if(offset + skipLastLayer + 1 < ossContext.samplingRate && goDown(it)){
             counter += 4;
 
             do{
-                fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
+                fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, skipLastLayer, counter);
             }while(goRight(it));
-/*
-            std::array<Pair<TContigsSum, TContigsSum>, 4> goDownAll;
-            uint8_t k = 0;
-            do{
-                goDownAll.push_back[i] = it.vDesc.range;
-                ++k;
-            }while(goRight(it));
-            for(uint8_t i = 0; i < k; ++i){
-                it.vDesc.range = goDownAll[i];
-                fm_tree(ossContext, delegate, needleId, saRange, it, offset + 1, counter);
-            }
-            */
         }
     }
 }
 
-/*
 template<typename TSpec, typename TConfig,
-         typename TDelegate,
-         typename TIndex>
-inline void locate(OSSContext<TSpec, TConfig> & ossContext,
-                   TDelegate & delegate,
-                   uint32_t const needleId,
-                   Iter<TIndex, VSTree<TopDown<> > > iter,
-                   Pair <int8_t, int8_t> & limOffsets,
-                   uint8_t const errors)
-{
-    typedef MapperTraits<TSpec, TConfig>                     TTraits;
-    typedef typename TTraits::TContigsPos                    TContigsPos;
-    typedef typename TConfig::TContigsSum                    TContigsSum;
-
-
-    uint32_t readId = getReadId(ossContext.readSeqs, needleId);
-    setMapped(ossContext.ctx, readId);
-    setMinErrors(ossContext.ctx, readId, errors);
-
-    if(ossContext.fmTreeThreshold < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1)
-    {
-            auto fwdIter = iter.fwdIter;
-            SARange<TContigsSum> saRange;
-            saRange.repLength = repLength(iter);
-            saRange.limOffsets = limOffsets;
-            saRange.errors = errors;
-
-            uint32_t counter = 0;
-            fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, counter);
-//            std::cout << "Edge counter: " << counter << "\n";
-    }
-    else
-    {
-//             std::cout << "Default Locate Default Locate Default Locate\n";
-        for (uint32_t i = saRange.range.i1; i < saRange.range.i2; ++i)
-        {
-//             std::cout << "Use Default\n";
-            TContigsPos pos = iter.fwdIter.index->sa[i];
-            delegate(ossContext, needleId, saRange, pos);
-            ++ossContext.delegateFilteredOcc;
-        }
-    }
-}*/
-
-template<typename TSpec, typename TConfig,
+         typename TContigSeqs,
          typename TDelegate,
          typename TContigsSum,
          typename TIndex>
 inline void locate(OSSContext<TSpec, TConfig> & ossContext,
+                   TContigSeqs const & genome,
                    TDelegate & delegate,
                    uint32_t const needleId,
                    seqan::SARange<TContigsSum> & saRange,
@@ -152,7 +100,41 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
             fwdIter.vDesc.repLen = saRange.repLength;
             fwdIter.vDesc.range = saRange.range;
             uint32_t counter = 0;
-            fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, counter);
+            
+            //early leaf node calculation (corresponds to the last level of the fm_tree)
+            if(ossContext.earlyLeaf){
+                TContigsSum ssp = (saRange.goRight) ? 
+                    getRank(iter.revIter.index->sa.sparseString.indicators, iter.revIter._parentDesc.range.i1 - 1) :
+                    getRank(iter.fwdIter.index->sa.sparseString.indicators, iter.fwdIter._parentDesc.range.i1 - 1);
+                TContigsSum sep = (saRange.goRight) ? 
+                    getRank(iter.revIter.index->sa.sparseString.indicators, iter.revIter._parentDesc.range.i2 - 1) :
+                    getRank(iter.fwdIter.index->sa.sparseString.indicators, iter.fwdIter._parentDesc.range.i2 - 1);
+                auto lastChar = (saRange.goRight) ? 
+                    iter.revIter._parentDesc.lastChar :
+                    iter.fwdIter._parentDesc.lastChar;
+                    
+                if (saRange.goRight){
+                    for(TContigsSum i = ssp; i < sep; ++i){
+                        TContigsPos pos = posAdd(getValue(iter.revIter.index->sa.sparseString.values, i), 1);
+                        if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
+                            //Calculate position in forward text
+                            setSeqOffset(pos, ossContext.sequenceLengths[getSeqNo(pos)] - getSeqOffset(pos) - 1);
+                            delegate(ossContext, needleId, saRange, pos);
+                        }
+                    }
+                }else{
+                    for(TContigsSum i = ssp; i < sep; ++i){
+                        TContigsPos pos = posAdd(getValue(iter.fwdIter.index->sa.sparseString.values, i), (-1));
+                        
+                        if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
+                            //Report position
+                            delegate(ossContext, needleId, saRange, pos);
+                        }
+                    }
+                }
+            }
+
+            fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, static_cast<uint8_t>(ossContext.earlyLeaf), counter);
             ossContext.fmtreeBacktrackings += 2 * counter;
     }
     else
@@ -168,15 +150,16 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
 }
 
 template<typename TContex,
+         typename TContigSeqs,
          typename TDelegate,
          typename TIndex,
          typename TContigsSum>
 inline void locateSARanges(TContex & ossContext,
-                    TDelegate & delegate,
-                    uint32_t const needleId,
-                    Iter<TIndex, VSTree<TopDown<> > > iter,
-//                     std::vector<seqan::SARange<TContigsSum> > allRanges[],
-                    std::vector<seqan::SARange<TContigsSum> > & ranges)
+                           TContigSeqs const & genome,
+                           TDelegate & delegate,
+                           uint32_t const needleId,
+                           Iter<TIndex, VSTree<TopDown<> > > iter,
+                           std::vector<seqan::SARange<TContigsSum> > & ranges)
 {
     //Sort Ranges
     std::sort(ranges.begin(), ranges.end(), [](SARange<TContigsSum> & x, SARange<TContigsSum> & y){
@@ -218,7 +201,7 @@ inline void locateSARanges(TContex & ossContext,
         }
 
         ossContext.delegateFilteredOcc += crange.range.i2 - crange.range.i1;
-        locate(ossContext, delegate, needleId, crange, iter);
+        locate(ossContext, genome, delegate, needleId, crange, iter);
     }
 }
 
@@ -1357,7 +1340,8 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
             if(i != lastStart){
                 iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
                 iter.fwdIter.vDesc.range.i2 = rangeStart + i - 1;
-                delegate(ossContext, iter, limOffsets, needleId, errors);
+                //TODO add direction
+//                 delegate(ossContext, iter, limOffsets, needleId, errors, DIR);
             }
             lastStart = i + 1;
         }
@@ -1365,7 +1349,8 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
     if(lastStart < rangeEnd - rangeStart){
         iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
         iter.fwdIter.vDesc.range.i2 = rangeStart + rangeEnd - rangeStart;
-        delegate(ossContext, iter, limOffsets, needleId, errors);
+        //TODO add direction
+//         delegate(ossContext, iter, limOffsets, needleId, errors);
     }
 }
 
@@ -1409,7 +1394,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     if (done)
     {
         if(!lastEdit){
-            delegate(ossContext, iter, limOffsets, needleId, errors);
+            delegate(ossContext, iter, limOffsets, needleId, errors, std::is_same<TDir, Rev>::value);
         }
         return;
     }
@@ -1529,12 +1514,15 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     typedef MapperTraits<TSpec, TConfig>                     TTraits;
     typedef typename TTraits::TContigsPos                    TContigsPos;
     typedef typename TConfig::TContigsSum                    TContigsSum;
+    typedef typename TTraits::TContigSeqs                    TContigSeqs;
+
+    TContigSeqs const & genome = ossContext.contigSeqs;
 
     if(!ossContext.noSAfilter){
 
         std::vector<seqan::SARange<TContigsSum> > ranges;
 
-        auto delegateRange = [&ranges](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, auto const needleId, uint8_t const errors)
+        auto delegateRange = [&ranges](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, auto const needleId, uint8_t const errors, bool const goRight)
         {
             //only required for stats
             ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
@@ -1545,6 +1533,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             range.range = Pair<TContigsSum, TContigsSum> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
             range.repLength = repLength(iter);
             range.limOffsets = limOffsets;
+            range.goRight = goRight;
             ranges.push_back(range);
 
             setMapped(ossContext.ctx, readId);
@@ -1558,14 +1547,17 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 
         if(!ranges.empty()){
             ++ossContext.filteredOccsOfRead;
-            locateSARanges(ossContext, delegate, needleId, it, ranges/*, sMax*/);
+            locateSARanges(ossContext, genome, delegate, needleId, it, ranges);
         }
     }
     else
     {
 
-        auto delegateFMTree = [&delegate](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, auto const needleId, uint8_t const errors)
+        //TODO add early leaf here
+        auto delegateFMTree = [&delegate](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, auto const needleId, uint8_t const errors, bool const goRight)
         {
+            TContigSeqs const & genome = ossContext.contigSeqs;
+            
             //only required for stats
             ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
 
@@ -1579,21 +1571,52 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             setMinErrors(ossContext.ctx, readId, errors);
 
 
-            if(ossContext.fmTreeThreshold < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1)
+            if(ossContext.fmTreeThreshold < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 && ossContext.samplingRate > 1)
             {
                 ossContext.fmtreeLocates += saRange.range.i2 - saRange.range.i1;
                 auto fwdIter = iter.fwdIter;
                 uint32_t counter = 0;
-                fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, counter);
-        //            std::cout << "Edge counter: " << counter << "\n";
+                
+                //early leaf node calculation (corresponds to the last level of the fm_tree)
+                if(ossContext.earlyLeaf){
+                    TContigsSum ssp = (goRight) ? 
+                        getRank(iter.revIter.index->sa.sparseString.indicators, iter.revIter._parentDesc.range.i1 - 1) :
+                        getRank(iter.fwdIter.index->sa.sparseString.indicators, iter.fwdIter._parentDesc.range.i1 - 1);
+                    TContigsSum sep = (goRight) ? 
+                        getRank(iter.revIter.index->sa.sparseString.indicators, iter.revIter._parentDesc.range.i2 - 1) :
+                        getRank(iter.fwdIter.index->sa.sparseString.indicators, iter.fwdIter._parentDesc.range.i2 - 1);
+                    auto lastChar = (goRight) ? 
+                        iter.revIter._parentDesc.lastChar :
+                        iter.fwdIter._parentDesc.lastChar;
+                        
+                    if (goRight){
+                        for(TContigsSum i = ssp; i < sep; ++i){
+                            TContigsPos pos = posAdd(getValue(iter.revIter.index->sa.sparseString.values, i), 1);
+                            if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
+                            //Calculate position in forward text
+                                setSeqOffset(pos, ossContext.sequenceLengths[getSeqNo(pos)] - getSeqOffset(pos) - 1);
+                                delegate(ossContext, needleId, saRange, pos);
+                            }
+                        }
+                    }else{ 
+                        for(TContigsSum i = ssp; i < sep; ++i){
+                            TContigsPos pos = posAdd(getValue(iter.fwdIter.index->sa.sparseString.values, i), (-1));
+                            
+                            if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
+                                //Report position
+                                delegate(ossContext, needleId, saRange, pos);
+                            }
+                        }
+                    }
+                }
+                
+                fm_tree(ossContext, delegate, needleId, saRange, fwdIter, 0, static_cast<uint8_t>(ossContext.earlyLeaf), counter);
             }
             else
             {
                 ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
-        //             std::cout << "Default Locate Default Locate Default Locate\n";
                 for (TContigsSum i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
                 {
-        //             std::cout << "Use Default\n";
                     TContigsPos pos = iter.fwdIter.index->sa[i];
                     delegate(ossContext, needleId, saRange, pos);
                 }
