@@ -1590,22 +1590,42 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                         iter.fwdIter._parentDesc.lastChar;
                         
                     if (goRight){
+                        std::cout << "revIndex\n";
                         for(TContigsSum i = ssp; i < sep; ++i){
                             TContigsPos pos = posAdd(getValue(iter.revIter.index->sa.sparseString.values, i), 1);
+                            std::cout << pos << "\n";
                             if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
                             //Calculate position in forward text
                                 setSeqOffset(pos, ossContext.sequenceLengths[getSeqNo(pos)] - getSeqOffset(pos) - 1);
+                                std::cout << "Pos calc from reverseIndex: "  << pos << "\t(" << i << ")\n";
                                 delegate(ossContext, needleId, saRange, pos);
                             }
                         }
-                    }else{ 
+
+                        //Debugging
+                        for (TContigsSum i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
+                        {
+                            TContigsPos pos = iter.fwdIter.index->sa[i];
+                            std::cout << "All forward Pos: " << pos << "\t(" << i << ")\n";
+                        }
+                        
+                    }else{
+                        std::cout << "fwdIndex\n";
                         for(TContigsSum i = ssp; i < sep; ++i){
                             TContigsPos pos = posAdd(getValue(iter.fwdIter.index->sa.sparseString.values, i), (-1));
-                            
+                            std::cout << pos << "\n";
                             if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
+                                std::cout << "Pos earlyLeaf acc: "  << pos << "\t(" << i << ")\n";
                                 //Report position
                                 delegate(ossContext, needleId, saRange, pos);
                             }
+                        }
+                        
+                        //Debugging
+                        for (TContigsSum i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
+                        {
+                            TContigsPos pos = iter.fwdIter.index->sa[i];
+                            std::cout << "All forward Pos: " << pos << "\t(" << i << ")\n";
                         }
                     }
                 }
