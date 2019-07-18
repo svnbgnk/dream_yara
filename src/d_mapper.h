@@ -61,6 +61,7 @@ public:
     bool                    noSAfilter = false;
     bool                    noDelayITV = false;
     bool                    noMappability = false;
+    bool                    noEarlyLeaf = false;
     bool                    compare = false;
     uint32_t                threshold = 11;
     uint32_t                itvOccThreshold = 10;
@@ -1047,6 +1048,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
     ossContext.delayITV = !disOptions.noDelayITV;
+    ossContext.earlyLeaf = !disOptions.noEarlyLeaf;
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
     ossContext.noSAfilter = disOptions.noSAfilter;
 
