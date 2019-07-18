@@ -47,7 +47,7 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
     typedef MapperTraits<TSpec, TConfig>                     TTraits;
     typedef typename TTraits::TContigsPos                    TContigsPos;
 
-    if(false && (it.vDesc.range.i2 - it.vDesc.range.i1) < ossContext.fmTreeBreak){
+    if((it.vDesc.range.i2 - it.vDesc.range.i1) < ossContext.fmTreeBreak){
 //         ossContext.fmtreeBreakLocates += (it.vDesc.range.i2 - it.vDesc.range.i1) * (ossContext.samplingRate - offset - 1) / 2;
         for(TContigsSum i = it.vDesc.range.i1; i < it.vDesc.range.i2; ++i)
         {
@@ -58,10 +58,10 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
                 setSeqOffset(pos, getSeqOffset(pos) + offset);
                 if(goRightDir){
                     setSeqOffset(pos, ossContext.sequenceLengths[getSeqNo(pos)] - getSeqOffset(pos) - saRange.repLength);
-                    std::cout << "FM-tree revt: " << pos << "\n";
+//                     std::cout << "FM-tree revt: " << pos << "\n";
                 }
                 else{
-                     std::cout << "FM-treet: " << pos << "\n";
+//                      std::cout << "FM-treet: " << pos << "\n";
                 }
 //                 ossContext.allPos += getSeqOffset(pos);
                 delegate(ossContext, needleId, saRange, pos);
@@ -79,11 +79,11 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
             if(goRightDir){
             //    std::cout << "rev: " << pos  << "\n";
                 setSeqOffset(pos, ossContext.sequenceLengths[getSeqNo(pos)] - getSeqOffset(pos) - saRange.repLength);
-                std::cout << "FM-tree rev: " << pos << "\toffset:" << offset << "\t" << i << "\n";
+//                 std::cout << "FM-tree rev: " << pos << "\toffset:" << offset << "\t" << i << "\n";
             }
             else
             {
-                std::cout << "FM-tree: " << pos << "\toffset:" << offset << "\t" << i << "\n";
+//                 std::cout << "FM-tree: " << pos << "\toffset:" << offset << "\t" << i << "\n";
             }
             delegate(ossContext, needleId, saRange, pos);
         }
@@ -134,7 +134,7 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
                 auto lastChar = saRange.lastChar;
                     
                 if (saRange.goRight){
-                    std::cout << "\nrevIndex\n";
+//                     std::cout << "\nrevIndex\n";
                     
                     for(TContigsSum i = ssp; i < sep; ++i){
                         TContigsPos pos = getValue(uniIter.index->sa.sparseString.values, i);
@@ -143,7 +143,7 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
                         setSeqOffset(pos, ossContext.sequenceLengths[getSeqNo(pos)] - getSeqOffset(pos) - 1);
                         if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
                             setSeqOffset(pos, getSeqOffset(pos) - (saRange.repLength - 1));
-                            std::cout << "FPos calc from reverseIndex: " << pos << "\n";
+//                             std::cout << "FPos calc from reverseIndex: " << pos << "\n";
                             delegate(ossContext, needleId, saRange, pos);
                         }
                     }
@@ -152,28 +152,29 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
                         for (TContigsSum i = saRange.range.i1; i < saRange.range.i2; ++i)
                         {
                             TContigsPos pos2 = iter.fwdIter.index->sa[i];
-                            std::cout << "All forward Pos: " << pos2 << "\t(" << i << ")\n";
+//                             std::cout << "All forward Pos: " << pos2 << "\t(" << i << ")\n";
                         }
                     
                 }else{
-                    std::cout << "\nfwdIndex\n";
+//                     std::cout << "\nfwdIndex\n";
                     for(TContigsSum i = ssp; i < sep; ++i){
                         TContigsPos pos = posAdd(getValue(uniIter.index->sa.sparseString.values, i), (-1));
                         
                         if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
                             //Report position
-                            std::cout << "FPos: " << pos << "\n";
+//                             std::cout << "FPos: " << pos << "\n";
                             delegate(ossContext, needleId, saRange, pos);
                         }
                     }
-                        //Debugging
-                        for (TContigsSum i = uniIter.vDesc.range.i1; i < uniIter.vDesc.range.i2; ++i)
-                        {
-                            TContigsPos pos2 = iter.fwdIter.index->sa[i];
-                            std::cout << "All forward Pos: " << pos2 << "\t(" << i << ")\n";
-                        }
                 }
             }
+         /*   
+            //Debugging
+            for (TContigsSum i = uniIter.vDesc.range.i1; i < uniIter.vDesc.range.i2; ++i)
+                        {
+                TContigsPos pos2 = iter.fwdIter.index->sa[i];
+                std::cout << "All forward Pos: " << pos2 << "\t(" << i << ")\n";
+            }*/
             
             bool goRight2 = ossContext.earlyLeaf && saRange.goRight;
             fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(ossContext.earlyLeaf), counter);
@@ -1633,7 +1634,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     }
     else
     {
-        std::cout << "no SA filter\n"; 
+//         std::cout << "no SA filter\n"; 
         auto delegateFMTree = [&delegate](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, auto const needleId, uint8_t const errors, bool const goRight)
         {
             TContigSeqs const & genome = ossContext.contigSeqs;
@@ -1665,7 +1666,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                     auto lastChar = uniIter.vDesc.lastChar;
               
                     if (goRight){
-                        std::cout << "\nrevIndex\n";
+//                         std::cout << "\nrevIndex\n";
                         for(TContigsSum i = ssp; i < sep; ++i){
 //                        for(TContigsSum i = iter.revIter._parentDesc.range.i1; i < iter.revIter._parentDesc.range.i2; ++i){
 //                            if(getValue(iter.revIter.index->sa.sparseString.indicators, i)){
@@ -1683,25 +1684,17 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                 //searched one less char the we use range from parent
                                 setSeqOffset(pos, getSeqOffset(pos) - (saRange.repLength - 1));
         //                        std::cout << "Genome: " << infix(genome, pos, posAdd(pos, 140)) << "\n";
-                                std::cout << "Pos calc from reverseIndex: "  << pos << "\n";
                                 delegate(ossContext, needleId, saRange, pos);
                             }
                             else
                             {
                                 setSeqOffset(pos, getSeqOffset(pos) - (saRange.repLength - 1));
-                                std::cout << "skip calc of this pos  " << pos << "\n"; 
                             }
                         }
 
-                        //Debugging
-                        for (TContigsSum i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
-                        {
-                            TContigsPos pos2 = iter.fwdIter.index->sa[i];
-                            std::cout << "All forward Pos: " << pos2 << "\t(" << i << ")\n";
-                        }
-                }
-		else
-		{
+                    }
+                    else
+                    {
                         for(TContigsSum i = ssp; i < sep; ++i){
                             TContigsPos pos = posAdd(getValue(uniIter.index->sa.sparseString.values, i), (-1));
                             if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
@@ -1709,16 +1702,16 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                 delegate(ossContext, needleId, saRange, pos);
                             }
                         }
-                       /* 
-                        //Debugging
-                        for (TContigsSum i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
-                        {
-                            TContigsPos pos3 = iter.fwdIter.index->sa[i];
-                            std::cout << "All forward Pos: " << pos3 << "\t(" << i << ")\n";
-                        }
-			*/
                     }
                 }
+                /*
+                //Debugging
+                for (TContigsSum i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
+                {
+                    TContigsPos pos2 = iter.fwdIter.index->sa[i];
+                    std::cout << "All forward Pos: " << pos2 << "\t(" << i << ")\n";
+                }*/
+                
                 bool goRight2 = ossContext.earlyLeaf && goRight;
                 fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(ossContext.earlyLeaf), counter);
             }
