@@ -89,7 +89,7 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
         }
 
         //TODO stop before the last level since we used the early leaf node
-        if(offset + /*skipLastLayer*/ + 1 < ossContext.samplingRate && goDown(it)){
+        if(offset + skipLastLayer + 1 < ossContext.samplingRate && goDown(it)){
             counter += 4;
 
             do{
