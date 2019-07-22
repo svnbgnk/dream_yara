@@ -15,7 +15,6 @@ namespace seqan{
 template<typename TContigsSum>
 struct SARange
 {
-    //TODO add parent Ranges
     Pair<TContigsSum, TContigsSum> range;
     Pair<TContigsSum, TContigsSum> revRange;
     Pair<TContigsSum, TContigsSum> parentRange;
@@ -88,9 +87,8 @@ inline void fm_tree(OSSContext<TSpec, TConfig> & ossContext,
             delegate(ossContext, needleId, saRange, pos);
         }
 
-        //TODO stop before the last level since we used the early leaf node
         if(offset + skipLastLayer + 1 < ossContext.samplingRate && goDown(it)){
-            counter += 4;
+//             counter += 4;
 
             do{
                 fm_tree(ossContext, delegate, needleId, saRange, it, goRightDir, offset + 1, skipLastLayer, counter);
@@ -116,7 +114,7 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
 
     if(ossContext.fmTreeThreshold < saRange.range.i2 - saRange.range.i1 && ossContext.samplingRate > 1)
     {
-        ossContext.fmtreeLocates += saRange.range.i2 - saRange.range.i1;
+//         ossContext.fmtreeLocates += saRange.range.i2 - saRange.range.i1;
         //locate Interval with fm_tree
             auto uniIter = (ossContext.earlyLeaf && saRange.goRight) ? iter.revIter : iter.fwdIter;
             uniIter.vDesc.repLen = saRange.repLength;
@@ -178,11 +176,11 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
 
             bool goRight2 = ossContext.earlyLeaf && saRange.goRight;
             fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(ossContext.earlyLeaf), counter);
-            ossContext.fmtreeBacktrackings += 2 * counter;
+//             ossContext.fmtreeBacktrackings += 2 * counter;
     }
     else
     {
-        ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
+//         ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
         for (uint32_t i = saRange.range.i1; i < saRange.range.i2; ++i)
         {
             TContigsPos pos = iter.fwdIter.index->sa[i];
@@ -1603,7 +1601,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             TContigSeqs const & genome = ossContext.contigSeqs;
 
             //only required for stats
-            ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
+//             ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
 
             SARange<TContigsSum> saRange;
             saRange.repLength = repLength(iter);
@@ -1673,7 +1671,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             }
             else
             {
-                ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
+//                 ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
                 for (TContigsSum i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
                 {
                     TContigsPos pos = iter.fwdIter.index->sa[i];
