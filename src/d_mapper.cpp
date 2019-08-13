@@ -392,7 +392,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     // Parse output disOptions.
     getOptionValue(disOptions.readGroup, parser, "read-group");
-    getOptionValue(disOptions.secondaryMatches, parser, "secondary-alignments", disOptions.secondaryMatchesList);
+    getOptionValue(disOptions.secondaryMatches, parser, "secondary-matches", disOptions.secondaryMatchesList);
     getOptionValue(disOptions.rabema, parser, "rabema-alignments");
 
     if (isSet(parser, "secondary-alignments"))
@@ -554,13 +554,13 @@ void configureDisMapper(DisOptions & disOptions,
     }
     else if (disOptions.contigsSize <= MaxValue<uint16_t>::VALUE)
     {
-//         configureDisMapper<uint16_t>(disOptions, threading, sequencing, distance);
-         throw RuntimeError("Maximum contig4 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+         configureDisMapper<uint16_t>(disOptions, threading, sequencing, distance);
+//         throw RuntimeError("Maximum contig4 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
     }
     else
     {
-        throw RuntimeError("Maximum contig2 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
-//         configureDisMapper<uint32_t>(disOptions, threading, sequencing, distance);
+//        throw RuntimeError("Maximum contig2 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+        configureDisMapper<uint32_t>(disOptions, threading, sequencing, distance);
     }
 }
 
