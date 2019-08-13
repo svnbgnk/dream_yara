@@ -159,7 +159,7 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("nD", "noDelayITV", "Use In Text Verification right after finding a a potential Position"));
 
-    addOption(parser, ArgParseOption("ea", "EarlyLeaf", "When using FM-tree use use early Leaf method (which requires reverse index suffix array). Generally slowes down read mapper"));
+    addOption(parser, ArgParseOption("ea", "earlyLeaf", "When using FM-tree use use early Leaf method (which requires reverse index suffix array). Generally slowes down read mapper"));
 
     addOption(parser, ArgParseOption("Ith", "itvOccThreshold", "Start In Text Verification when search Interval on Index is smaller", ArgParseOption::INTEGER));
     hideOption(getOption(parser, "itvOccThreshold"));
@@ -366,7 +366,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "noITV")) disOptions.noITV = true;
     if (isSet(parser, "noSAfilter")) disOptions.noSAfilter = true;
     if (isSet(parser, "noDelayITV")) disOptions.noDelayITV = true;
-    if (isSet(parser, "EarlyLeaf")) disOptions.EarlyLeaf = true;
+    if (isSet(parser, "earlyLeaf")) disOptions.earlyLeaf = true;
     if (isSet(parser, "bioSeqZip")) disOptions.zipFastq = true;
 
     getOptionValue(disOptions.readLength, parser, "length");
