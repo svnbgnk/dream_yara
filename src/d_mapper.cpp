@@ -315,7 +315,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     // Parse output disOptions.
     getOptionValue(disOptions.readGroup, parser, "read-group");
-    getOptionValue(disOptions.secondaryMatches, parser, "secondary-alignments", disOptions.secondaryMatchesList);
+    getOptionValue(disOptions.secondaryMatches, parser, "secondary-matches", disOptions.secondaryMatchesList);
     getOptionValue(disOptions.rabema, parser, "rabema-alignments");
 
     if (isSet(parser, "secondary-alignments"))
