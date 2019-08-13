@@ -61,7 +61,7 @@ public:
     bool                    noSAfilter = false;
     bool                    noDelayITV = false;
     bool                    noMappability = false;
-    bool                    noEarlyLeaf = false;
+    bool                    earlyLeaf = false;
     bool                    compare = false;
     uint32_t                threshold = 11;
     uint32_t                itvOccThreshold = 10;
@@ -970,8 +970,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     disOptions.readLength = len;
 
-    me.maxError = me.options.errorRate * len;
-    me.strata = disOptions.strataRate * len;
+    me.maxError = std::ceil(me.options.errorRate * len);
+    me.strata = std::ceil(disOptions.strataRate * len);
     Mapper<void, TConfig> me2(disOptions);
 
     //tracking
@@ -989,7 +989,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
 
-/*    
+/*
     typedef typename TTraits::TIndexConfig                      TIndexConfig;
     TIndexConfig::SAMPLING = me.samplingRate;
 
@@ -999,9 +999,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TBiIndex;
 
     TBiIndex & mybiIndex = me.biIndex;
-    
+
     */
-    
+
     TMatchesAppender appender(me.matchesByCoord);
     bool noOverlap = disOptions.noDelayITV || disOptions.hammingDistance;
     Delegate delegate(appender, noOverlap);
@@ -1041,14 +1041,15 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 // copy parameters to ossContext
 
 //     YaraFMConfig<uint16_t, uint32_t, uint32_t> myConfig{}; //myConfig.SAMPLING
-    std::cout << "SAMPLING RATE: " << me.samplingRate << "\n";
+    if(disOptions.verbose > 1)
+        std::cout << "SAMPLING RATE: " << me.samplingRate << "\n";
 
     ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs), me.samplingRate, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
     ossContext.itv = !disOptions.noITV;
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
     ossContext.delayITV = !disOptions.noDelayITV;
-    ossContext.earlyLeaf = !disOptions.noEarlyLeaf;
+    ossContext.earlyLeaf = disOptions.earlyLeaf;
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
     ossContext.noSAfilter = disOptions.noSAfilter;
 
@@ -1767,16 +1768,16 @@ inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & 
 {
 //     typedef String<TChar, TAllocConfig> TString;
 //     typedef StringSet<TString, Owner<ConcatDirect<SizeSpec_<TSeqNo, TSeqPos> > > > TStringSet;
-// 
+//
 //     using TFMIndexConfig = TGemMapFastFMIndexConfig<TBWTLen>;
 //     TFMIndexConfig::SAMPLING = opt.sampling;
-    
-    
-    
+
+
+
     typedef MapperTraits<TSpec, TConfig>                        TTraits;
 //     typedef typename TTraits::TIndexConfig                      TIndexConfig;
     using TIndexConfig = YaraFMConfig<typename TConfig::TContigsSize, typename TConfig::TContigsLen, typename TConfig::TContigsSum, typename TConfig::TAlloc>;
-    
+
 //     using TTraits::TIndexConfig                      TIndexConfig;
     TIndexConfig::SAMPLING = me.samplingRate;
 

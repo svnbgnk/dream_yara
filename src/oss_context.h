@@ -559,7 +559,7 @@ struct OSSContext
     bool itv = true;
     bool delayITV = false;
     bool noSAfilter = false;
-    bool earlyLeaf = true;
+    bool earlyLeaf = false;
     uint32_t itvOccThreshold = 10;
     uint32_t fmTreeThreshold = 1000;
     uint32_t fmTreeBreak = 10;
