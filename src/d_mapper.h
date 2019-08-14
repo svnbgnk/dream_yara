@@ -1174,7 +1174,26 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //             write(std::cout, *startMatch);
             //TODO check if startMatch is itv job
             while(matchIt != matchEnd){
+                bool ossMatch = getMember(*matchIt, Errors()) <= me.maxError;
+                if(!ossMatch)
+                {
+                    uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
+                    uint32_t readId = getReadId(readSeqs, readSeqId);
+                    valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                    if(valid){
+                        setMapped(me.ctx, readId);
+                        setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
+                        ++valids;
+                    }
+                }
+                else
+                {
+                    setInvalid(*matchIt);
+                }
+            }
 
+            if(false)
+            {
                 bool ossMatch = getMember(*matchIt, Errors()) <= me.maxError;
                 //test if start match is valid
                 if(ossMatch && startM){
