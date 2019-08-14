@@ -1132,9 +1132,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         uint32_t oss = 0;
         uint32_t merges = 0;
         uint32_t dups = 0;
-        TContigsSize lastContig;
-        TContigsLen lastStartPos;
-        TContigsLen maxEndPos;
 
 
 /*
@@ -1152,46 +1149,92 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
         }*/
 
-        //  #pragma omp parallel for schedule(dynamic) num_threads(mainMapper.threadsCount)
+        #pragma omp parallel for schedule(dynamic) num_threads(disOptions.threadsCount)
         for(int i = 0; i < length(me.matchesSetByCoord); ++i){
 //                 std::cout << "New read" << i << "\n";
             auto const & matches = me.matchesSetByCoord[i];
             auto matchIt = begin(matches, Standard());
             auto matchEnd = end(matches, Standard());
+            auto lValid = matchIt;
+            int extendedLength = 0;
 
-//             lastStrand = onForwardStrand();
-            lastContig = getMember(*matchIt, ContigId());
-            lastStartPos = getMember(*matchIt, ContigBegin());
-            maxEndPos = getMember(*matchIt, ContigEnd());
-            // first Match of matches locate closly next to each other
-            auto startMatch = matchIt;
-//                 write(std::cout, *matchIt);
-//             ++matchIt;
-            //check for ITV jobs here
-            bool startM = true;
-
-//             std::cout << "Start:\n";
-//             write(std::cout, *startMatch);
-            //TODO check if startMatch is itv job
             while(matchIt != matchEnd){
                 bool ossMatch = getMember(*matchIt, Errors()) <= me.maxError;
-                if(!ossMatch)
+
+                oss += ossMatch;
+
+                //check Neighborhood
+                //TODO check extendedLength and same match
+                if(matchIt != lValid && extendedLength <= (me.maxError * 10) &&
+                   getMember(*matchIt, ContigId()) == getMember(*lValid, ContigId()) &&
+                   !(onForwardStrand(*matchIt) ^ onForwardStrand(*lValid)) &&
+                   getMember(*lValid, ContigBegin()) + 2 * me.maxError >= getMember(*matchIt, ContigBegin()))
                 {
-                    uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
-                    uint32_t readId = getReadId(readSeqs, readSeqId);
-                    valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
-                    if(valid){
-                        setMapped(me.ctx, readId);
-                        setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
-                        ++valids;
+                    bool valid = true;
+                    if(!ossMatch)
+                    {
+                        uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
+                        uint32_t readId = getReadId(readSeqs, readSeqId);
+                        valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                        ++itvJobsDone;
+                        if(valid){
+                            setMapped(me.ctx, readId);
+                            setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
+                        }
                     }
+                    // extend the last valid match if the current match is valid
+                    if(valid){
+                        int32_t shift = static_cast<int32_t>(getMember(*matchIt, ContigEnd())) - getMember(*lValid, ContigEnd());
+                        if(shift > 0)
+                        {
+                            extendedLength += shift;
+                            //merge oss and ITV if extendedLength is under threshold into the lastValid match
+                            shiftEnd(*lValid, shift);
+                        }
+                        ++merges;
+                    }
+                    setInvalid(*matchIt);
+                    ++dups;
                 }
                 else
                 {
-                    setInvalid(*matchIt);
+                    // match is not in Neighborhood of another match (to the left) do ITV
+                    if(!ossMatch)
+                    {
+                        uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
+                        uint32_t readId = getReadId(readSeqs, readSeqId);
+                        bool valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                        ++itvJobsDone;
+                        if(valid){
+                            setMapped(me.ctx, readId);
+                            setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
+                            ++valids;
+                            lValid = matchIt;
+                            extendedLength = 0;
+                        }
+                        else
+                        {
+                            setInvalid(*matchIt);
+                        }
+                    }
+                    else
+                    {
+                        lValid = matchIt;
+                        extendedLength = 0;
+                    }
                 }
+                ++matchIt;
             }
 
+
+//         TContigsSize lastContig;
+//         TContigsLen lastStartPos;
+//         TContigsLen maxEndPos;
+            //             lastStrand = onForwardStrand();
+//             lastContig = getMember(*matchIt, ContigId());
+//             lastStartPos = getMember(*matchIt, ContigBegin());
+//             maxEndPos = getMember(*matchIt, ContigEnd());
+/*
             if(false)
             {
                 bool ossMatch = getMember(*matchIt, Errors()) <= me.maxError;
@@ -1299,7 +1342,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         lastStartPos = getMember(*matchIt, ContigBegin());
                         maxEndPos = getMember(*matchIt, ContigEnd());
                     }
-            }
+            }*/
         }
 /*
         std::cout << "Print Matches\n";

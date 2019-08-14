@@ -159,7 +159,10 @@ inline int _align(TContigGaps & contigGaps, TReadGaps & readGaps, TErrors errors
 template <typename TContigGaps, typename TReadGaps, typename TErrors>
 inline int _align(TContigGaps & contigGaps, TReadGaps & readGaps, TErrors errors, LinearGaps)
 {
-    return -globalAlignment(contigGaps, readGaps, Score<short, EditDistance>(), -(int)errors, (int)errors);
+    Score<int, Simple> scoringScheme(1, -999, -1000);
+    return globalAlignment(contigGaps, readGaps, scoringScheme,
+                            AlignConfig<true, false, false, true>(),
+                            -(int)errors, (int)errors) / -999;
 }
 
 template <typename TContigGaps, typename TReadGaps, typename TErrors>
@@ -287,7 +290,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         write(std::cout, *matchIt);
         std::cout << readSeq << "\n";
         std::cout << contigInfix << "\n";
-        std::cout << contigInfix2 << "\n";
+        std::cout << "display +3 bases in both directions: " << contigInfix2 << "\n";
         std::cout << readGaps2 << "\n";
         std::cout << contigGaps2 << "\n\n";
         std::cout << readGaps << "\n" << contigGaps << "\n";
