@@ -242,10 +242,14 @@ struct Delegate
         uint8_t overlap_r = rangeInfo.limOffsets.i2;
         uint32_t occLength = rangeInfo.repLength;
         TMatch hit;
-        if(noOverlap)
+        if(noOverlap){
             setContigPosition(hit, pos, posAdd(pos, occLength));
+        }
         else
+        {
+            overlap_l = (overlap_l <=  getSeqOffset(pos)) ? overlap_l : 0;
             setContigPosition(hit, posAdd(pos, 0 - overlap_l), posAdd(pos, occLength + overlap_r));
+        }
 
         hit.errors = rangeInfo.errors;
         setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement

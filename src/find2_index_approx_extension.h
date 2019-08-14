@@ -793,17 +793,18 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 */
 
                 TReadId readId = getReadId(ossContext.readSeqs, needleId);
+                int8_t overlap_l_tmp = (overlap_l <= seqOffset) ? overlap_l : 0;
 
 //                 std::cout << ossContext.strata + s.l[s.l.size() - 1] << "\t" << ossContext.maxError << "\n";
                 //TODO search <0, 2> need to search till 0 is found or 1
                 if(ossContext.delayITV && (isMapped(ossContext.ctx, readId && getMinErrors(ossContext.ctx, readId) + ossContext.strata <= upper) || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError))
                 {
-                    delegateDirect(ossContext, posAdd(sa_info, -overlap_l), posAdd(sa_info, needleL + overlap_r), needleId, 127);
+                    delegateDirect(ossContext, posAdd(sa_info, 0 - overlap_l_tmp), posAdd(sa_info, needleL + overlap_r), needleId, 127);
                 }
                 else
                 {
                     TContigSeqsInfix ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
-                    inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, -overlap_l), max_e, upper, lower, false);
+                    inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, 0 - overlap_l_tmp), max_e, upper, lower, false);
                 }
 //                 std::cout << posAdd(sa_info, -overlap_l) << "\t" << posAdd(sa_info, needleL + overlap_r) << "\n";
             }
