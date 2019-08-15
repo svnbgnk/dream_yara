@@ -60,6 +60,7 @@ public:
     bool                    noITV = false;
     bool                    noSAfilter = false;
     bool                    noDelayITV = false;
+    bool                    determineExactSecondaryPos = true;
     bool                    noMappability = false;
     bool                    earlyLeaf = false;
     bool                    compare = false;
@@ -941,19 +942,115 @@ inline bool inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNee
 //     std::cout << "\nScore: " << (int)minErrors << "\n";
     if(minErrors <= maxErrors)
         match.errors = minErrors;
-/*
-    if(14668 == match.readId){
-        write(std::cout, match);
-        std::cout << "Needle: \n" << needle << "\n";
-        std::cout << text << "\n";
-
-        std::cout << "E: " << match.errors << "\n";
-    }*/
 
     return(minErrors <= maxErrors);
 }
 
+// ----------------------------------------------------------------------------
+// Function inTextVerification()
+// ----------------------------------------------------------------------------
 
+template<typename TSpec, typename TConfig, typename TMatch, typename TNeedle, typename TError>
+inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNeedle const & needle, TError maxErrors)
+{
+    typedef MapperTraits<TSpec, TConfig>                        TTraits;
+    typedef typename TConfig::TContigsLen                       TContigsLen;
+    typedef typename TConfig::TContigsSize                      TContigsSize;
+
+    typedef typename TTraits::TContigSeqs                       TContigSeqs;
+    typedef typename StringSetPosition<TContigSeqs const>::Type TContigPos;
+    typedef typename InfixOnValue<TContigSeqs const>::Type      TContigSeqsInfix;
+    typedef typename InfixOnValue<TNeedle const>::Type          TNeedleInfix;
+    typedef ModifiedString<TNeedle, ModReverse>                 TNeedleInfixRev;
+    typedef ModifiedString<TContigSeqsInfix, ModReverse>        TStringInfixRev;
+
+    TContigSeqs & contigSeqs = me.contigs.seqs;
+
+    TContigsSize seqNo = getMember(match, ContigId());
+    TContigsLen seqOffset = getMember(match, ContigBegin());
+    TContigsLen seqOffsetEnd = getMember(match, ContigEnd());
+    TContigSeqsInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
+
+    typedef Finder<TContigSeqsInfix>                        TFinder;
+    typedef Finder<TStringInfixRev>                       TFinder2;
+    typedef AlignTextBanded</*FindPrefix*/FindInfix,
+                            NMatchesNone_,
+                            NMatchesNone_>                     TMyersSpecInfix;
+    typedef Myers<TMyersSpecInfix, True, void>                 TAlgorithmInfix;
+    typedef PatternState_<TContigSeqsInfix, TAlgorithmInfix>   TPatternInfix;
+    TPatternInfix patternInfix;
+
+    typedef AlignTextBanded<FindPrefix,
+                            NMatchesNone_,
+                            NMatchesNone_>               TMyersSpec;
+    typedef Myers<TMyersSpec, True, void>                TAlgorithm;
+    typedef PatternState_<TNeedle, TAlgorithm>  TPattern;
+    TPattern pattern;
+    typedef PatternState_<TNeedleInfixRev, TAlgorithm>  TPatternRev;
+    TPatternRev patternRev;
+
+    uint8_t minErrors = maxErrors + 1;
+    TFinder finderInfix(text);
+
+    while (find(finderInfix, needle, patternInfix, -static_cast<int>(minErrors)))
+    {
+        uint16_t currentErrors = -getScore(patternInfix);
+        if(minErrors > currentErrors)
+            minErrors = currentErrors;
+    }
+
+    if(minErrors <= maxErrors)
+        match.errors = minErrors;
+
+    TFinder finder(text);
+    uint8_t mErrors = maxErrors + minErrors + 1;
+    TContigsLen endPos = 0;
+    while (find(finder, needle, pattern, -static_cast<int>(mErrors)))
+    {
+        int currentEnd = position(finder) + 1;
+        uint16_t currentErrors = -getScore(pattern);
+//         std::cout << currentErrors << "\t" << currentEnd << "\n";
+        if (currentErrors < mErrors)
+        {
+            mErrors = currentErrors;
+            endPos = currentEnd;
+        }
+    }
+
+    TContigSeqsInfix infixPrefix = infix(text, 0, endPos);
+    if(endPos - 0 != length(infixPrefix)){
+        std::cerr << "prefix from infix does not have correct size: " << length(infixPrefix) << "\n";
+        exit(1);
+    }
+
+
+    TStringInfixRev infixRev(infixPrefix);
+    TNeedleInfixRev needleRev(needle);
+    TFinder2 finder2(infixRev);
+
+    mErrors = maxErrors + 1;
+    TContigsLen startPos = endPos;
+
+    while (find(finder2, needleRev, patternRev, -static_cast<int>(mErrors)))
+    {
+        int currentEnd = position(finder2) + 1;
+        uint16_t currentErrors = -getScore(patternRev);
+//         std::cout << currentErrors << "\t" << currentEnd << "\n";
+        if (currentErrors < mErrors)
+        {
+            mErrors = currentErrors;
+            startPos = currentEnd;
+        }
+    }
+
+    TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
+    TContigPos contigEnd = contigBegin;
+    contigEnd = posAdd(contigEnd, endPos);
+    contigBegin = posAdd(contigBegin, endPos - startPos);
+    setContigPosition(match, contigBegin, contigEnd);
+
+    return(minErrors <= maxErrors);
+}
 
 
 // ----------------------------------------------------------------------------
@@ -1007,7 +1104,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     */
 
     TMatchesAppender appender(me.matchesByCoord);
-    bool noOverlap = disOptions.noDelayITV || disOptions.hammingDistance;
+    bool noOverlap = disOptions.determineExactSecondaryPos || disOptions.noDelayITV || disOptions.hammingDistance;
     Delegate delegate(appender, noOverlap);
     DelegateDirect delegateDirect(appender);
 //     DelegateUnfiltered delegateUnfiltered(appender, noOverlap);
@@ -1168,9 +1265,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 oss += ossMatch;
 
                 //check Neighborhood
-                //TODO check extendedLength and same match
-                /*
                 if(matchIt != lValid && extendedLength <= (me.maxError * 10) &&
+                   !disOptions.determineExactSecondaryPos &&
                    getMember(*matchIt, ContigId()) == getMember(*lValid, ContigId()) &&
                    !(onForwardStrand(*matchIt) ^ onForwardStrand(*lValid)) &&
                    getMember(*lValid, ContigBegin()) + 2 * me.maxError >= getMember(*matchIt, ContigBegin()))
@@ -1201,14 +1297,18 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     setInvalid(*matchIt);
                     ++dups;
                 }
-                else*/
+                else
                 {
                     // match is not in Neighborhood of another match (to the left) do ITV
                     if(!ossMatch)
                     {
                         uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
                         uint32_t readId = getReadId(readSeqs, readSeqId);
-                        bool valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                        bool valid;
+                        if(disOptions.determineExactSecondaryPos)
+                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                        else
+                            valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
                         ++itvJobsDone;
                         if(valid){
                             setMapped(me.ctx, readId);

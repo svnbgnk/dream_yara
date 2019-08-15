@@ -610,7 +610,7 @@ inline void inTextVerificationN(TContex & ossContext,
     TFinder finderInfix(ex_infix);
 
 //     std::cout << "Score from: \n" << ex_infix << "\n" << needle << "\n";
-    while (find(finderInfix, needle, patternInfix, -static_cast<int>(length(needle)))) //TODO check
+    while (find(finderInfix, needle, patternInfix, -static_cast<int>(minErrors))) //TODO check
     {
         uint16_t currentErrors = -getScore(patternInfix);
         if(minErrors > currentErrors)
@@ -620,17 +620,14 @@ inline void inTextVerificationN(TContex & ossContext,
     if(minErrors > max_e)
         return;
 
-//     if(minErrors > upper)
-//         return;
-
     // check if match is outside of current search -> other search will find it no reason to report it now
     if(minErrors > upper || minErrors < lower)
         return;
 
     TFinder finder(ex_infix);
-    uint8_t mErrors = max_e * 4;
+    uint8_t mErrors = max_e + minErrors + 1;
     TContigsLen endPos = 0;
-    while (find(finder, needle, pattern, -static_cast<int>(max_e * 4))) //TODO choose correct value
+    while (find(finder, needle, pattern, -static_cast<int>(mErrors)))
     {
         int currentEnd = position(finder) + 1;
         uint16_t currentErrors = -getScore(pattern);
@@ -643,17 +640,14 @@ inline void inTextVerificationN(TContex & ossContext,
     }
     TString infixPrefix = infix(ex_infix, 0, endPos);
 
-//     std::cout << "Cut one: " << "\n" << infixPrefix << "\n";
-
-
     TStringInfixRev infixRev(infixPrefix);
     TNeedleInfixRev needleRev(needle);
     TFinder2 finder2(infixRev);
 
-    mErrors = max_e * 3;
+    mErrors = max_e + 1;
     TContigsLen startPos = endPos;
 
-    while (find(finder2, needleRev, patternRev, -static_cast<int>(max_e * 3))) //TODO choose correct value
+    while (find(finder2, needleRev, patternRev, -static_cast<int>(mErrors)))
     {
         int currentEnd = position(finder2) + 1;
         uint16_t currentErrors = -getScore(patternRev);

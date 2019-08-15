@@ -260,12 +260,12 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
 
         // Shrink the match after realigning and clipping.
         TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
-        contigBegin = posAdd(contigBegin, beginPosition(contigGaps));
         TContigPos contigEnd = contigBegin;
         contigEnd = posAdd(contigEnd, endPosition(contigGaps));
+        contigBegin = posAdd(contigBegin, beginPosition(contigGaps));
 
         // do to overlap selected endposition is to long
-        if(getSeqOffset(contigEnd) < length(me.contigSeqs[getMember(match, ContigId())])){
+        if(getSeqOffset(contigEnd) >= length(me.contigSeqs[getMember(match, ContigId())])){
             std::cout << "Endposition after chromosom\n";
             setInvalid(match);
             return;
