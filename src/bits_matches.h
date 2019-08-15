@@ -394,6 +394,12 @@ struct MatchesCompactorOSS
 // Match Setters
 // ============================================================================
 
+template <typename TSpec, typename TErrors>
+inline void setErrors(Match<TSpec> & me, TErrors errors)
+{
+    me.errors = errors;
+}
+
 // ----------------------------------------------------------------------------
 // Function setReadId()
 // ----------------------------------------------------------------------------

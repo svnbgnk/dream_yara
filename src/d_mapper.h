@@ -1169,6 +1169,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
                 //check Neighborhood
                 //TODO check extendedLength and same match
+                /*
                 if(matchIt != lValid && extendedLength <= (me.maxError * 10) &&
                    getMember(*matchIt, ContigId()) == getMember(*lValid, ContigId()) &&
                    !(onForwardStrand(*matchIt) ^ onForwardStrand(*lValid)) &&
@@ -1200,7 +1201,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     setInvalid(*matchIt);
                     ++dups;
                 }
-                else
+                else*/
                 {
                     // match is not in Neighborhood of another match (to the left) do ITV
                     if(!ossMatch)

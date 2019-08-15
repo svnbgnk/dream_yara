@@ -656,7 +656,7 @@ inline void _writeRecordImpl(MatchesWriter<TSpec, Traits> & me, TThreading const
                 break;
             --p;
         }
-        
+
         String<char> suffix = infix(name, p + 4, size);
     //     std::cout  << "Number: " << suffix <<"\n";
         size_t number = std::stoi(toCString(suffix));
@@ -687,7 +687,7 @@ inline void _writeRecordImpl(MatchesWriter<TSpec, Traits> & me, Parallel)
                 break;
             --p;
         }
-        
+
         String<char> suffix = infix(name, p + 4, size);
     //     std::cout  << "Number: " << suffix <<"\n";
         size_t number = std::stoi(toCString(suffix));

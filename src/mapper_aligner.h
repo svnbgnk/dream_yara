@@ -253,26 +253,25 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         SEQAN_ASSERT_LEQ(dpErrors, (int)errors);
         ignoreUnusedVariableWarning(dpErrors);
 
-//         std::cout << readGaps  << "\n" << contigGaps<< "\ncliped:\n";
+//         std::cout << readGaps  << "\n" << contigGaps<< "\n\n";
         clipSemiGlobal(contigGaps, readGaps);
 
 //         std::cout << readGaps << "\n" << contigGaps << "\n";
 
         // Shrink the match after realigning and clipping.
         TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
+        contigBegin = posAdd(contigBegin, beginPosition(contigGaps));
         TContigPos contigEnd = contigBegin;
         contigEnd = posAdd(contigEnd, endPosition(contigGaps));
-        contigBegin = posAdd(contigBegin, beginPosition(contigGaps));
-
 
         // do to overlap selected endposition is to long
-        if(getSeqOffset(contigEnd) >= length(me.contigSeqs[getMember(match, ContigId())])){
+        if(getSeqOffset(contigEnd) < length(me.contigSeqs[getMember(match, ContigId())])){
             std::cout << "Endposition after chromosom\n";
-            setInvalid(*matchIt);
+            setInvalid(match);
             return;
         }
         setContigPosition(match, contigBegin, contigEnd);
-//         write(std::cerr, match);
+        setErrors(match, dpErrors);
     }
 
 
