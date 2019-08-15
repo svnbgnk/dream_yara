@@ -186,14 +186,14 @@ namespace seqan
                 uint32_t binNo = 0;
                 for (uint16_t batchNo = 0; batchNo < _binIntWidth; ++batchNo)
                 {
-                    binNo = batchNo * INT_WIDTH;
-                    uint64_t tmp = _filterVector.get_int(vecIndices[0], INT_WIDTH);
+                    binNo = batchNo * MY_INT_WIDTH;
+                    uint64_t tmp = _filterVector.get_int(vecIndices[0], MY_INT_WIDTH);
                     for(uint8_t i = 1; i < _noOfHashFunc;  i++)
                     {
-                        tmp &= _filterVector.get_int(vecIndices[i], INT_WIDTH);
+                        tmp &= _filterVector.get_int(vecIndices[i], MY_INT_WIDTH);
                     }
 
-                    if (tmp ^ (1ULL<<(INT_WIDTH-1)))
+                    if (tmp ^ (1ULL<<(MY_INT_WIDTH-1)))
                     {
                         while (tmp > 0)
                         {
@@ -207,11 +207,11 @@ namespace seqan
                     }
                     else
                     {
-                        ++counts[binNo + INT_WIDTH - 1];
+                        ++counts[binNo + MY_INT_WIDTH - 1];
                     }
                     for(uint8_t i = 0; i < _noOfHashFunc ; i++)
                     {
-                        vecIndices[i] += INT_WIDTH;
+                        vecIndices[i] += MY_INT_WIDTH;
                     }
                 }
             }
@@ -244,8 +244,8 @@ namespace seqan
 
         void _init()
         {
-            _binIntWidth = std::ceil((float)_noOfBins / INT_WIDTH);
-            _blockBitSize = _binIntWidth * INT_WIDTH;
+            _binIntWidth = std::ceil((float)_noOfBins / MY_INT_WIDTH);
+            _blockBitSize = _binIntWidth * MY_INT_WIDTH;
             _noOfHashPos = (_noOfBits - filterMetadataSize) / _blockBitSize;
 
             _preCalcValues.resize(_noOfHashFunc);

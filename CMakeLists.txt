@@ -45,7 +45,8 @@ if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/sdsl-lite/include/sdsl/bits.hpp"
     message (STATUS "Found a local SDSL library provided with the DREAM-YARA source code.")
 endif ()
 
-
+set(CMAKE_C_COMPILER "/usr/bin/g++-7")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++-7")
 
 # ----------------------------------------------------------------------------
 # Add Yara targets
