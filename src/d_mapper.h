@@ -992,7 +992,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     uint8_t minErrors = maxErrors + 1;
     TFinder finderInfix(text);
 
-    while (find(finderInfix, needle, patternInfix, -static_cast<int>(minErrors)))
+    while (find(finderInfix, needle, patternInfix, -static_cast<int>(length(needle))))
     {
         uint16_t currentErrors = -getScore(patternInfix);
         if(minErrors > currentErrors)
@@ -1003,9 +1003,9 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         match.errors = minErrors;
 
     TFinder finder(text);
-    uint8_t mErrors = maxErrors + minErrors + 1;
+    uint8_t mErrors = maxErrors * 4;
     TContigsLen endPos = 0;
-    while (find(finder, needle, pattern, -static_cast<int>(mErrors)))
+    while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 4)))
     {
         int currentEnd = position(finder) + 1;
         uint16_t currentErrors = -getScore(pattern);
@@ -1028,10 +1028,10 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     TNeedleInfixRev needleRev(needle);
     TFinder2 finder2(infixRev);
 
-    mErrors = maxErrors + 1;
+    mErrors = maxErrors * 4;
     TContigsLen startPos = endPos;
 
-    while (find(finder2, needleRev, patternRev, -static_cast<int>(mErrors)))
+    while (find(finder2, needleRev, patternRev, -static_cast<int>(maxErrors * 4)))
     {
         int currentEnd = position(finder2) + 1;
         uint16_t currentErrors = -getScore(patternRev);

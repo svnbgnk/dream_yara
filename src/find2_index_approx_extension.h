@@ -610,7 +610,7 @@ inline void inTextVerificationN(TContex & ossContext,
     TFinder finderInfix(ex_infix);
 
 //     std::cout << "Score from: \n" << ex_infix << "\n" << needle << "\n";
-    while (find(finderInfix, needle, patternInfix, -static_cast<int>(minErrors))) //TODO check
+    while (find(finderInfix, needle, patternInfix, -static_cast<int>(length(needle))))
     {
         uint16_t currentErrors = -getScore(patternInfix);
         if(minErrors > currentErrors)
@@ -625,9 +625,9 @@ inline void inTextVerificationN(TContex & ossContext,
         return;
 
     TFinder finder(ex_infix);
-    uint8_t mErrors = max_e + minErrors + 1;
+    uint8_t mErrors = max_e * 4;
     TContigsLen endPos = 0;
-    while (find(finder, needle, pattern, -static_cast<int>(mErrors)))
+    while (find(finder, needle, pattern, -static_cast<int>(max_e * 4)))
     {
         int currentEnd = position(finder) + 1;
         uint16_t currentErrors = -getScore(pattern);
@@ -644,10 +644,10 @@ inline void inTextVerificationN(TContex & ossContext,
     TNeedleInfixRev needleRev(needle);
     TFinder2 finder2(infixRev);
 
-    mErrors = max_e + 1;
+    mErrors = max_e * 4;
     TContigsLen startPos = endPos;
 
-    while (find(finder2, needleRev, patternRev, -static_cast<int>(mErrors)))
+    while (find(finder2, needleRev, patternRev, -static_cast<int>(max_e * 4)))
     {
         int currentEnd = position(finder2) + 1;
         uint16_t currentErrors = -getScore(patternRev);
