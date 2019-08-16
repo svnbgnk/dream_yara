@@ -119,6 +119,8 @@ struct DelegateDirect
     typedef typename Traits::TMatchesAppender              TMatches;
     typedef typename Traits::TContigsPos                  TContigsPos;
 
+    typedef typename Traits::TReadSeqs                     TReadSeqs;
+    typedef typename Size<TReadSeqs>::Type                  TReadId;
 
     TMatches &          matches;
 
@@ -126,16 +128,17 @@ struct DelegateDirect
         matches(matches)
     {}
 
-    template <typename TReadId, typename TMatchErrors>
-    void operator() (OSSContext<TSpec, TConfig> & ossContext, TContigsPos const & start, TContigsPos const & end, TReadId const needleId, TMatchErrors errors)
+    template <typename TNeedleId, typename TMatchErrors>
+    void operator() (OSSContext<TSpec, TConfig> & ossContext, TContigsPos const & start, TContigsPos const & end, TNeedleId const needleId, TMatchErrors errors)
     {
         TReadId readId = getReadId(ossContext.readSeqs, needleId);
-
         TMatch hit;
         setContigPosition(hit, start, end);
 //         SEQAN_ASSERT_LEQ(5, getSeqOffset(end) - getSeqOffset(start));
         hit.errors = errors;
-        setReadId(hit, ossContext.readSeqs, needleId);
+        setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
+
+        appendValue(matches, hit, Generous(), typename Traits::TThreading());
 
         if(errors <= ossContext.maxError){
             ++ossContext.itvOccs;
@@ -146,16 +149,6 @@ struct DelegateDirect
         {
             ++ossContext.itvJobs;
         }
-
-
-//         std::cout << "Direct hit" << start << "end" << end << " (" << (int)getSeqOffset(end) - getSeqOffset(start) << ")" << "\t" << needleId << "\terrors" << (int) errors << "\n";
-//         setMinErrors(ossContext.ctx, needleId, errors);
-//         hit.readId = needleId;
-
-//         THit hit = { range(indexIt), (TSeedId)position(seedsIt), errors };
-
-//         write(std::cout, hit);
-        appendValue(matches, hit, Generous(), typename Traits::TThreading());
     }
 };
 
@@ -255,12 +248,13 @@ struct Delegate
         hit.errors = rangeInfo.errors;
         setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
-            //read Context is done as soon as a range is reported
+        appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
+
+
+        //read Context is done as soon as a range is reported
 //             TReadId readId = getReadId(ossContext.readSeqs, needleId);
 //             setMapped(ossContext.ctx, readId);
 //             setMinErrors(ossContext.ctx, readId, errors);
-
-        appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
     }
 };
 
