@@ -241,7 +241,6 @@ struct Delegate
         }
         else
         {
-            std::cout << "overlap";
             overlap_l = (overlap_l <=  getSeqOffset(pos)) ? overlap_l : 0;
             setContigPosition(hit, posAdd(pos, 0 - overlap_l), posAdd(pos, occLength + overlap_r));
         }
@@ -1004,8 +1003,10 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     {
         int currentEnd = position(finder) + 1;
         uint16_t currentErrors = -getScore(pattern);
+        if (getValue(text, currentEnd) != back(needle))
+            ++currentErrors;
 //         std::cout << currentErrors << "\t" << currentEnd << "\n";
-        if (currentErrors < mErrors)
+        if (currentErrors <= mErrors)
         {
             mErrors = currentErrors;
             endPos = currentEnd;
@@ -1013,12 +1014,6 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     }
 
     TContigSeqsInfix infixPrefix = infix(text, 0, endPos);
-    if(endPos - 0 != length(infixPrefix)){
-        std::cerr << "prefix from infix does not have correct size: " << length(infixPrefix) << "\n";
-        exit(1);
-    }
-
-
     TStringInfixRev infixRev(infixPrefix);
     TNeedleInfixRev needleRev(needle);
     TFinder2 finder2(infixRev);
@@ -1031,7 +1026,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         int currentEnd = position(finder2) + 1;
         uint16_t currentErrors = -getScore(patternRev);
 //         std::cout << currentErrors << "\t" << currentEnd << "\n";
-        if (currentErrors < mErrors)
+        if (currentErrors <= mErrors)
         {
             mErrors = currentErrors;
             startPos = currentEnd;

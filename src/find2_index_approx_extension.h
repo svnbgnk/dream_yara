@@ -631,8 +631,10 @@ inline void inTextVerificationN(TContex & ossContext,
     {
         int currentEnd = position(finder) + 1;
         uint16_t currentErrors = -getScore(pattern);
+        if (getValue(ex_infix, currentEnd) != back(needle))
+            ++currentErrors;
 //         std::cout << currentErrors << "\t" << currentEnd << "\n";
-        if (currentErrors < mErrors)
+        if (currentErrors <= mErrors)
         {
             mErrors = currentErrors;
             endPos = currentEnd;
@@ -651,10 +653,9 @@ inline void inTextVerificationN(TContex & ossContext,
     {
         int currentEnd = position(finder2) + 1;
         uint16_t currentErrors = -getScore(patternRev);
-//         std::cout << currentErrors << "\t" << currentEnd << "\n";
-        if (currentErrors < mErrors)
+
+        if (currentErrors <= mErrors)
         {
-            std::cerr << "";
             mErrors = currentErrors;
             startPos = currentEnd;
         }
