@@ -241,6 +241,7 @@ struct Delegate
         }
         else
         {
+            std::cout << "overlap";
             overlap_l = (overlap_l <=  getSeqOffset(pos)) ? overlap_l : 0;
             setContigPosition(hit, posAdd(pos, 0 - overlap_l), posAdd(pos, occLength + overlap_r));
         }

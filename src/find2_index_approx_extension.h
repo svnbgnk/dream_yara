@@ -621,8 +621,8 @@ inline void inTextVerificationN(TContex & ossContext,
         return;
 
     // check if match is outside of current search -> other search will find it no reason to report it now
-    if(minErrors > upper || minErrors < lower)
-        return;
+//     if(minErrors > upper || minErrors < lower)
+//         return;
 
     TFinder finder(ex_infix);
     uint8_t mErrors = max_e * 4;
@@ -654,6 +654,7 @@ inline void inTextVerificationN(TContex & ossContext,
 //         std::cout << currentErrors << "\t" << currentEnd << "\n";
         if (currentErrors < mErrors)
         {
+            std::cerr << "";
             mErrors = currentErrors;
             startPos = currentEnd;
         }
@@ -797,7 +798,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 }
                 else
                 {
-                    TContigSeqsInfix ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l, seqOffset + needleL + overlap_r);
+                    TContigSeqsInfix ex_infix = infix(genome[getSeqNo(sa_info)], seqOffset - overlap_l_tmp, seqOffset + needleL + overlap_r);
                     inTextVerificationN(ossContext, delegateDirect, needle, needleId, ex_infix, chromlength, posAdd(sa_info, 0 - overlap_l_tmp), max_e, upper, lower, false);
                 }
 //                 std::cout << posAdd(sa_info, -overlap_l) << "\t" << posAdd(sa_info, needleL + overlap_r) << "\n";
