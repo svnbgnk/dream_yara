@@ -610,7 +610,7 @@ inline void inTextVerificationN(TContex & ossContext,
     TFinder finderInfix(ex_infix);
 
 //     std::cout << "Score from: \n" << ex_infix << "\n" << needle << "\n";
-    while (find(finderInfix, needle, patternInfix, -static_cast<int>(length(needle))))
+    while (find(finderInfix, needle, patternInfix, -static_cast<int>(max_e + 1)))
     {
         uint16_t currentErrors = -getScore(patternInfix);
         if(minErrors > currentErrors)
@@ -669,11 +669,14 @@ inline void inTextVerificationN(TContex & ossContext,
 
 //     std::cout << "final cut" << needleId << "\t" << posAdd(sa_info_tmp, endPos - startPos) << "\t" << posAdd(sa_info_tmp, endPos) << "\n";
 //     std::cout << infix(ex_infix, endPos - startPos, endPos) << "\n\n";
-
+/*
     // no used in the moment need to check for correctness
+    TSAValue sa_info_tmp = posAdd(sa_info_tmp, endPos - startPos);
     if(usingReverseText){
-        saPosOnFwd(posAdd(sa_info_tmp, endPos - startPos), genomelength, endPos - startPos);
+        saPosOnFwd(sa_info_tmp, genomelength, endPos - startPos);
     }
+    call delegateDirect with delegateDirect(ossContext, sa_info_tmp, ...
+    */
 
     delegateDirect(ossContext, posAdd(sa_info_tmp, length(infixRev) - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
 }

@@ -924,7 +924,7 @@ inline bool inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNee
     uint8_t minErrors = maxErrors + 1;
     TFinder finder(text);
 
-    while (find(finder, needle, pattern, -static_cast<int>(length(needle)))) //TODO choose correct value
+    while (find(finder, needle, pattern, -static_cast<int>(maxErrors + 1)))
     {
         uint16_t currentErrors = -getScore(pattern);
         if(minErrors > currentErrors)
@@ -945,7 +945,7 @@ inline bool inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNee
 // ----------------------------------------------------------------------------
 
 template<typename TSpec, typename TConfig, typename TMatch, typename TNeedle, typename TError>
-inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNeedle const & needle, TError maxErrors)
+inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNeedle const & needle, TError maxErrors, bool const ossMatch = false)
 {
     typedef MapperTraits<TSpec, TConfig>                        TTraits;
     typedef typename TConfig::TContigsLen                       TContigsLen;
@@ -983,18 +983,27 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     typedef PatternState_<TNeedleInfixRev, TAlgorithm>  TPatternRev;
     TPatternRev patternRev;
 
-    uint8_t minErrors = maxErrors + 1;
-    TFinder finderInfix(text);
+    uint8_t minErrors;
+    // for ossMatch we know match is valid and only need to determine start and end position of the match (we added overlap so suffix filter works)
+    if(!ossMatch){
+        minErrors = maxErrors + 1;
+        TFinder finderInfix(text);
 
-    while (find(finderInfix, needle, patternInfix, -static_cast<int>(length(needle))))
+        while (find(finderInfix, needle, patternInfix, -static_cast<int>(maxErrors + 1)))
+        {
+            uint16_t currentErrors = -getScore(patternInfix);
+            if(minErrors > currentErrors)
+                minErrors = currentErrors;
+        }
+
+        if(minErrors <= maxErrors)
+            match.errors = minErrors;
+    }
+    else
     {
-        uint16_t currentErrors = -getScore(patternInfix);
-        if(minErrors > currentErrors)
-            minErrors = currentErrors;
+        minErrors = 0;
     }
 
-    if(minErrors <= maxErrors)
-        match.errors = minErrors;
 
     TFinder finder(text);
     uint8_t mErrors = maxErrors * 4;
@@ -1033,6 +1042,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         }
     }
 
+    //there is no need to report the minimum error or that a read mapped since this case in already in-text-Verification inside the optimal search schemes.
     TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
     TContigPos contigEnd = contigBegin;
     contigEnd = posAdd(contigEnd, endPos);
@@ -1094,7 +1104,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     */
 
     TMatchesAppender appender(me.matchesByCoord);
-    bool noOverlap = disOptions.determineExactSecondaryPos || disOptions.noDelayITV || disOptions.hammingDistance;
+    bool noOverlap = disOptions.noSAfilter && (disOptions.determineExactSecondaryPos || disOptions.noDelayITV || disOptions.hammingDistance);
     Delegate delegate(appender, noOverlap);
     DelegateDirect delegateDirect(appender);
 //     DelegateUnfiltered delegateUnfiltered(appender, noOverlap);
@@ -1104,7 +1114,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     if(disOptions.verbose > 1){
         std::cout << "maxError: " << (int)me.maxError << "\t" << (int)me.strata << "\n";
-        std::cout << "Using Delayed In Text Verification:  " << !disOptions.noDelayITV << "\n";
+        std::cout << "Use overlap during reporting:  " << !disOptions.noDelayITV << "\n";
     }
 
     if(!disOptions.noMappability){
@@ -1224,22 +1234,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         uint32_t merges = 0;
         uint32_t dups = 0;
 
-
-/*
-        std::cout << "Print Matches\n";
-        for(int i = 0; i < length(me.matchesSetByCoord); ++i){
-//             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
-//             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
-            auto const & matches = me.matchesSetByCoord[i];
-            auto matchIt = begin(matches, Standard());
-            auto matchEnd = end(matches, Standard());
-            while(matchIt != matchEnd){
-                write(std::cout, *matchIt);
-                ++matchIt;
-            }
-
-        }*/
-
         #pragma omp parallel for schedule(dynamic) num_threads(disOptions.threadsCount)
         for(int i = 0; i < length(me.matchesSetByCoord); ++i){
 //                 std::cout << "New read" << i << "\n";
@@ -1289,17 +1283,28 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 }
                 else
                 {
-                    // match is not in Neighborhood of another match (to the left) do ITV
-                    if(!ossMatch)
+                    // match is not in Neighborhood of another match (to the left) do ITV or we want to determine the exact position of all (repeating) matches
+                    if(!ossMatch || !disOptions.noSAfilter)
                     {
                         uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
                         uint32_t readId = getReadId(readSeqs, readSeqId);
                         bool valid;
-                        if(disOptions.determineExactSecondaryPos)
-                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                        if(disOptions.determineExactSecondaryPos || !disOptions.noSAfilter)
+                        {
+                            if(ossMatch){
+                                std::cout << "ossmatch: ";
+                                write(std::cout, *matchIt);
+                            }
+                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, ossMatch);
+                            if(ossMatch)
+                                write(std::cout, *matchIt);
+                        }
                         else
+                        {
                             valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
-                        ++itvJobsDone;
+                        }
+                        if(ossMatch)
+                            ++itvJobsDone;
                         if(valid){
                             setMapped(me.ctx, readId);
                             setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
@@ -1320,139 +1325,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 }
                 ++matchIt;
             }
-
-
-//         TContigsSize lastContig;
-//         TContigsLen lastStartPos;
-//         TContigsLen maxEndPos;
-            //             lastStrand = onForwardStrand();
-//             lastContig = getMember(*matchIt, ContigId());
-//             lastStartPos = getMember(*matchIt, ContigBegin());
-//             maxEndPos = getMember(*matchIt, ContigEnd());
-/*
-            if(false)
-            {
-                bool ossMatch = getMember(*matchIt, Errors()) <= me.maxError;
-                //test if start match is valid
-                if(ossMatch && startM){
-                    startM = false;
-                    ++oss;
-                    ++matchIt;
-                    continue;
-                }
-
-                    TContigsLen currentPos = getMember(*matchIt, ContigBegin());
-                    //same contig? and to close? otherwise
-//                     std::cout << "compare StartMatch with Current match:\n";
-//                     write(std::cout, *startMatch);
-//                     write(std::cout, *matchIt);
-
-                    if(lastContig == getMember(*matchIt, ContigId()) && !(onForwardStrand(*matchIt) ^ onForwardStrand(*startMatch)) && lastStartPos + 2 * me.maxError >= currentPos){
-
-//                         std::cout << "Close\n";
-                        TContigsLen cEndPos = getMember(*matchIt, ContigEnd());
-                        // check if current Match would influence result
-                        if(maxEndPos < cEndPos || startM){
-                            bool valid = false;
-                            // check if match is a ITV Jobs
-                            if(!ossMatch)
-                            {
-                                uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
-                                uint32_t readId = getReadId(readSeqs, readSeqId);
-//                                 std::cout << "Do ITV:\n";
-//                                 write(std::cout, *matchIt);
-                                valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
-                                ++itvJobsDone;
-                                if(valid)
-                                {
-//                                     std::cout << "Valid:\n";
-                                    setMapped(me.ctx, readId);
-                                    setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
-                                    ++valids;
-                                    if(startM){
-                                        startM = false;
-//                                         std::cout << "Found verified Startmatch\n";
-                                        ++matchIt;
-                                        continue;
-                                    }
-                                }
-                                else
-                                {
-//                                     std::cout << "InValid:\n";
-                                    setInvalid(*matchIt);
-                                    //if start match was itv job and invalid select next match as start match
-                                    if(startM){
-//                                         std::cout << "Select new Startmatch:\n";
-                                        ++matchIt;
-                                        startM = true;
-                                        startMatch = matchIt;
-//                                         write(std::cout, *startMatch);
-                                        lastContig = getMember(*matchIt, ContigId());
-                                        lastStartPos = getMember(*matchIt, ContigBegin());
-                                        maxEndPos = getMember(*matchIt, ContigEnd());
-                                        continue;
-                                    }
-                                }
-                            }
-
-                            //if valid or oss Match merge matches together
-                            if (valid || ossMatch)
-                            {
-//                                 std::cout << "merging into start Match:\n";
-//                                 write(std::cout, *matchIt);
-                                if(ossMatch)
-                                    ++oss;
-                                ++merges;
-
-//                                 std::cout << "Before:\n";
-//                                 write(std::cout, *startMatch);
-                                shiftEnd(*startMatch, cEndPos - maxEndPos);
-//                                 std::cout << "After:\n";
-//                                 write(std::cout, *startMatch);
-                                setInvalid(*matchIt);
-//                                 std::cout << "Merged Match:\n";
-//                                 write(std::cout, *matchIt);
-                                maxEndPos = cEndPos;
-                            }
-                        }
-                        else
-                        {
-                            setInvalid(*matchIt);
-//                             std::cout << "Duplicate:\n";
-                            ++dups;
-
-                        }
-                        ++matchIt;
-                        startM = false;
-
-                    }
-                    else
-                    {
-//                         std::cout << "To far select new start match\n";
-//                         std::cout << "\n";
-                        startM = true;
-                        startMatch = matchIt;
-//                         write(std::cout, *matchIt);
-                        lastContig = getMember(*matchIt, ContigId());
-                        lastStartPos = getMember(*matchIt, ContigBegin());
-                        maxEndPos = getMember(*matchIt, ContigEnd());
-                    }
-            }*/
         }
-/*
-        std::cout << "Print Matches\n";
-        for(int i = 0; i < length(me.matchesSetByCoord); ++i){
-//             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
-//             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
-            auto const & matches = me.matchesSetByCoord[i];
-            auto matchIt = begin(matches, Standard());
-            auto matchEnd = end(matches, Standard());
-            while(matchIt != matchEnd){
-                write(std::cout, *matchIt);
-                ++matchIt;
-            }
-
-        }*/
 
         stop(me.timer);
         me.stats.inTextVerification += getValue(me.timer);

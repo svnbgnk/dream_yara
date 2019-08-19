@@ -373,6 +373,10 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "earlyLeaf")) disOptions.earlyLeaf = true;
     if (isSet(parser, "bioSeqZip")) disOptions.zipFastq = true;
 
+    if(disOptions.hammingDistance && disOptions.noSAfilter){
+        std::cerr << "WARNING: It is strongly suggested to turn of the SA filter algorithm alignment with HD, since it only provides an advantage for multiple alternative alignments of the same position\n";
+    }
+
     getOptionValue(disOptions.readLength, parser, "length");
 
     getOptionValue(disOptions.startBin, parser, "startBin");
