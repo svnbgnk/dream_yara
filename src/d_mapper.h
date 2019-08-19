@@ -1003,8 +1003,8 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     {
         int currentEnd = position(finder) + 1;
         uint16_t currentErrors = -getScore(pattern);
-        if (getValue(text, currentEnd) != back(needle))
-            ++currentErrors;
+//         if (getValue(text, currentEnd) != back(needle))
+//             ++currentErrors;
 //         std::cout << currentErrors << "\t" << currentEnd << "\n";
         if (currentErrors <= mErrors)
         {
@@ -1013,8 +1013,8 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         }
     }
 
-    TContigSeqsInfix infixPrefix = infix(text, 0, endPos);
-    TStringInfixRev infixRev(infixPrefix);
+//     TContigSeqsInfix infixPrefix = infix(text, 0, endPos);
+    TStringInfixRev infixRev(text);
     TNeedleInfixRev needleRev(needle);
     TFinder2 finder2(infixRev);
 
@@ -1036,7 +1036,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
     TContigPos contigEnd = contigBegin;
     contigEnd = posAdd(contigEnd, endPos);
-    contigBegin = posAdd(contigBegin, endPos - startPos);
+    contigBegin = posAdd(contigBegin, length(text) - startPos);
     setContigPosition(match, contigBegin, contigEnd);
 
     return(minErrors <= maxErrors);

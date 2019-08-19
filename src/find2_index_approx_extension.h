@@ -621,8 +621,8 @@ inline void inTextVerificationN(TContex & ossContext,
         return;
 
     // check if match is outside of current search -> other search will find it no reason to report it now
-//     if(minErrors > upper || minErrors < lower)
-//         return;
+    if(minErrors > upper || minErrors < lower)
+        return;
 
     TFinder finder(ex_infix);
     uint8_t mErrors = max_e * 4;
@@ -631,8 +631,8 @@ inline void inTextVerificationN(TContex & ossContext,
     {
         int currentEnd = position(finder) + 1;
         uint16_t currentErrors = -getScore(pattern);
-        if (getValue(ex_infix, currentEnd) != back(needle))
-            ++currentErrors;
+//         if (getValue(ex_infix, currentEnd) != back(needle))
+//             ++currentErrors;
 //         std::cout << currentErrors << "\t" << currentEnd << "\n";
         if (currentErrors <= mErrors)
         {
@@ -640,9 +640,12 @@ inline void inTextVerificationN(TContex & ossContext,
             endPos = currentEnd;
         }
     }
-    TString infixPrefix = infix(ex_infix, 0, endPos);
 
-    TStringInfixRev infixRev(infixPrefix);
+    // no longer use known prefix to calculate start position
+    // just reverse both sequences
+//     TString infixPrefix = infix(ex_infix, 0, endPos);
+
+    TStringInfixRev infixRev(ex_infix);
     TNeedleInfixRev needleRev(needle);
     TFinder2 finder2(infixRev);
 
@@ -661,15 +664,18 @@ inline void inTextVerificationN(TContex & ossContext,
         }
     }
 
+    // sa_info is given my reference so copy it
     TSAValue sa_info_tmp = sa_info;
 
 //     std::cout << "final cut" << needleId << "\t" << posAdd(sa_info_tmp, endPos - startPos) << "\t" << posAdd(sa_info_tmp, endPos) << "\n";
 //     std::cout << infix(ex_infix, endPos - startPos, endPos) << "\n\n";
+
+    // no used in the moment need to check for correctness
     if(usingReverseText){
-            saPosOnFwd(sa_info_tmp, genomelength, length(needle));
+        saPosOnFwd(posAdd(sa_info_tmp, endPos - startPos), genomelength, endPos - startPos);
     }
 
-    delegateDirect(ossContext, posAdd(sa_info_tmp, endPos - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
+    delegateDirect(ossContext, posAdd(sa_info_tmp, length(infixRev) - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
 }
 
 template <typename TSpec, typename TConfig,
