@@ -48,6 +48,9 @@ endif ()
 set(CMAKE_C_COMPILER "/usr/bin/g++-7")
 set(CMAKE_CXX_COMPILER "/usr/bin/g++-7")
 
+#set(CMAKE_C_COMPILER "/import/GCC/7.4.0/bin/g++")
+#set(CMAKE_CXX_COMPILER "/import/GCC/7.4.0/bin/g++")
+
 # ----------------------------------------------------------------------------
 # Add Yara targets
 # ----------------------------------------------------------------------------
