@@ -271,7 +271,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
             return;
         }
         setContigPosition(match, contigBegin, contigEnd);
-        setErrors(match, dpErrors);
+//        setErrors(match, dpErrors);
     }
 
 
