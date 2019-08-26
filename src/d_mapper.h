@@ -232,8 +232,8 @@ struct Delegate
     void operator() (OSSContext<TSpec, TConfig> & ossContext, TNeedleId const needleId, TSARange const & rangeInfo, TPos & pos)
     {
         //TODO move into function calls
-        uint8_t overlap_l = rangeInfo.limOffsets.i1;
-        uint8_t overlap_r = rangeInfo.limOffsets.i2;
+        int8_t overlap_l = rangeInfo.limOffsets.i1;
+        int8_t overlap_r = rangeInfo.limOffsets.i2;
         uint32_t occLength = rangeInfo.repLength;
         TMatch hit;
         if(noOverlap){
@@ -997,7 +997,8 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         }
 
         if(minErrors <= maxErrors)
-            match.errors = minErrors;
+            setErrors(match, minErrors);
+//             match.errors = minErrors;
     }
     else
     {
@@ -1291,13 +1292,14 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         bool valid;
                         if(disOptions.determineExactSecondaryPos || !disOptions.noSAfilter)
                         {
+                            /*
                             if(ossMatch){
                                 std::cout << "ossmatch: ";
                                 write(std::cout, *matchIt);
-                            }
+                            }*/
                             valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, ossMatch);
-                            if(ossMatch)
-                                write(std::cout, *matchIt);
+//                             if(ossMatch)
+//                                 write(std::cout, *matchIt);
                         }
                         else
                         {

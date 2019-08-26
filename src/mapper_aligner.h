@@ -159,7 +159,7 @@ inline int _align(TContigGaps & contigGaps, TReadGaps & readGaps, TErrors errors
 template <typename TContigGaps, typename TReadGaps, typename TErrors>
 inline int _align(TContigGaps & contigGaps, TReadGaps & readGaps, TErrors errors, LinearGaps)
 {
-    Score<int, Simple> scoringScheme(1, -999, -1000);
+    Score<int, Simple> scoringScheme(0, -999, -1000);
     return globalAlignment(contigGaps, readGaps, scoringScheme,
                             AlignConfig<true, false, false, true>(),
                             -(int)errors, (int)errors) / -999;
@@ -168,7 +168,7 @@ inline int _align(TContigGaps & contigGaps, TReadGaps & readGaps, TErrors errors
 template <typename TContigGaps, typename TReadGaps, typename TErrors>
 inline int _align(TContigGaps & contigGaps, TReadGaps & readGaps, TErrors errors)
 {
-    Score<short, Simple> scoringScheme(1, -1, -999);
+    Score<short, Simple> scoringScheme(0, -1, -999);
     return -globalAlignment(contigGaps, readGaps, scoringScheme, -(int)errors, (int)errors);
 //     return -globalAlignment(contigGaps, readGaps, Score<short, HammingDistance>(), -(int)errors, (int)errors);
 }

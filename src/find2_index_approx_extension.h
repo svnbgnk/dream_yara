@@ -1533,11 +1533,11 @@ inline void _optimalSearchScheme(TContex & ossContext,
                                  TDistanceTag const &)
 {
     bool initialDirection = s.pi[1] > s.pi[0];
-    uint32_t max_e = ossContext.maxError; //unify overlap between all used schemes
+    uint32_t ov = ossContext.maxError; //unify overlap between all used schemes
     if(initialDirection)
-        _optimalSearchScheme(ossContext, delegate, delegateDirect, it, Pair<int8_t, int8_t>(max_e, max_e), needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Rev(), TDistanceTag());
+        _optimalSearchScheme(ossContext, delegate, delegateDirect, it, Pair<int8_t, int8_t>(ov, ov), needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Rev(), TDistanceTag());
     else
-        _optimalSearchScheme(ossContext, delegate, delegateDirect, it, Pair<int8_t, int8_t>(max_e, max_e), needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Fwd(), TDistanceTag());
+        _optimalSearchScheme(ossContext, delegate, delegateDirect, it, Pair<int8_t, int8_t>(ov, ov), needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Fwd(), TDistanceTag());
 }
 
 template <typename TSpec, typename TConfig,
