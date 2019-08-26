@@ -363,8 +363,10 @@ inline void copyMatches(Mapper<TSpec, TMainConfig> & mainMapper, Mapper<TSpec, T
         auto matchEnd = end(matches, Standard());
         while(matchIt != matchEnd){
              TMatch currentMatch;
-             copyMatch(currentMatch, *matchIt, disOptions);
-             appendValue(appender, currentMatch, Generous(), TThreading());
+             if(isValid(*matchIt)){
+                copyMatch(currentMatch, *matchIt, disOptions);
+                appendValue(appender, currentMatch, Generous(), TThreading());
+             }
              ++matchIt;
         }
     }
@@ -999,6 +1001,8 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         if(minErrors <= maxErrors)
             setErrors(match, minErrors);
 //             match.errors = minErrors;
+        else
+            return false;
     }
     else
     {
@@ -1203,19 +1207,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     {
         std::cout << "ITV during Search\n";
         aggregateMatchesOSS(me, readSeqs);
-/*
-        for(int i = 0; i < length(me.matchesSetByCoord); ++i){
-//             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
-//             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
-            auto const & matches = me.matchesSetByCoord[i];
-            auto matchIt = begin(matches, Standard());
-            auto matchEnd = end(matches, Standard());
-            while(matchIt != matchEnd){
-                write(std::cout, *matchIt);
-                ++matchIt;
-            }
 
-        }*/
     }
     else
     {
@@ -1305,7 +1297,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         {
                             valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
                         }
-                        if(ossMatch)
+                        if(!ossMatch)
                             ++itvJobsDone;
                         if(valid){
                             setMapped(me.ctx, readId);

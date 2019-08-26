@@ -978,13 +978,13 @@ inline void removeDuplicatesITV(TMatchesSet & matchesSet, TThreading const & thr
     TLimits newLimits;
     resize(newLimits, length(stringSetLimits(matchesSet)), Exact());
     front(newLimits) = 0;
-
+/*
     // Sort matches by end position and move unique matches at the beginning.
     iterate(matchesSet, MatchesCompactor<TLimits, ContigEndITV>(newLimits), Rooted(), threading);
 
     // Exclude duplicate matches at the end.
     assign(stringSetLimits(matchesSet), newLimits);
-    _refreshStringSetLimits(matchesSet, threading);
+    _refreshStringSetLimits(matchesSet, threading);*/
 
     // Sort matches by begin position and move unique matches at the beginning.
     iterate(matchesSet, MatchesCompactor<TLimits, ContigBeginITV>(newLimits), Rooted(), threading);
