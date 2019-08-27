@@ -1419,9 +1419,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     rankMatches(me, me.reads.seqs);
     if (me.options.verifyMatches)
         verifyMatches(me);
-    alignMatches(me);
+//     alignMatches(me);
     copyMatches(mainMapper, me, disOptions);
-    copyCigars(mainMapper, me, disOptions);
+//     copyCigars(mainMapper, me, disOptions);
     appendStats(mainMapper, me);
 }
 
@@ -2206,7 +2206,9 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
     //Since we are garantued to corretly filter nearby occurrences of the same read we can use the faster
     //aggregate function aggregateMatchesOSS
     rankMatches2(mainMapper, mainMapper.reads.seqs);
-    transferCigars(mainMapper, disOptions);
+//     transferCigars(mainMapper, disOptions);
+    loadAllContigs(mainMapper, disOptions);
+    alignMatches(mainMapper);
 
     writeMatches(mainMapper);
     clearMatches(mainMapper);

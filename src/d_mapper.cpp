@@ -214,8 +214,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     hideOption(parser, "sa");
 
     // Turn off for DREAM-Yara temporarly till matches and cigar managment is handeled properly
-    // addOption(parser, ArgParseOption("as", "align-secondary", "Compute and output co- and suboptimal \
-    //                                  match alignments. Ignored if '-sa omit' is set."));
+    addOption(parser, ArgParseOption("as", "align-secondary", "Compute and output co- and suboptimal \
+                                      match alignments. Ignored if '-sa omit' is set."));
 
     addOption(parser, ArgParseOption("ra", "rabema-alignments", "Output alignments compatible with the \
                                      Read Alignment BEnchMArk (RABEMA)."));
@@ -410,12 +410,12 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     }
 
     // Turn off for DREAM-Yara temporarly till matches and cigar managment is handeled properly
-    // getOptionValue(disOptions.alignSecondary, parser, "align-secondary");
-    // if (disOptions.alignSecondary && disOptions.secondaryMatches == OMIT)
-    // {
-    //     disOptions.alignSecondary = false;
-    //     std::cerr << getAppName(parser) << ": WARNING, ignoring '-as' as '-sa omit' is set." << std::endl;
-    // }
+    getOptionValue(disOptions.alignSecondary, parser, "align-secondary");
+    if (disOptions.alignSecondary && disOptions.secondaryMatches == OMIT)
+    {
+       disOptions.alignSecondary = false;
+//        std::cerr << getAppName(parser) << ": WARNING, ignoring '-as' as '-sa omit' is set." << std::endl;
+    }
 
     if (isSet(parser, "skip-sam-headers")) disOptions.skipSamHeader = true;
 
