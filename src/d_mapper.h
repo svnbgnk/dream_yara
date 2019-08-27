@@ -2202,10 +2202,7 @@ inline void prepairMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter c
 template <typename TSpec, typename TMainConfig>
 inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptions & disOptions)
 {
-    if(disOptions.ossOff)
-        aggregateMatches(mainMapper, mainMapper.reads.seqs);
-    else
-        aggregateMatchesOSS(mainMapper, mainMapper.reads.seqs);
+    aggregateMatches(mainMapper, mainMapper.reads.seqs);
     //Since we are garantued to corretly filter nearby occurrences of the same read we can use the faster
     //aggregate function aggregateMatchesOSS
     rankMatches2(mainMapper, mainMapper.reads.seqs);
