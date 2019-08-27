@@ -410,7 +410,7 @@ inline void _writeSecondary(MatchesWriter<TSpec, Traits> & me, TMatches const & 
     typedef typename Value<TMatches const>::Type TMatch;
     iterate(matches, [&](typename Iterator<TMatches const>::Type matchIt)
     {
-        if (matchIt == primaryIt)
+        if (matchIt == primaryIt || !isValid(*matchIt))
             return;
         TMatch const & match = *matchIt;
         clear(me.record);

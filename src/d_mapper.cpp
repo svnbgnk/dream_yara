@@ -414,7 +414,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (disOptions.alignSecondary && disOptions.secondaryMatches == OMIT)
     {
        disOptions.alignSecondary = false;
-//        std::cerr << getAppName(parser) << ": WARNING, ignoring '-as' as '-sa omit' is set." << std::endl;
+       std::cerr << getAppName(parser) << ": WARNING, ignoring '-as' as '-sa omit' is set." << std::endl;
     }
 
     if (isSet(parser, "skip-sam-headers")) disOptions.skipSamHeader = true;

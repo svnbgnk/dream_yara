@@ -855,6 +855,38 @@ inline void aggregateMatches(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeqs)
     }
 }
 
+
+template <typename TSpec, typename TConfig, typename TReadSeqs>
+inline void aggregateMatchesITV_debug(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeqs)
+{
+    typedef MapperTraits<TSpec, TConfig>    TTraits;
+    typedef typename TTraits::TMatch        TMatch;
+
+    start(me.timer);
+    // Sort matches by readId and bucket them.
+    sort(me.matchesByCoord, MatchSorter<TMatch, ReadId>(), typename TConfig::TThreading());
+    setHost(me.matchesSetByCoord, me.matchesByCoord);
+    bucket(me.matchesSetByCoord, Getter<TMatch, ReadId>(), getReadsCount(readSeqs), typename TConfig::TThreading());
+    stop(me.timer);
+    me.stats.sortMatches += getValue(me.timer);
+
+    if (me.options.verbose > 1)
+        std::cout << "Sorting time:\t\t\t" << me.timer << std::endl;
+
+    // Remove duplicate matches (sorts the matches by genomic coordinate).
+    start(me.timer);
+    removeDuplicatesITV_debug(me.matchesSetByCoord, typename TConfig::TThreading());
+    stop(me.timer);
+    me.stats.compactMatches += getValue(me.timer);
+
+    if (me.options.verbose > 1)
+    {
+        std::cout << "Compaction time:\t\t" << me.timer << std::endl;
+        std::cout << "Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord) << std::endl;
+    }
+}
+
+
 template <typename TSpec, typename TConfig, typename TReadSeqs>
 inline void aggregateMatchesITV(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeqs)
 {

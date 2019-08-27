@@ -1211,9 +1211,38 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     }
     else
     {
+        aggregateMatchesITV_debug(me, readSeqs);
+        std::cout << "Print duplicate Matches\n";
+        for(int i = 0; i < 20/*length(me.matchesSetByCoord)*/; ++i){
+//             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
+//             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
+            auto const & matches = me.matchesSetByCoord[i];
+            auto matchIt = begin(matches, Standard());
+            auto matchEnd = end(matches, Standard());
+            while(matchIt != matchEnd){
+                write(std::cout, *matchIt);
+                ++matchIt;
+            }
+        }
+
          //ITV after filtering
         //filtering after cordinates + Intervalsize
         aggregateMatchesITV(me, readSeqs);
+
+
+
+        std::cout << "Print Matches\n";
+        for(int i = 0; i < 20/*length(me.matchesSetByCoord)*/; ++i){
+//             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
+//             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
+            auto const & matches = me.matchesSetByCoord[i];
+            auto matchIt = begin(matches, Standard());
+            auto matchEnd = end(matches, Standard());
+            while(matchIt != matchEnd){
+                write(std::cout, *matchIt);
+                ++matchIt;
+            }
+        }
 
         std::cout << "Hits after filtering: " << lengthSum(me.matchesSetByCoord) << "\n\n";
 
@@ -2203,11 +2232,12 @@ template <typename TSpec, typename TMainConfig>
 inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptions & disOptions)
 {
     aggregateMatches(mainMapper, mainMapper.reads.seqs);
-    //Since we are garantued to corretly filter nearby occurrences of the same read we can use the faster
-    //aggregate function aggregateMatchesOSS
+
     rankMatches2(mainMapper, mainMapper.reads.seqs);
 //     transferCigars(mainMapper, disOptions);
+    std::cout << "Load All Contigs\n";
     loadAllContigs(mainMapper, disOptions);
+    std::cout << "Align all matches\n";
     alignMatches(mainMapper);
 
     writeMatches(mainMapper);
