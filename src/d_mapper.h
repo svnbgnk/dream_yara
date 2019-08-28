@@ -232,8 +232,8 @@ struct Delegate
     void operator() (OSSContext<TSpec, TConfig> & ossContext, TNeedleId const needleId, TSARange const & rangeInfo, TPos & pos)
     {
         //TODO move into function calls
-        int8_t overlap_l = rangeInfo.limOffsets.i1;
-        int8_t overlap_r = rangeInfo.limOffsets.i2;
+        int8_t overlap_l = 0;
+        int8_t overlap_r = 0;
         uint32_t occLength = rangeInfo.repLength;
         TMatch hit;
         if(noOverlap){
@@ -1210,10 +1210,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     }
     else
-    {
+    {/*
         aggregateMatchesITV_debug(me, readSeqs);
         std::cout << "Print duplicate Matches\n";
-        for(int i = 0; i < 20/*length(me.matchesSetByCoord)*/; ++i){
+        for(int i = 0; i < 20; ++i){
 //             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
 //             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
             auto const & matches = me.matchesSetByCoord[i];
@@ -1223,16 +1223,16 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 write(std::cout, *matchIt);
                 ++matchIt;
             }
-        }
+        }*/
 
          //ITV after filtering
         //filtering after cordinates + Intervalsize
         aggregateMatchesITV(me, readSeqs);
 
-
+/*
 
         std::cout << "Print Matches\n";
-        for(int i = 0; i < 20/*length(me.matchesSetByCoord)*/; ++i){
+        for(int i = 0; i < 20; ++i){
 //             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
 //             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
             auto const & matches = me.matchesSetByCoord[i];
@@ -1242,7 +1242,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 write(std::cout, *matchIt);
                 ++matchIt;
             }
-        }
+        }*/
 
         std::cout << "Hits after filtering: " << lengthSum(me.matchesSetByCoord) << "\n\n";
 
@@ -1349,6 +1349,20 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 ++matchIt;
             }
         }
+/*
+        std::cout << "Print aligned Matches\n";
+        for(int i = 0; i < 1; ++i){
+//             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
+//             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
+            auto const & matches = me.matchesSetByCoord[i];
+            auto matchIt = begin(matches, Standard());
+            auto matchEnd = end(matches, Standard());
+            while(matchIt != matchEnd){
+                write(std::cout, *matchIt);
+                ++matchIt;
+            }
+        }*/
+
 
         stop(me.timer);
         me.stats.inTextVerification += getValue(me.timer);
