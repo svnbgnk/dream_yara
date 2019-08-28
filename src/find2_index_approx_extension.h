@@ -16,10 +16,9 @@ template<typename TContigsSum>
 struct SARange
 {
     Pair<TContigsSum, TContigsSum> range;
-    Pair<TContigsSum, TContigsSum> revRange;
-    Pair<TContigsSum, TContigsSum> parentRange;
-    Pair<TContigsSum, TContigsSum> parentRevRange;
-    Pair<int8_t, int8_t> limOffsets;
+//     Pair<TContigsSum, TContigsSum> revRange;
+//     Pair<TContigsSum, TContigsSum> parentRange;
+//     Pair<TContigsSum, TContigsSum> parentRevRange;
     Dna lastChar;
     uint32_t repLength;
     uint8_t errors;
@@ -116,11 +115,12 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
     {
 //         ossContext.fmtreeLocates += saRange.range.i2 - saRange.range.i1;
         //locate Interval with fm_tree
-            auto uniIter = (ossContext.earlyLeaf && saRange.goRight) ? iter.revIter : iter.fwdIter;
+            auto uniIter = /*(ossContext.earlyLeaf && saRange.goRight) ? iter.revIter : */iter.fwdIter;
             uniIter.vDesc.repLen = saRange.repLength;
-            uniIter.vDesc.range = (ossContext.earlyLeaf && saRange.goRight) ? saRange.revRange : saRange.range;
+            uniIter.vDesc.range = /*(ossContext.earlyLeaf && saRange.goRight) ? saRange.revRange :*/ saRange.range;
 
             uint32_t counter = 0;
+            /*
             //early leaf node calculation (corresponds to the last level of the fm_tree)
             if(ossContext.earlyLeaf){
                 TContigsSum ssp = (saRange.goRight) ?
@@ -165,7 +165,7 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
                         }
                     }
                 }
-            }
+            }*/
          /*
             //Debugging
             for (TContigsSum i = uniIter.vDesc.range.i1; i < uniIter.vDesc.range.i2; ++i)
@@ -319,7 +319,6 @@ inline void filter_interval(OSSContext<TSpec, TConfig> & ossContext,
                             TDelegate & delegate,
                             TDelegateD & delegateDirect,
                             Iter<TIndex, VSTree<TopDown<> > > iter,
-                            Pair <int8_t, int8_t> limOffsets,
                             TNeedle const & needle,
                             uint32_t needleId,
                             std::vector<TBitvectorPair > & bitvectors,
@@ -693,7 +692,6 @@ template <typename TSpec, typename TConfig,
 inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                          TDelegateD & delegateDirect,
                          Iter<TIndex, VSTree<TopDown<> > > iter,
-                         Pair <int8_t, int8_t> & limOffsets,
                          TNeedle const & needle,
                          uint32_t needleId,
                          std::vector<TBitvectorPair > & bitvectors,
@@ -745,7 +743,6 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 //         uint8_t overlap_r = max_e;
 
 //         std::cout << "NLP: " << needleLeftPos << "\tNRP: " << needleRightPos << "\trepL: " << (int)repLength(iter) << "\trange: " <<  (int)needleRightPos - needleLeftPos - 1 << "\n";
-//         std::cout << "Off: " << (int)limOffsets.i1 - max_e << ", " << (int)limOffsets.i2 - max_e << "\n";
 
         int8_t overlap_l = max_e;
         int8_t overlap_r = max_e;
@@ -1044,7 +1041,6 @@ inline ReturnCode checkCurrentMappability(OSSContext<TSpec, TConfig> & ossContex
                                           TDelegate & delegate,
                                           TDelegateD & delegateDirect,
                                           Iter<TIndex, VSTree<TopDown<> > > iter,
-                                          Pair <int8_t, int8_t> limOffsets,
                                           TNeedle const & needle,
                                           uint32_t needleId,
                                           std::vector<TBitvectorPair > & bitvectors,
@@ -1070,14 +1066,14 @@ inline ReturnCode checkCurrentMappability(OSSContext<TSpec, TConfig> & ossContex
 
         case ReturnCode::DIRECTSEARCH:
         {
-            directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
+            directSearch(ossContext, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
             return ReturnCode::FINISHED;
         }
 
         case ReturnCode::COMPMAPPABLE:
         {
             std::vector<TBitvectorPair > empty_bitvectors;
-            _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, empty_bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
+            _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, needle, needleId, empty_bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
             return ReturnCode::FINISHED;
         }
 
@@ -1099,7 +1095,6 @@ inline ReturnCode checkMappability(OSSContext<TSpec, TConfig> & ossContext,
                                    TDelegate & delegate,
                                    TDelegateD & delegateDirect,
                                    Iter<TIndex, VSTree<TopDown<> > > iter,
-                                   Pair <int8_t, int8_t> limOffsets,
                                    TNeedle const & needle,
                                    uint32_t needleId,
                                    std::vector<TBitvectorPair > & bitvectors,
@@ -1127,14 +1122,14 @@ inline ReturnCode checkMappability(OSSContext<TSpec, TConfig> & ossContext,
         case ReturnCode::DIRECTSEARCH:
         {
             //search directly in Genome
-            directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
+            directSearch(ossContext, delegateDirect, iter, needle, needleId, bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
             return ReturnCode::FINISHED;
         }
 
         case ReturnCode::COMPMAPPABLE:
         {
             std::vector<TBitvectorPair > empty_bitvectors;
-            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, empty_bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
+            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, empty_bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
             return ReturnCode::FINISHED;
         }
 /*
@@ -1145,7 +1140,7 @@ inline ReturnCode checkMappability(OSSContext<TSpec, TConfig> & ossContext,
             bool goToRight2 = std::is_same<TDir, Rev>::value;
             if(testUnidirectionalFilter(ossContext, iter, bitvectors, bit_interval, s, blockIndex, goToRight2)){
                 //range on iter was changed in function before
-                filter_interval(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
+                filter_interval(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
                 return ReturnCode::FINISHED;
             }
         }*/
@@ -1166,7 +1161,6 @@ inline void _optimalSearchSchemeDeletion(TContex & ossContext,
                                          TDelegate & delegate,
                                          TDelegateDirect & delegateDirect,
                                          Iter<TIndex, VSTree<TopDown<> > > iter,
-                                         Pair <int8_t, int8_t> limOffsets,
                                          TNeedle const & needle,
                                          uint32_t needleId,
                                          std::vector<TBitvectorPair > & bitvectors,
@@ -1187,24 +1181,19 @@ inline void _optimalSearchSchemeDeletion(TContex & ossContext,
         bool const goToRight2 = s.pi[blockIndex2] > s.pi[blockIndex2 - 1];
 
         if (goToRight2)
-            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex2, lastEdit, Rev(), EditDistance());
+            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex2, lastEdit, Rev(), EditDistance());
         else
-            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex2, lastEdit, Fwd(), EditDistance());
+            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex2, lastEdit, Fwd(), EditDistance());
     }
 
     //    bool goToRight = std::is_same<TDir, Rev>::value;
     bool not_at_end = std::is_same<TDir, Rev>::value && needleRightPos != length(needle) + 1 || !std::is_same<TDir, Rev>::value && needleLeftPos != 0/* || true*/;
 
-    if(std::is_same<TDir, Rev>::value)
-        --limOffsets.i2;
-    else
-        --limOffsets.i1;
-
     if (not_at_end && maxErrorsLeftInBlock > 0 && goDown(iter, TDir()))
     {
         do
         {
-            _optimalSearchSchemeDeletion(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors + 1, s, blockIndex, true, TDir());
+            _optimalSearchSchemeDeletion(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors + 1, s, blockIndex, true, TDir());
         } while (goRight(iter, TDir()));
     }
 }
@@ -1221,7 +1210,6 @@ inline void _optimalSearchSchemeChildren(TContex & ossContext,
                                          TDelegate & delegate,
                                          TDelegateD & delegateDirect,
                                          Iter<TIndex, VSTree<TopDown<> > > iter,
-                                         Pair <int8_t, int8_t> limOffsets,
                                          TNeedle const & needle,
                                          uint32_t needleId,
                                          std::vector<TBitvectorPair > & bitvectors,
@@ -1235,11 +1223,6 @@ inline void _optimalSearchSchemeChildren(TContex & ossContext,
                                          TDistanceTag const &)
 {
     bool goToRight = std::is_same<TDir, Rev>::value;
-    auto newlimOffsets = limOffsets;
-    if(goToRight)
-        --newlimOffsets.i2;
-    else
-        --newlimOffsets.i1;
 
     if (goDown(iter, TDir()))
     {
@@ -1259,29 +1242,29 @@ inline void _optimalSearchSchemeChildren(TContex & ossContext,
                 if (std::is_same<TDistanceTag, EditDistance>::value)
                 {
                     //use delta instead of false if no mismatches are allowed
-                    _optimalSearchSchemeDeletion(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + delta, s, blockIndex, false, TDir());
+                    _optimalSearchSchemeDeletion(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + delta, s, blockIndex, false, TDir());
                 }
                 else
                 {
                     uint8_t blockIndex2 = std::min(blockIndex + 1, static_cast<uint8_t>(s.u.size()) - 1);
                     bool goToRight2 = s.pi[blockIndex2] > s.pi[blockIndex2 - 1];
                     if (goToRight2)
-                        _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + delta, s, blockIndex2, false, Rev(), TDistanceTag());
+                        _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + delta, s, blockIndex2, false, Rev(), TDistanceTag());
                     else
-                        _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + delta, s, blockIndex2, false, Fwd(), TDistanceTag());
+                        _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + delta, s, blockIndex2, false, Fwd(), TDistanceTag());
                 }
             }
             else
             {
 
                 //if want to disable mismatches at the start and end (!delta || not_at_end) && use delta instead of false
-                _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + delta, s, blockIndex, false, TDir(), TDistanceTag());
+                _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + delta, s, blockIndex, false, TDir(), TDistanceTag());
             }
 
             //Deletion
             bool not_at_end = std::is_same<TDir, Rev>::value && needleRightPos2 != length(needle) + 1 || !std::is_same<TDir, Rev>::value && needleLeftPos2 != 0/* || true*/;
             if (std::is_same<TDistanceTag, EditDistance>::value && not_at_end){
-                _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, newlimOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors + 1, s, blockIndex, true, TDir(), TDistanceTag());
+                _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors + 1, s, blockIndex, true, TDir(), TDistanceTag());
             }
         } while (goRight(iter, TDir()));
     }
@@ -1299,7 +1282,6 @@ inline void _optimalSearchSchemeExact(TContex & ossContext,
                                       TDelegate & delegate,
                                       TDelegateD & delegateDirect,
                                       Iter<TIndex, VSTree<TopDown<> > > iter,
-                                      Pair <int8_t, int8_t> & limOffsets,
                                       TNeedle const & needle,
                                       uint32_t needleId,
                                       std::vector<TBitvectorPair > & bitvectors,
@@ -1327,9 +1309,9 @@ inline void _optimalSearchSchemeExact(TContex & ossContext,
 	    ++infixPosLeft;
 	}
         if (goToRight2)
-            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, infixPosRight + 2, errors, s, blockIndex2, false, Rev(), TDistanceTag());
+            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, infixPosRight + 2, errors, s, blockIndex2, false, Rev(), TDistanceTag());
         else
-            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, infixPosRight + 2, errors, s, blockIndex2, false, Fwd(), TDistanceTag());
+            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, infixPosRight + 2, errors, s, blockIndex2, false, Fwd(), TDistanceTag());
     }
     else
     {
@@ -1346,9 +1328,9 @@ inline void _optimalSearchSchemeExact(TContex & ossContext,
         }
 
         if (goToRight2)
-            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, infixPosLeft, needleRightPos, errors, s, blockIndex2, false, Rev(), TDistanceTag());
+            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, infixPosLeft, needleRightPos, errors, s, blockIndex2, false, Rev(), TDistanceTag());
         else
-            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, infixPosLeft, needleRightPos, errors, s, blockIndex2, false, Fwd(), TDistanceTag());
+            _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, infixPosLeft, needleRightPos, errors, s, blockIndex2, false, Fwd(), TDistanceTag());
     }
 }
 
@@ -1359,7 +1341,6 @@ template <typename TSpec, typename TConfig,
 inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
                              TDelegate & delegate,
                              Iter<TIndex, VSTree<TopDown<> > > iter,
-                             Pair <int8_t, int8_t> limOffsets,
                              uint32_t needleId,
                              std::vector<TBitvectorPair > & bitvectors,
                              uint8_t const errors)
@@ -1381,7 +1362,7 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
                 iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
                 iter.fwdIter.vDesc.range.i2 = rangeStart + i - 1;
                 //TODO add direction
-//                 delegate(ossContext, iter, limOffsets, needleId, errors, DIR);
+//                 delegate(ossContext, iter, needleId, errors, DIR);
             }
             lastStart = i + 1;
         }
@@ -1390,7 +1371,7 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
         iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
         iter.fwdIter.vDesc.range.i2 = rangeStart + rangeEnd - rangeStart;
         //TODO add direction
-//         delegate(ossContext, iter, limOffsets, needleId, errors);
+//         delegate(ossContext, iter, needleId, errors);
     }
 }
 
@@ -1406,7 +1387,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                                  TDelegate & delegate,
                                  TDelegateD & delegateDirect,
                                  Iter<TIndex, VSTree<TopDown<> > > iter,
-                                 Pair <int8_t, int8_t> limOffsets,
                                  TNeedle const & needle,
                                  uint32_t needleId,
                                  std::vector<TBitvectorPair > & bitvectors,
@@ -1430,13 +1410,13 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     {
         if(!lastEdit){
             bool goToRightT = (blockIndex < s.pi.size() - 1) ? s.pi[blockIndex + 1] > s.pi[blockIndex] : s.pi[blockIndex] > s.pi[blockIndex - 1];
-            delegate(ossContext, iter, limOffsets, needleId, errors, goToRightT);
+            delegate(ossContext, iter, needleId, errors, goToRightT);
         }
         return;
     }
 
     if(atBlockEnd && checkMappa){
-        ReturnCode rcode = checkMappability(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
+        ReturnCode rcode = checkMappability(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
         if(rcode == ReturnCode::FINISHED)
             return;
     }
@@ -1444,14 +1424,14 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     // Exact search in current block.
     if (maxErrorsLeftInBlock == 0)
     {
-        _optimalSearchSchemeExact(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, TDir(), TDistanceTag());
+        _optimalSearchSchemeExact(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, TDir(), TDistanceTag());
     }
     else if(!checkMappa && ossContext.itvConditionComp(iter, needleLeftPos, needleRightPos, errors, s, blockIndex))
     {
         typedef typename TConfig::TContigsSum   TContigsSum;
         //give emtpy bitvector and bitvector range sine we will not check mappability
         Pair<uint8_t, Pair<TContigsSum, TContigsSum>> dummy_bit_interval;
-         directSearch(ossContext, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, dummy_bit_interval, TDir(), TDistanceTag());
+         directSearch(ossContext, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, dummy_bit_interval, TDir(), TDistanceTag());
     }
 
     // Approximate search in current block.
@@ -1464,11 +1444,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             bool const goToRight = std::is_same<TDir, Rev>::value;
             int32_t const needleLeftPos2 = needleLeftPos - !goToRight;
             uint32_t const needleRightPos2 = needleRightPos + goToRight;
-            auto newlimOffsets = limOffsets;
-            if(goToRight)
-                ++newlimOffsets.i2;
-            else
-                ++newlimOffsets.i1;
 
             //if we are at the end of block we need to add possible deletions because _optimalSearchScheme does not check it
             if (needleRightPos - needleLeftPos == s.blocklength[blockIndex])
@@ -1480,26 +1455,26 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                     bool goToRight2 = s.pi[blockIndex2] > s.pi[blockIndex2 - 1];
 
                     if (goToRight2)
-                        _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, newlimOffsets, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + 1, s, blockIndex2, true, Rev(), TDistanceTag());
+                        _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + 1, s, blockIndex2, true, Rev(), TDistanceTag());
                     else
-                        _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, newlimOffsets, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + 1, s, blockIndex2, true, Fwd(), TDistanceTag());
+                        _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + 1, s, blockIndex2, true, Fwd(), TDistanceTag());
                 }
             }
             else
             {
-                _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, newlimOffsets, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + 1, s, blockIndex, true, TDir(), TDistanceTag());
+                _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos2, needleRightPos2, errors + 1, s, blockIndex, true, TDir(), TDistanceTag());
             }
         }
 
         //checkCurrentMappability (inside a Block)
         if(!atBlockEnd && checkMappa && ossContext.inBlockCheckMappabilityCondition(needleLeftPos, needleRightPos, s, blockIndex))
         {
-            ReturnCode rcode = checkCurrentMappability(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
+            ReturnCode rcode = checkCurrentMappability(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
             if(rcode == ReturnCode::FINISHED)
                 return;
         }
 
-        _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, limOffsets, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
+        _optimalSearchSchemeChildren(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, minErrorsLeftInBlock, TDir(), TDistanceTag());
     }
 }
 
@@ -1522,11 +1497,10 @@ inline void _optimalSearchScheme(TContex & ossContext,
                                  TDistanceTag const &)
 {
     bool initialDirection = s.pi[1] > s.pi[0];
-    uint32_t ov = ossContext.maxError; //unify overlap between all used schemes
     if(initialDirection)
-        _optimalSearchScheme(ossContext, delegate, delegateDirect, it, Pair<int8_t, int8_t>(ov, ov), needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Rev(), TDistanceTag());
+        _optimalSearchScheme(ossContext, delegate, delegateDirect, it, needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Rev(), TDistanceTag());
     else
-        _optimalSearchScheme(ossContext, delegate, delegateDirect, it, Pair<int8_t, int8_t>(ov, ov), needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Fwd(), TDistanceTag());
+        _optimalSearchScheme(ossContext, delegate, delegateDirect, it, needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Fwd(), TDistanceTag());
 }
 
 template <typename TSpec, typename TConfig,
@@ -1556,7 +1530,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     if(!ossContext.noSAfilter){
         std::vector<seqan::SARange<TContigsSum> > ranges;
 
-        auto delegateRange = [&ranges](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, auto const needleId, uint8_t const errors, bool const goRight)
+        auto delegateRange = [&ranges](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto const needleId, uint8_t const errors, bool const goRight)
         {
             //only required for stats
             ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
@@ -1565,11 +1539,10 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             SARange<TContigsSum> range;
             range.errors = errors;
             range.range = Pair<TContigsSum, TContigsSum> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
-            range.revRange = Pair<TContigsSum, TContigsSum> (iter.revIter.vDesc.range.i1, iter.revIter.vDesc.range.i2);
-            range.parentRange = Pair<TContigsSum, TContigsSum> (iter.fwdIter._parentDesc.range.i1, iter.fwdIter._parentDesc.range.i2);
-            range.parentRevRange = Pair<TContigsSum, TContigsSum> (iter.revIter._parentDesc.range.i1, iter.revIter._parentDesc.range.i2);
+//             range.revRange = Pair<TContigsSum, TContigsSum> (iter.revIter.vDesc.range.i1, iter.revIter.vDesc.range.i2);
+//             range.parentRange = Pair<TContigsSum, TContigsSum> (iter.fwdIter._parentDesc.range.i1, iter.fwdIter._parentDesc.range.i2);
+//             range.parentRevRange = Pair<TContigsSum, TContigsSum> (iter.revIter._parentDesc.range.i1, iter.revIter._parentDesc.range.i2);
             range.repLength = repLength(iter);
-            range.limOffsets = limOffsets;
             range.lastChar = (goRight) ? iter.revIter.vDesc.lastChar : iter.fwdIter.vDesc.lastChar;
             range.goRight = goRight;
             ranges.push_back(range);
@@ -1591,7 +1564,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     else
     {
 //         std::cout << "no SA filter\n";
-        auto delegateFMTree = [&delegate](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto & limOffsets, auto const needleId, uint8_t const errors, bool const goRight)
+        auto delegateFMTree = [&delegate](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto const needleId, uint8_t const errors, bool const goRight)
         {
             TContigSeqs const & genome = ossContext.contigSeqs;
 
@@ -1600,7 +1573,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 
             SARange<TContigsSum> saRange;
             saRange.repLength = repLength(iter);
-            saRange.limOffsets = limOffsets;
             //TODO check errors
             saRange.errors = errors;
 
