@@ -221,19 +221,22 @@ struct Delegate
 
     TMatches &          matches;
     bool const          noOverlap;
+    uint16_t const       maxError;
 
     Delegate(TMatches & matches,
-             bool noOverlap) :
+             bool noOverlap,
+             uint16_t maxError) :
         matches(matches),
-        noOverlap(noOverlap)
+        noOverlap(noOverlap),
+        maxError(maxError)
     {}
 
     template <typename TNeedleId, typename TSARange, typename TPos>
     void operator() (OSSContext<TSpec, TConfig> & ossContext, TNeedleId const needleId, TSARange const & rangeInfo, TPos & pos)
     {
         //TODO move into function calls
-        int8_t overlap_l = 0;
-        int8_t overlap_r = 0;
+        int16_t overlap_l = maxError;
+        int16_t overlap_r = maxError;
         uint32_t occLength = rangeInfo.repLength;
         TMatch hit;
         if(noOverlap){
@@ -250,6 +253,12 @@ struct Delegate
 
         appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
 
+        if(!ossContext.noSAfilter && getSeqOffset(pos) == 0)
+        {
+            TMatch hit2 = hit;
+            hit2.errors = 127;
+            setContigPosition(hit2, pos, posAdd(pos, occLength));
+        }
 
         //read Context is done as soon as a range is reported
 //             TReadId readId = getReadId(ossContext.readSeqs, needleId);
@@ -1110,7 +1119,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     TMatchesAppender appender(me.matchesByCoord);
     bool noOverlap = disOptions.noSAfilter && (disOptions.determineExactSecondaryPos || disOptions.noDelayITV || disOptions.hammingDistance);
-    Delegate delegate(appender, noOverlap);
+    Delegate delegate(appender, noOverlap, me.maxError);
     DelegateDirect delegateDirect(appender);
 //     DelegateUnfiltered delegateUnfiltered(appender, noOverlap);
     TContigSeqs & contigSeqs = me.contigs.seqs;
@@ -1318,7 +1327,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                                 std::cout << "ossmatch: ";
                                 write(std::cout, *matchIt);
                             }*/
-                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, ossMatch);
+                            if(!disOptions.alignSecondary)
+                                valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, ossMatch);
+                            else
+                                valid = true;
 //                             if(ossMatch)
 //                                 write(std::cout, *matchIt);
                         }
@@ -2339,7 +2351,7 @@ inline void spawnDisMapper(DisOptions & disOptions,
                            TSeedsDistance const & /* tag */)
 {
     disOptions.outputFile = disOptions.superOutputFile;
-    typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TMainConfig;
+    typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, MMap<>>  TMainConfig;
     Mapper<void, TMainConfig> disMapper(disOptions);
 
     Timer<double> timer;

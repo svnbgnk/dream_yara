@@ -786,7 +786,9 @@ inline bool isDuplicate(Match<TSpec> const & a, Match<TSpec> const & b, ContigEn
 template <typename TSpec>
 inline bool isDuplicate(Match<TSpec> const & a, Match<TSpec> const & b, ContigBeginITV)
 {
-    return contigEqual(a, b) && strandEqual(a, b) && getMember(a, ContigBegin()) == getMember(b, ContigBegin());
+    return contigEqual(a, b) && strandEqual(a, b) && getMember(a, ContigBegin()) == getMember(b, ContigBegin()) &&
+    getMember(a, ContigBegin()) != 0;
+    //dont remove matches at start position (eg. match: 0-98 and 0-102)
 }
 
 // ----------------------------------------------------------------------------
