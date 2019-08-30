@@ -2066,6 +2066,7 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
     TContigs tmpContigs;
     if (!open(mainMapper.contigs, toCString(allContigsFile), OPEN_RDONLY)){
         start(mainMapper.timer);
+        std::cout << "Load with Alloc\n";
         try
         {
 //             SeqStore<void, YaraContigsConfig< > allContigs;
@@ -2085,7 +2086,7 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
                 append(allContigs.contigs.names, tmpContigs.names);
             }
 
-            if (!save(/*mainMapper.contigs*/allContigs, toCString(allContigsFile)))
+            if (!save(/*mainMapper.contigs*/allContigs.contigs, toCString(allContigsFile)))
                 throw RuntimeError("Error while saving all Contig references.");
             append(mainMapper.contigs.seqs, std::move(allContigs.contigs.seqs));
             append(mainMapper.contigs.names, std::move(allContigs.contigs.names));
