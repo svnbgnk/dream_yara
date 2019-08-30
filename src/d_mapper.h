@@ -2053,7 +2053,7 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
 
     CharString allContigs = disOptions.IndicesDirectory;
     allContigs += "allContigs";
-    std::cout << "AllContigsFile name" << allContigs << "\n";
+    std::cout << "AllContigsFile name " << allContigs << "\n";
     TContigs tmpContigs;
     if (!open(mainMapper.contigs, toCString(allContigs), OPEN_RDONLY)){
         start(mainMapper.timer);
@@ -2079,6 +2079,10 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
         {
             throw RuntimeError("Insufficient memory to load the reference.");
         }
+    }
+    else
+    {
+        std::cout << "From Object\n";
     }
     stop(mainMapper.timer);
     mainMapper.stats.loadContigs += getValue(mainMapper.timer);
@@ -2312,7 +2316,27 @@ inline void prepairMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter c
 template <typename TSpec, typename TMainConfig>
 inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptions & disOptions)
 {
+    /*
+    std::cout << "Print Matches\n";
+    for(int i = 0; i < 1; ++i){
+            auto matchIt = begin(matches, Standard());
+            auto matchEnd = end(matches, Standard());
+            while(matchIt != matchEnd){
+                write(std::cout, *matchIt);
+                ++matchIt;
+            }
+    }*/
     aggregateMatches(mainMapper, mainMapper.reads.seqs);
+/*
+    std::cout << "Print Filtered Matches\n";
+    for(int i = 0; i < 1; ++i){
+            auto matchIt = begin(matches, Standard());
+            auto matchEnd = end(matches, Standard());
+            while(matchIt != matchEnd){
+                write(std::cout, *matchIt);
+                ++matchIt;
+            }
+    }*/
 
     rankMatches2(mainMapper, mainMapper.reads.seqs);
 //     transferCigars(mainMapper, disOptions);
