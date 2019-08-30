@@ -255,6 +255,7 @@ struct Delegate
 
         if(!ossContext.noSAfilter && getSeqOffset(pos) == 0)
         {
+            std::cout << "append additional Match\n";
             TMatch hit2 = hit;
             hit2.errors = 127;
             setContigPosition(hit2, pos, posAdd(pos, occLength));
@@ -1369,16 +1370,13 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         bool valid;
                         if(disOptions.determineExactSecondaryPos || !disOptions.noSAfilter)
                         {
-                            /*
-                            if(ossMatch){
-                                std::cout << "ossmatch: ";
-                                write(std::cout, *matchIt);
-                            }*/
+//                             write(std::cout, *matchIt);
+
                             if(!disOptions.alignSecondary)
                                 valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, ossMatch);
                             else
                                 valid = true;
-//                             if(ossMatch)
+
 //                                 write(std::cout, *matchIt);
                         }
                         else
