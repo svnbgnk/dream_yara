@@ -96,6 +96,9 @@ typedef Tag<ContigId_> const ContigId;
 struct ReadSize_;
 typedef Tag<ReadSize_> const ReadSize;
 
+struct ReadSizeLen_;
+typedef Tag<ReadSizeLen_> const ReadSizeLen;
+
 struct ContigSize_;
 typedef Tag<ContigSize_> const ContigSize;
 
@@ -104,6 +107,7 @@ typedef Tag<Errors_> const Errors;
 
 typedef ContigSize      ContigBegin;
 typedef ReadSize        ContigEnd;
+
 
 //INFO added additional types for new sorting behavior
 struct ReadSizeAlt_;
@@ -271,6 +275,25 @@ struct MatchSorter<TMatch, ContigBeginITV>
 {
     inline bool operator()(TMatch const & a, TMatch const & b) const
     {
+            return getSortKey(a, ContigBeginITV()) < getSortKey(b, ContigBeginITV());
+    }
+};
+
+template <typename TMatch>
+struct MatchSorter<TMatch, ContigEndITV>
+{
+    inline bool operator()(TMatch const & a, TMatch const & b) const
+    {
+        return getSortKey(a, ContigEndITV()) < getSortKey(b, ContigEndITV());
+    }
+};
+
+/*
+template <typename TMatch>
+struct MatchSorter<TMatch, ContigBeginITV>
+{
+    inline bool operator()(TMatch const & a, TMatch const & b) const
+    {
         if(getSortKey(a, ContigBeginITV()) == getSortKey(b, ContigBeginITV()))
             return getMember(a, ContigEnd()) > getMember(b, ContigEnd());
 //             return getSortKey(a, ContigEndITV()) > getSortKey(b, ContigEndITV());
@@ -290,7 +313,7 @@ struct MatchSorter<TMatch, ContigEndITV>
         else
             return getSortKey(a, ContigEndITV()) < getSortKey(b, ContigEndITV());
     }
-};
+};*/
 
 
 template <typename TMatch, typename TReadSeqs, typename TTag>
@@ -533,6 +556,13 @@ getMember(Match<TSpec> const & me, ContigEnd)
 }
 
 template <typename TSpec>
+inline typename Member<Match<TSpec>, ReadSize>::Type
+getMember(Match<TSpec> const & me, ReadSizeLen)
+{
+    return me.contigEnd;
+}
+
+template <typename TSpec>
 inline typename Member<Match<TSpec>, Errors>::Type
 getMember(Match<TSpec> const & me, Errors)
 {
@@ -651,7 +681,36 @@ inline uint64_t getSortKey(Match<TSpec> const & me, ContigEnd)
            ((uint64_t)getMember(me, Errors()));
 }
 
+// ----------------------------------------------------------------------------
+// Function getSortKey(ContigBeginITV_s)
+// ----------------------------------------------------------------------------
 
+template <typename TSpec>
+inline uint64_t getSortKey(Match<TSpec> const & me, ContigBeginITV)
+{
+    typedef Match<TSpec>    TMatch;
+
+    return ((uint64_t)getMember(me, ContigId())      << (1 + MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, ReadSize>::VALUE)) |
+           ((uint64_t)onReverseStrand(me)            << (MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, ReadSize>::VALUE))     |
+           ((uint64_t)getMember(me, ContigBegin())   << (MemberBits<TMatch, ReadSize>::VALUE))                                             |
+           ((uint64_t)getMember(me, ReadSizeLen()));
+}
+
+// ----------------------------------------------------------------------------
+// Function getSortKey(ContigEndITV_s)
+// ----------------------------------------------------------------------------
+
+template <typename TSpec>
+inline uint64_t getSortKey(Match<TSpec> const & me, ContigEndITV)
+{
+    typedef Match<TSpec>    TMatch;
+
+    return ((uint64_t)getMember(me, ContigId())     << (1 + MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, ReadSize>::VALUE)) |
+           ((uint64_t)onReverseStrand(me)           << (MemberBits<TMatch, ContigSize>::VALUE  + MemberBits<TMatch, ReadSize>::VALUE))    |
+           ((uint64_t)getMember(me, ContigEnd())    <<  (MemberBits<TMatch, ReadSize>::VALUE))                                            |
+           ((uint64_t)getMember(me, ReadSizeLen()));
+}
+/*
 // ----------------------------------------------------------------------------
 // Function getSortKey(ContigBeginITV)
 // ----------------------------------------------------------------------------
@@ -678,7 +737,7 @@ inline uint64_t getSortKey(Match<TSpec> const & me, ContigEndITV)
     return ((uint64_t)getMember(me, ContigId())     << (1 + MemberBits<TMatch, ContigSize>::VALUE)) |
            ((uint64_t)onReverseStrand(me)           << MemberBits<TMatch, ContigSize>::VALUE)       |
            ((uint64_t)getMember(me, ContigEnd()));
-}
+}*/
 
 
 template <typename TSpec, typename TReadSeqs>
@@ -1005,13 +1064,13 @@ inline void removeDuplicatesITV(TMatchesSet & matchesSet, TThreading const & thr
     TLimits newLimits;
     resize(newLimits, length(stringSetLimits(matchesSet)), Exact());
     front(newLimits) = 0;
-/*
+
     // Sort matches by end position and move unique matches at the beginning.
     iterate(matchesSet, MatchesCompactor<TLimits, ContigEndITV>(newLimits), Rooted(), threading);
 
     // Exclude duplicate matches at the end.
     assign(stringSetLimits(matchesSet), newLimits);
-    _refreshStringSetLimits(matchesSet, threading);*/
+    _refreshStringSetLimits(matchesSet, threading);
 
     // Sort matches by begin position and move unique matches at the beginning.
     iterate(matchesSet, MatchesCompactor<TLimits, ContigBeginITV>(newLimits), Rooted(), threading);

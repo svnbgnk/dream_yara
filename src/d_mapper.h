@@ -2062,14 +2062,13 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
 
     CharString allContigsFile = disOptions.IndicesDirectory;
     allContigsFile += "allContigs";
-    std::cout << "AllContigsFile name " << allContigsFile << "\n";
+//     std::cout << "AllContigsFile name " << allContigsFile << "\n";
     TContigs tmpContigs;
     if (!open(mainMapper.contigs, toCString(allContigsFile), OPEN_RDONLY)){
         start(mainMapper.timer);
-        std::cout << "Load with Alloc\n";
+//         std::cout << "Load with Alloc\n";
         try
         {
-//             SeqStore<void, YaraContigsConfig< > allContigs;
             AllContigs<> allContigs;
             for (uint32_t i=0; i < disOptions.numberOfBins; ++i)
             {
@@ -2098,7 +2097,7 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
     }
     else
     {
-        std::cout << "From Object\n";
+//         std::cout << "From Object\n";
     }
     stop(mainMapper.timer);
     mainMapper.stats.loadContigs += getValue(mainMapper.timer);
