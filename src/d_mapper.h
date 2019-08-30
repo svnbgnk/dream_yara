@@ -258,6 +258,7 @@ struct Delegate
             TMatch hit2 = hit;
             hit2.errors = 127;
             setContigPosition(hit2, pos, posAdd(pos, occLength));
+            appendValue(matches, hit2, Generous(), typename Traits::TThreading());
         }
 
         //read Context is done as soon as a range is reported
@@ -962,27 +963,72 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     typedef typename TConfig::TContigsLen                       TContigsLen;
     typedef typename TConfig::TContigsSize                      TContigsSize;
 
+
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
+    typedef typename Value<TContigSeqs const>::Type              TContigSeq;
+//     typedef typename Value<TContigSeqs>::Type                       TContig;
     typedef typename StringSetPosition<TContigSeqs const>::Type TContigPos;
-    typedef typename InfixOnValue<TContigSeqs const>::Type      TContigSeqsInfix;
+    typedef typename InfixOnValue<TContigSeq const>::Type      TContigSeqInfix;
     typedef typename InfixOnValue<TNeedle const>::Type          TNeedleInfix;
     typedef ModifiedString<TNeedle, ModReverse>                 TNeedleInfixRev;
-    typedef ModifiedString<TContigSeqsInfix, ModReverse>        TStringInfixRev;
+    typedef ModifiedString<TContigSeqInfix, ModReverse>        TStringInfixRev;
+
+    typedef String<GapAnchor<int> >            TGapAnchors;
+    typedef AnchorGaps<TGapAnchors>            TAnchorGaps;
+    typedef Gaps<TContigSeqInfix, TAnchorGaps>     TContigGaps;
+    typedef Gaps<TNeedle, TAnchorGaps>             TReadGaps;
 
     TContigSeqs & contigSeqs = me.contigs.seqs;
 
     TContigsSize seqNo = getMember(match, ContigId());
     TContigsLen seqOffset = getMember(match, ContigBegin());
     TContigsLen seqOffsetEnd = getMember(match, ContigEnd());
-    TContigSeqsInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
 
-    typedef Finder<TContigSeqsInfix>                        TFinder;
+
+    TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
+
+
+    // Fix rare edge Case
+    if (seqOffset == 0 && length(text) <= length(needle))
+    {
+        TGapAnchors contigAnchors;
+        TGapAnchors readAnchors;
+        TContigGaps contigGaps(text, contigAnchors);
+        TReadGaps needleGaps(needle, readAnchors);
+
+//         TContigSeqInfix text_c = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
+//         TContigGaps contigGaps(text_c);
+//         Gaps<TNeedle> needleGaps(needle);
+
+        Score<int, Simple> scoringScheme(0, -999, -1000);
+        int score = globalAlignment(contigGaps, needleGaps, scoringScheme, AlignConfig<true, false, false, true>()) / -999;
+        clipSemiGlobal(contigGaps, needleGaps);
+        std::cout << contigGaps << "\n" << needleGaps << "\n";
+        std::cout << beginPosition(contigGaps) << "\n" << endPosition(contigGaps) << "\n";
+        std::cout << beginPosition(needleGaps) << "\n" << endPosition(needleGaps) << "\n";
+        std::cout << "Score " << (int)score << "\n";
+
+                std::cout << "Before:\n";
+        write(std::cout, match);
+
+        setErrors(match, score);
+
+        TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
+        TContigPos contigEnd = contigBegin;
+        contigEnd = posAdd(contigEnd, endPosition(contigGaps));
+        contigBegin = posAdd(contigBegin, beginPosition(contigGaps));
+        setContigPosition(match, contigBegin, contigEnd);
+        write(std::cout, match);
+        return score < maxErrors;
+    }
+
+    typedef Finder<TContigSeqInfix>                        TFinder;
     typedef Finder<TStringInfixRev>                       TFinder2;
     typedef AlignTextBanded</*FindPrefix*/FindInfix,
                             NMatchesNone_,
                             NMatchesNone_>                     TMyersSpecInfix;
     typedef Myers<TMyersSpecInfix, True, void>                 TAlgorithmInfix;
-    typedef PatternState_<TContigSeqsInfix, TAlgorithmInfix>   TPatternInfix;
+    typedef PatternState_<TContigSeqInfix, TAlgorithmInfix>   TPatternInfix;
     TPatternInfix patternInfix;
 
     typedef AlignTextBanded<FindPrefix,
@@ -1036,7 +1082,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         }
     }
 
-//     TContigSeqsInfix infixPrefix = infix(text, 0, endPos);
+//     TContigSeqInfix infixPrefix = infix(text, 0, endPos);
     TStringInfixRev infixRev(text);
     TNeedleInfixRev needleRev(needle);
     TFinder2 finder2(infixRev);
@@ -1055,6 +1101,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
             startPos = currentEnd;
         }
     }
+
 
     //there is no need to report the minimum error or that a read mapped since this case in already in-text-Verification inside the optimal search schemes.
     TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
@@ -2006,24 +2053,34 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
 {
     typedef typename MapperTraits<TSpec, TConfig>::TContigs          TContigs;
 
-    start(mainMapper.timer);
-    try
-    {
-        for (uint32_t i=0; i < disOptions.numberOfBins; ++i)
+    CharString allContigs = disOptions.IndicesDirectory;
+    allContigs += "allContigs";
+    std::cout << "AllContigsFile name" << allContigs << "\n";
+    TContigs tmpContigs;
+    if (!open(mainMapper.contigs, toCString(allContigs), OPEN_RDONLY)){
+        start(mainMapper.timer);
+        try
         {
-            TContigs tmpContigs;
-            CharString fileName;
-            appendFileName(fileName, disOptions.IndicesDirectory, i);
+            for (uint32_t i=0; i < disOptions.numberOfBins; ++i)
+            {
+                TContigs tmpContigs;
+                CharString fileName;
+                appendFileName(fileName, disOptions.IndicesDirectory, i);
 
-            if (!open(tmpContigs, toCString(fileName), OPEN_RDONLY))
-                throw RuntimeError("Error while opening reference file.");
-            append(mainMapper.contigs.seqs, tmpContigs.seqs);
-            append(mainMapper.contigs.names, tmpContigs.names);
+                if (!open(tmpContigs, toCString(fileName), OPEN_RDONLY))
+                    throw RuntimeError("Error while opening reference file.");
+                append(mainMapper.contigs.seqs, tmpContigs.seqs);
+                append(mainMapper.contigs.names, tmpContigs.names);
+            }
+
+        if (!save(mainMapper.contigs, toCString(allContigs)))
+            throw RuntimeError("Error while saving all Contig references.");
+
         }
-    }
-    catch (BadAlloc const & /* e */)
-    {
-        throw RuntimeError("Insufficient memory to load the reference.");
+        catch (BadAlloc const & /* e */)
+        {
+            throw RuntimeError("Insufficient memory to load the reference.");
+        }
     }
     stop(mainMapper.timer);
     mainMapper.stats.loadContigs += getValue(mainMapper.timer);
