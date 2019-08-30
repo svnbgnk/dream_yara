@@ -255,7 +255,7 @@ struct Delegate
 
         if(!ossContext.noSAfilter && getSeqOffset(pos) == 0)
         {
-            std::cout << "append additional Match\n";
+//             std::cout << "append additional Match\n";
             TMatch hit2 = hit;
             hit2.errors = 127;
             setContigPosition(hit2, pos, posAdd(pos, occLength));
@@ -1004,13 +1004,13 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         Score<int, Simple> scoringScheme(0, -999, -1000);
         int score = globalAlignment(contigGaps, needleGaps, scoringScheme, AlignConfig<true, false, false, true>()) / -999;
         clipSemiGlobal(contigGaps, needleGaps);
+/*
         std::cout << contigGaps << "\n" << needleGaps << "\n";
         std::cout << beginPosition(contigGaps) << "\n" << endPosition(contigGaps) << "\n";
         std::cout << beginPosition(needleGaps) << "\n" << endPosition(needleGaps) << "\n";
         std::cout << "Score " << (int)score << "\n";
-
-                std::cout << "Before:\n";
-        write(std::cout, match);
+        std::cout << "Before:\n";
+        write(std::cout, match);*/
 
         setErrors(match, score);
 
@@ -1019,8 +1019,8 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         contigEnd = posAdd(contigEnd, endPosition(contigGaps));
         contigBegin = posAdd(contigBegin, beginPosition(contigGaps));
         setContigPosition(match, contigBegin, contigEnd);
-        write(std::cout, match);
-        return score < maxErrors;
+//         write(std::cout, match);
+        return score <= maxErrors;
     }
 
     typedef Finder<TContigSeqInfix>                        TFinder;
@@ -2042,6 +2042,15 @@ void configureMapper(Options const & options,
 }
 
 
+template <typename TSpec = void>
+struct AllContigs
+{
+    typedef SeqStore<TSpec, YaraContigsConfig<> >   TContigs;
+
+    TContigs            contigs;
+};
+
+
 // ----------------------------------------------------------------------------
 // Function loadAllContigs()
 // ----------------------------------------------------------------------------
@@ -2051,29 +2060,35 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
 {
     typedef typename MapperTraits<TSpec, TConfig>::TContigs          TContigs;
 
-    CharString allContigs = disOptions.IndicesDirectory;
-    allContigs += "allContigs";
-    std::cout << "AllContigsFile name " << allContigs << "\n";
+    CharString allContigsFile = disOptions.IndicesDirectory;
+    allContigsFile += "allContigs";
+    std::cout << "AllContigsFile name " << allContigsFile << "\n";
     TContigs tmpContigs;
-    if (!open(mainMapper.contigs, toCString(allContigs), OPEN_RDONLY)){
+    if (!open(mainMapper.contigs, toCString(allContigsFile), OPEN_RDONLY)){
         start(mainMapper.timer);
         try
         {
+//             SeqStore<void, YaraContigsConfig< > allContigs;
+            AllContigs<> allContigs;
             for (uint32_t i=0; i < disOptions.numberOfBins; ++i)
             {
+
                 TContigs tmpContigs;
                 CharString fileName;
                 appendFileName(fileName, disOptions.IndicesDirectory, i);
 
                 if (!open(tmpContigs, toCString(fileName), OPEN_RDONLY))
                     throw RuntimeError("Error while opening reference file.");
-                append(mainMapper.contigs.seqs, tmpContigs.seqs);
-                append(mainMapper.contigs.names, tmpContigs.names);
+//                 append(mainMapper.contigs.seqs, tmpContigs.seqs);
+//                 append(mainMapper.contigs.names, tmpContigs.names);
+                append(allContigs.contigs.seqs, tmpContigs.seqs);
+                append(allContigs.contigs.names, tmpContigs.names);
             }
 
-        if (!save(mainMapper.contigs, toCString(allContigs)))
-            throw RuntimeError("Error while saving all Contig references.");
-
+            if (!save(/*mainMapper.contigs*/allContigs, toCString(allContigsFile)))
+                throw RuntimeError("Error while saving all Contig references.");
+            append(mainMapper.contigs.seqs, std::move(allContigs.contigs.seqs));
+            append(mainMapper.contigs.names, std::move(allContigs.contigs.names));
         }
         catch (BadAlloc const & /* e */)
         {
