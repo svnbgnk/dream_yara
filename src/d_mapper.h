@@ -376,6 +376,12 @@ inline void copyMatches(Mapper<TSpec, TMainConfig> & mainMapper, Mapper<TSpec, T
              TMatch currentMatch;
              if(isValid(*matchIt)){
                 copyMatch(currentMatch, *matchIt, disOptions);
+
+                if (getMember(currentMatch, ContigEnd()) - getMember(currentMatch, ContigBegin()) >= 200){
+                    std::cout << "After Copy Match\n";
+                    write(std::cout, currentMatch);
+                }
+
                 appendValue(appender, currentMatch, Generous(), TThreading());
              }
              ++matchIt;
@@ -934,12 +940,12 @@ inline bool inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNee
     typedef PatternState_<TContigSeqsInfix, TAlgorithm>     TPattern;
     TPattern pattern;
 
-    uint8_t minErrors = maxErrors + 1;
+    int minErrors = maxErrors + 1;
     TFinder finder(text);
 
     while (find(finder, needle, pattern, -static_cast<int>(maxErrors + 1)))
     {
-        uint16_t currentErrors = -getScore(pattern);
+        int currentErrors = -getScore(pattern);
         if(minErrors > currentErrors)
             minErrors = currentErrors;
 
@@ -1041,7 +1047,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     typedef PatternState_<TNeedleInfixRev, TAlgorithm>  TPatternRev;
     TPatternRev patternRev;
 
-    uint8_t minErrors;
+    int minErrors;
     // for ossMatch we know match is valid and only need to determine start and end position of the match (we added overlap so suffix filter works)
     if(!ossMatch){
         minErrors = maxErrors + 1;
@@ -1067,12 +1073,15 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
 
     TFinder finder(text);
-    uint8_t mErrors = maxErrors * 4;
+    int mErrors = maxErrors * 4;
     TContigsLen endPos = 0;
+    int tmpErrors = 99999;
     while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 4)))
     {
         int currentEnd = position(finder) + 1;
-        uint16_t currentErrors = -getScore(pattern);
+        int currentErrors = -getScore(pattern);
+        if (currentErrors <= tmpErrors)
+            tmpErrors = currentErrors;
 //         if (getValue(text, currentEnd) != back(needle))
 //             ++currentErrors;
 //         std::cout << currentErrors << "\t" << currentEnd << "\n";
@@ -1081,6 +1090,12 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
             mErrors = currentErrors;
             endPos = currentEnd;
         }
+    }
+
+    if(endPos == 0){
+        std::cout << "EndPos failed\n" << "Current: " << tmpErrors << "\n";
+        write(std::cout, match);
+        std::cout << text << "\n" << needle << "\n";
     }
 
 //     TContigSeqInfix infixPrefix = infix(text, 0, endPos);
@@ -1094,7 +1109,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     while (find(finder2, needleRev, patternRev, -static_cast<int>(maxErrors * 4)))
     {
         int currentEnd = position(finder2) + 1;
-        uint16_t currentErrors = -getScore(patternRev);
+        int currentErrors = -getScore(patternRev);
 //         std::cout << currentErrors << "\t" << currentEnd << "\n";
         if (currentErrors <= mErrors)
         {
@@ -1110,6 +1125,12 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     contigEnd = posAdd(contigEnd, endPos);
     contigBegin = posAdd(contigBegin, length(text) - startPos);
     setContigPosition(match, contigBegin, contigEnd);
+
+    if (getMember(match, ContigEnd()) - getMember(match, ContigBegin()) >= 200){
+            std::cout << "After VerificationE Match\n";
+            write(std::cout, match);
+    }
+
 
     return(minErrors <= maxErrors);
 }
@@ -2342,18 +2363,40 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
             }
     }*/
     aggregateMatches(mainMapper, mainMapper.reads.seqs);
-/*
-    std::cout << "Print Filtered Matches\n";
-    for(int i = 0; i < 1; ++i){
+
+//     std::cout << "Print Filtered Matches\n";
+    for(int i = 0; i < length(mainMapper.matchesSetByCoord); ++i){
+            auto const & matches = mainMapper.matchesSetByCoord[i];
             auto matchIt = begin(matches, Standard());
             auto matchEnd = end(matches, Standard());
             while(matchIt != matchEnd){
-                write(std::cout, *matchIt);
+                  if (getMember(*matchIt, ContigEnd()) - getMember(*matchIt, ContigBegin()) >= 200){
+                    std::cout << "After sort Match\n";
+                    write(std::cout, *matchIt);
+                }
+//                 write(std::cout, *matchIt);
                 ++matchIt;
             }
-    }*/
+    }
+
+
+
 
     rankMatches2(mainMapper, mainMapper.reads.seqs);
+    for(int i = 0; i < length(mainMapper.matchesSetByCoord); ++i){
+        auto const & matches = mainMapper.matchesSetByCoord[i];
+            auto matchIt = begin(matches, Standard());
+            auto matchEnd = end(matches, Standard());
+            while(matchIt != matchEnd){
+                  if (getMember(*matchIt, ContigEnd()) - getMember(*matchIt, ContigBegin()) >= 200){
+                    std::cout << "After rank Match\n";
+                    write(std::cout, *matchIt);
+                }
+//                 write(std::cout, *matchIt);
+                ++matchIt;
+            }
+    }
+
 //     transferCigars(mainMapper, disOptions);
     std::cout << "Load All Contigs\n";
     loadAllContigs(mainMapper, disOptions);
