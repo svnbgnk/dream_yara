@@ -228,17 +228,17 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     addOption(parser, ArgParseOption("e", "error-rate", "Consider alignments within this percentual number of errors. \
                                      Increase this threshold to increase the number of mapped reads. \
                                      Decrease this threshold to decrease the runtime.",
-                                     ArgParseOption::INTEGER));
-    setMinValue(parser, "error-rate", "0");
-    setMaxValue(parser, "error-rate", "10");
+                                     ArgParseOption::DOUBLE));
+    setMinValue(parser, "error-rate", "0.0");
+    setMaxValue(parser, "error-rate", "10.0");
     setDefaultValue(parser, "error-rate", 100.0 * disOptions.errorRate);
 
     addOption(parser, ArgParseOption("s", "strata-rate", "Consider suboptimal alignments within this percentual number \
                                      of errors from the optimal alignment. Increase this threshold to increase \
                                      the number of alternative alignments at the expense of runtime.",
-                                     ArgParseOption::INTEGER));
-    setMinValue(parser, "strata-rate", "0");
-    setMaxValue(parser, "strata-rate", "10");
+                                     ArgParseOption::DOUBLE));
+    setMinValue(parser, "strata-rate", "0.0");
+    setMaxValue(parser, "strata-rate", "10.0");
     setDefaultValue(parser, "strata-rate", 100.0 * disOptions.strataRate);
 
     addOption(parser, ArgParseOption("y", "sensitivity", "Sensitivity with respect to edit distance. \
@@ -420,11 +420,11 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "skip-sam-headers")) disOptions.skipSamHeader = true;
 
     // Parse mapping disOptions.
-    unsigned errorRate;
+    double errorRate;
     if (getOptionValue(errorRate, parser, "error-rate"))
         disOptions.errorRate = errorRate / 100.0;
 
-    unsigned strataRate;
+    double strataRate;
     if (getOptionValue(strataRate, parser, "strata-rate"))
         disOptions.strataRate = strataRate / 100.0;
 
