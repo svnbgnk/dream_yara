@@ -611,17 +611,25 @@ inline void inTextVerificationN(TContex & ossContext,
 //     std::cout << "Score from: \n" << ex_infix << "\n" << needle << "\n";
     while (find(finderInfix, needle, patternInfix, -static_cast<int>(max_e + 1)))
     {
-        uint16_t currentErrors = -getScore(patternInfix);
+        int currentErrors = -getScore(patternInfix);
         if(minErrors > currentErrors)
             minErrors = currentErrors;
     }
 
-    if(minErrors > max_e)
+    // check if match is outside of current search -> other search will find it no reason to report it now
+    if (minErrors > max_e || minErrors > upper || minErrors < lower)
         return;
 
-    // check if match is outside of current search -> other search will find it no reason to report it now
-    if(minErrors > upper || minErrors < lower)
+
+    // sa_info is given my reference so copy it
+    TSAValue sa_info_tmp = sa_info;
+
+    // In this case all matches have overlap (OSS need them for SA filter) therefore we do not determine correct start and end position
+    if (!ossContext.noSAfilter)
+    {
+        delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, length(ex_infix)), needleId, minErrors);
         return;
+    }
 
     TFinder finder(ex_infix);
     int mErrors = max_e * 4;
@@ -662,9 +670,6 @@ inline void inTextVerificationN(TContex & ossContext,
             startPos = currentEnd;
         }
     }
-
-    // sa_info is given my reference so copy it
-    TSAValue sa_info_tmp = sa_info;
 
 //     std::cout << "final cut" << needleId << "\t" << posAdd(sa_info_tmp, endPos - startPos) << "\t" << posAdd(sa_info_tmp, endPos) << "\n";
 //     std::cout << infix(ex_infix, endPos - startPos, endPos) << "\n\n";

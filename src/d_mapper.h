@@ -221,11 +221,11 @@ struct Delegate
 
     TMatches &          matches;
     bool const          noOverlap;
-    uint16_t const       maxError;
+    uint8_t const       maxError;
 
     Delegate(TMatches & matches,
              bool noOverlap,
-             uint16_t maxError) :
+             uint8_t maxError) :
         matches(matches),
         noOverlap(noOverlap),
         maxError(maxError)
@@ -245,11 +245,21 @@ struct Delegate
         else
         {
             overlap_l = (overlap_l <=  getSeqOffset(pos)) ? overlap_l : 0;
-            setContigPosition(hit, posAdd(pos, 0 - overlap_l), posAdd(pos, occLength + overlap_r));
+            setContigPosition(hit, posAdd(pos, -overlap_l), posAdd(pos, occLength + overlap_r));
         }
 
         hit.errors = rangeInfo.errors;
         setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
+
+/*
+        if (!noOverlap && (getMember(hit, ContigEnd()) - getMember(hit, ContigBegin())) <= ossContext.readLength)
+        {
+            std::cout << "After adding overlap Match\n";
+            write(std::cout, hit);
+            std::cout << "maxError: " << maxError << "\n";
+            std::cout << "pos " << pos << "\t" << occLength << "\n";
+        }*/
+
 
         appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
 
@@ -376,12 +386,6 @@ inline void copyMatches(Mapper<TSpec, TMainConfig> & mainMapper, Mapper<TSpec, T
              TMatch currentMatch;
              if(isValid(*matchIt)){
                 copyMatch(currentMatch, *matchIt, disOptions);
-
-                if (getMember(currentMatch, ContigEnd()) - getMember(currentMatch, ContigBegin()) >= 200){
-                    std::cout << "After Copy Match\n";
-                    write(std::cout, currentMatch);
-                }
-
                 appendValue(appender, currentMatch, Generous(), TThreading());
              }
              ++matchIt;
@@ -1055,7 +1059,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
         while (find(finderInfix, needle, patternInfix, -static_cast<int>(maxErrors + 1)))
         {
-            uint16_t currentErrors = -getScore(patternInfix);
+            int currentErrors = -getScore(patternInfix);
             if(minErrors > currentErrors)
                 minErrors = currentErrors;
         }
@@ -1092,11 +1096,13 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         }
     }
 
+    SEQAN_ASSERT_NOT(endPos == 0);
+/*
     if(endPos == 0){
         std::cout << "EndPos failed\n" << "Current: " << tmpErrors << "\n";
         write(std::cout, match);
         std::cout << text << "\n" << needle << "\n";
-    }
+    }*/
 
 //     TContigSeqInfix infixPrefix = infix(text, 0, endPos);
     TStringInfixRev infixRev(text);
@@ -1125,12 +1131,6 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     contigEnd = posAdd(contigEnd, endPos);
     contigBegin = posAdd(contigBegin, length(text) - startPos);
     setContigPosition(match, contigBegin, contigEnd);
-
-    if (getMember(match, ContigEnd()) - getMember(match, ContigBegin()) >= 200){
-            std::cout << "After VerificationE Match\n";
-            write(std::cout, match);
-    }
-
 
     return(minErrors <= maxErrors);
 }
@@ -2363,7 +2363,7 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
             }
     }*/
     aggregateMatches(mainMapper, mainMapper.reads.seqs);
-
+/*
 //     std::cout << "Print Filtered Matches\n";
     for(int i = 0; i < length(mainMapper.matchesSetByCoord); ++i){
             auto const & matches = mainMapper.matchesSetByCoord[i];
@@ -2377,12 +2377,14 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
 //                 write(std::cout, *matchIt);
                 ++matchIt;
             }
-    }
+    }*/
 
 
 
 
     rankMatches2(mainMapper, mainMapper.reads.seqs);
+
+    /*
     for(int i = 0; i < length(mainMapper.matchesSetByCoord); ++i){
         auto const & matches = mainMapper.matchesSetByCoord[i];
             auto matchIt = begin(matches, Standard());
@@ -2395,7 +2397,7 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
 //                 write(std::cout, *matchIt);
                 ++matchIt;
             }
-    }
+    }*/
 
 //     transferCigars(mainMapper, disOptions);
     std::cout << "Load All Contigs\n";

@@ -221,6 +221,9 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         TContigInfix const & contigInfix2 = infix(me.contigSeqs[getMember(match, ContigId())],
                                              getMember(match, ContigBegin()) - 3,
                                              getMember(match, ContigEnd()) + 3);
+
+    SEQAN_ASSERT_LEQ(length(contigInfix), length(readSeq) * 2);
+
 /*
     std::cout << "Errors: " << (int)errors << "\n";
     write(std::cout, *matchIt);
