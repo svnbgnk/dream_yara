@@ -710,6 +710,7 @@ inline uint64_t getSortKey(Match<TSpec> const & me, ContigEndITV)
            ((uint64_t)getMember(me, ContigEnd())    <<  (MemberBits<TMatch, ReadSize>::VALUE))                                            |
            ((uint64_t)getMember(me, ReadSizeLen()));
 }
+
 /*
 // ----------------------------------------------------------------------------
 // Function getSortKey(ContigBeginITV)
