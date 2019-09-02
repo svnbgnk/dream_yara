@@ -42,7 +42,7 @@ option (DR_YARA_STATIC_BUILD "Include all libraries in the binaries."           
 
 if (DR_YARA_NATIVE_BUILD)
     add_definitions (-DDR_YARA_NATIVE_BUILD=1)
-    set (SEQAN_CXX_FLAGS "${SEQAN_CXX_FLAGS} -march=native")
+    set (SEQAN_CXX_FLAGS "${SEQAN_CXX_FLAGS} -static-libgcc -static-libstdc++ -march=native")
     if (COMPILER_IS_INTEL)
         set (SEQAN_CXX_FLAGS "${SEQAN_CXX_FLAGS} -xHOST -ipo -no-prec-div -fp-model fast=2")
     endif (COMPILER_IS_INTEL)
