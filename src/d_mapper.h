@@ -1964,7 +1964,7 @@ void spawnMapper(Options const & options,
                  TThreading const & /*threading*/,
                  TSequencing const & /*sequencing*/,
                  TSeedsDistance const & /*distance*/)
-{/*
+{
     if(disOptions.mmap)
     {
         typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TConfig;
@@ -1972,13 +1972,13 @@ void spawnMapper(Options const & options,
         runMapper(mapper, mainMapper, disOptions);
     }
     else
-    {*/
+    {
         typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, Alloc<>>  TConfig;
 
         Mapper<void, TConfig> mapper(options);
         mapper.samplingRate = options.samplingRate;
         runMapper(mapper, mainMapper, disOptions);
-//     }
+    }
 }
 // ----------------------------------------------------------------------------
 // Function configureMapper()

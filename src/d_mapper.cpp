@@ -459,16 +459,18 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     getOptionValue(disOptions.filterType, parser, "filter-type", disOptions.filterTypeList);
 
     // Parse Distributed mapper options
-    uint32_t nob = 0;
-    getOptionValue(nob, parser, "number-of-bins");
-    if (!isSet(parser, "number-of-bins") && disOptions.filterType == NONE)
-    {
-        std::cerr << "Number of bins has to be set if no filter was selected" << "\n";
-        exit(1);
-    }
-    else
-    {
-        disOptions.numberOfBins = nob;
+    if(disOptions.filterType == NONE){
+        uint32_t nob = 0;
+        getOptionValue(nob, parser, "number-of-bins");
+        if (!isSet(parser, "number-of-bins"))
+        {
+            std::cerr << "Number of bins has to be set if no filter was selected" << "\n";
+            exit(1);
+        }
+        else
+        {
+            disOptions.numberOfBins = nob;
+        }
     }
 
     if (isSet(parser, "verbose")) disOptions.verbose = 1;
