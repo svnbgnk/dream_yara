@@ -198,6 +198,9 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     hideOption(getOption(parser, "uncompressed-bam"));
 #endif
 
+    addOption(parser, ArgParseOption("um", "output-unmapped", "Write read ids of unmapped reads in this file separately.",
+                                     ArgParseOption::OUTPUT_FILE));
+
     addOption(parser, ArgParseOption("rg", "read-group", "Specify a read group for all records in the SAM/BAM file.",
                                      ArgParseOption::STRING));
     setDefaultValue(parser, "read-group", disOptions.readGroup);
@@ -383,6 +386,10 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     // Parse output file.
     getOptionValue(disOptions.superOutputFile, parser, "output-file");
+
+
+    getOptionValue(disOptions.unmappedFileName, parser, "output-unmapped");
+
 
     // Parse output format.
     CharString outputFormat;

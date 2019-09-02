@@ -67,6 +67,9 @@ struct MatchesWriter
 
     // Shared-memory read-write data.
     TOutputFile &           outputFile;
+    std::ofstream &         unmappedFile;
+
+    bool                    writeunmappedSeperate;
 
     // Shared-memory read-only data.
     TMatchesViewSet const & matchesSet;
@@ -79,6 +82,8 @@ struct MatchesWriter
     Options const &         options;
 
     MatchesWriter(TOutputFile & outputFile,
+                  std::ofstream & unmappedFile,
+                  bool writeunmappedSeperate,
                   TMatchesViewSet const & matchesSet,
                   TMatchesView const & primaryMatches,
                   TMatchesProbs const & primaryMatchesProbs,
@@ -88,6 +93,8 @@ struct MatchesWriter
                   TReads const & reads,
                   Options const & options) :
         outputFile(outputFile),
+        unmappedFile(unmappedFile),
+        writeunmappedSeperate(writeunmappedSeperate),
         matchesSet(matchesSet),
         primaryMatches(primaryMatches),
         primaryMatchesProbs(primaryMatchesProbs),
@@ -255,6 +262,12 @@ inline void _writeUnmappedRead(MatchesWriter<TSpec, Traits> & me, TReadId readId
 
     clear(me.record);
     _fillReadName(me, readId);
+    if (me.writeunmappedSeperate)
+    {
+        me.unmappedFile << me.record.qName << "\n";
+        return;
+    }
+
     _fillReadSeqQual(me, readId);
     me.record.mapQ = 0;
 
@@ -270,6 +283,11 @@ inline void _writeUnmappedRead(MatchesWriter<TSpec, Traits> & me, TReadId readId
 
     clear(me.record);
     _fillReadName(me, readId);
+    if (me.writeunmappedSeperate)
+    {
+        me.unmappedFile << me.record.qName << "\n";
+        return;
+    }
     _fillReadSeqQual(me, readId);
     me.record.mapQ = 0;
     _fillMateInfo(me, readId);

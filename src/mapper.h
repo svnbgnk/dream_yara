@@ -63,6 +63,7 @@ struct Options
     bool                zipFastq;
     CharString          outputFile;
     TOutputFormat       outputFormat;
+    CharString          unmappedFileName;
     bool                hammingDistance;
     SecondaryAlignments secondaryMatches;
     TList               secondaryMatchesList;
@@ -100,6 +101,7 @@ struct Options
         contigsSum(),
         samplingRate(10),
         zipFastq(false),
+        unmappedFileName(""),
         hammingDistance(false),
         secondaryMatches(TAG),
         uncompressedBam(false),
@@ -1418,8 +1420,18 @@ inline void writeMatches(Mapper<TSpec, TConfig> & me)
     typedef MapperTraits<TSpec, TConfig>        TTraits;
     typedef MatchesWriter<TSpec, TTraits>       TMatchesWriter;
 
+    std::ofstream unmappedFile;
+    bool writeUnmapped = false;
+    if (length(me.options.unmappedFileName) > 0)
+    {
+        writeUnmapped = true;
+        unmappedFile.open(toCString(me.options.unmappedFileName));
+    }
+
     start(me.timer);
     TMatchesWriter writer(me.outputFile,
+                          unmappedFile,
+                          writeUnmapped,
                           me.matchesSet,
                           me.primaryMatches, me.primaryMatchesProbs,
                           me.primaryCigars, me.cigarsSet,
