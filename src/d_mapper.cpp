@@ -148,6 +148,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("HD", "hammingD", "Use Hamming Distance to Search for reads."));
 
+    addOption(parser, ArgParseOption("hdp", "hammingDpieces", "Number of pieces searched with Hamming Distance for ITV and Alignment use ED", ArgParseOption::INTEGER));
+
     addOption(parser, ArgParseOption("c", "compare", "Compare hits between OSS and the original Yara seed + extention."));
     hideOption(getOption(parser, "compare"));
 
@@ -353,6 +355,8 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
             std::cerr << getAppName(parser) << ": Too many arguments!" << std::endl;
             return ArgumentParser::PARSE_ERROR;
     }
+
+    getOptionValue(disOptions.hammingDpieces, parser, "hammingDpieces");
 
     getOptionValue(disOptions.MappabilityDirectory, parser, "mappability");
 

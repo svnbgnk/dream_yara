@@ -64,6 +64,7 @@ public:
     bool                    noMappability = false;
     bool                    earlyLeaf = false;
     bool                    compare = false;
+    uint32_t                hammingDpieces = 0;
     uint32_t                threshold = 11;
     uint32_t                itvOccThreshold = 10;
     uint32_t                fmTreeThreshold = 1000;
@@ -151,57 +152,6 @@ struct DelegateDirect
         }
     }
 };
-
-/*
-template <typename TSpec, typename TConfig>
-struct DelegateUnfiltered
-{
-    typedef MapperTraits<TSpec, TConfig>                   Traits;
-    typedef typename Traits::TMatch                        TMatch;
-    typedef typename Traits::TMatchesAppender              TMatches;
-    typedef typename Traits::TContigsPos                   TContigsPos;
-//     typedef typename Traits::TSA                           TSA;
-//     typedef typename Size<TSA>::Type                        TSAPos;
-//     typedef typename Value<TSA>::Type                       TSAValue;
-    typedef typename Traits::TReadSeqs                     TReadSeqs;
-    typedef typename Size<TReadSeqs>::Type                  TReadId;
-
-
-    TMatches &          matches;
-    bool const          noOverlap;
-
-    DelegateUnfiltered(TMatches & matches,
-                       bool noOverlap) :
-        matches(matches),
-        noOverlap(noOverlap)
-    {}
-
-//     template <typename TNeedleId, typename TMatchErrors>
-    template <typename TNeedleId, typename TSARange, typename TPos>
-    void operator() (OSSContext<TSpec, TConfig> & ossContext, TNeedleId const needleId, TSARange const & rangeInfo, TPos & pos)
-    {
-
-        //TODO move into function calls
-        uint8_t overlap_l = rangeInfo.limOffsets.i1;
-        uint8_t overlap_r = rangeInfo.limOffsets.i2;
-        uint32_t occLength = rangeInfo.repLength;
-        TMatch hit;
-        if(noOverlap)
-            setContigPosition(hit, pos, posAdd(pos, occLength));
-        else
-            setContigPosition(hit, posAdd(pos, 0 - overlap_l), posAdd(pos, occLength + overlap_r));
-
-        hit.errors = rangeInfo.errors;
-        setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
-
-            //read Context is done as soon as a range is reported
-//             TReadId readId = getReadId(ossContext.readSeqs, needleId);
-//             setMapped(ossContext.ctx, readId);
-//             setMinErrors(ossContext.ctx, readId, errors);
-
-        appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
-    }
-};*/
 
 
 template <typename TSpec, typename TConfig>
@@ -1236,6 +1186,14 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.earlyLeaf = disOptions.earlyLeaf;
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
     ossContext.noSAfilter = disOptions.noSAfilter;
+    ossContext.hammingDpieces = disOptions.hammingDpieces;
+
+    start(me.timer);
+
+    if(disOptions.hammingDistance)
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, mybiIndex, me.bitvectors, readSeqs, HammingDistance());
+    else
+        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, mybiIndex, me.bitvectors, readSeqs, EditDistance());
 
 
     //set sampling rate of compressed suffix array
