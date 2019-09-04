@@ -86,6 +86,7 @@ struct Options
 
     unsigned            readsCount;
     bool                mmap;
+    uint32_t            allocThreshold;
     unsigned            threadsCount;
     unsigned            hitsThreshold;
     bool                rabema;
@@ -118,6 +119,7 @@ struct Options
         verifyMatches(true),
         readsCount(100000),
         mmap(false),
+        allocThreshold(10000),
         threadsCount(1),
         hitsThreshold(300),
         rabema(false),
