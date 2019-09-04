@@ -119,7 +119,7 @@ struct Options
         verifyMatches(true),
         readsCount(100000),
         mmap(false),
-        allocThreshold(10000),
+        allocThreshold(20000),
         threadsCount(1),
         hitsThreshold(300),
         rabema(false),

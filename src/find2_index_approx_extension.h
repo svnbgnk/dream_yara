@@ -1761,6 +1761,13 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     //use either specified maxumum readLength given as input or length of first needle
     linkBitvectors(ossContext, scheme, bitvectors, lbitvectors);
 
+    ossContext.hammingDpieces = std::floor(ossContext.hammingDpercentage * scheme[0].pi.size());
+    if(ossContext.hammingDpercentage != 0)
+    {
+        std::cout << "Scheme size: " << scheme[0].pi.size() << "\n";
+        std::cout << "Seach pieces with hamming distance: " << ossContext.hammingDpieces << "\n";
+    }
+
     // Iterate over all reads.
     iterate(needles, [&](TReadIt const & readIt)
     {

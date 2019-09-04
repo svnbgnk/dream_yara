@@ -131,7 +131,8 @@ template <typename TVector, typename TVSupport>
 inline void loadAllBitvectors(CharString const bitvectorpath,
                               std::vector<std::pair<TVector, TVSupport>> & bitvectorsOutput,
                               std::vector<std::pair<uint32_t, bool> > & metaOutput,
-                              uint32_t const K)
+                              uint32_t const K,
+                              bool verbose = true)
 {
      std::string tmp_file_name = std::string("") + toCString(bitvectorpath) + "left_anchored_bvector_" +  std::to_string(K) + "_shift_" +  std::to_string(0);
      if(file_exists(tmp_file_name)){
@@ -162,7 +163,8 @@ inline void loadAllBitvectors(CharString const bitvectorpath,
     }
     else
     {
-        std::cerr << tmp_file_name << " not found" <<  "\n";
+        if(verbose)
+            std::cerr << tmp_file_name << " not found" <<  "\n";
     }
 }
 /*

@@ -148,7 +148,7 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("HD", "hammingD", "Use Hamming Distance to Search for reads."));
 
-    addOption(parser, ArgParseOption("hdp", "hammingDpieces", "Number of pieces searched with Hamming Distance for ITV and Alignment use ED", ArgParseOption::INTEGER));
+    addOption(parser, ArgParseOption("hdp", "hammingDpercentage", "(Speed-up heuristic search) Percentage of pieces searched with Hamming Distance for ITV and Alignment use ED", ArgParseOption::DOUBLE));
 
     addOption(parser, ArgParseOption("c", "compare", "Compare hits between OSS and the original Yara seed + extention."));
     hideOption(getOption(parser, "compare"));
@@ -290,7 +290,7 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("at", "alloc-threshold", "If more than specified reads are for a bin memory allocation is used.", ArgParseOption::INTEGER));
 
-    setDefaultValue(parser, "threads", disOptions.allocThreshold);
+    setDefaultValue(parser, "alloc-threshold", disOptions.allocThreshold);
 
     addOption(parser, ArgParseOption("t", "threads", "Specify the number of threads to use.", ArgParseOption::INTEGER));
     setMinValue(parser, "threads", "1");
@@ -360,7 +360,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
             return ArgumentParser::PARSE_ERROR;
     }
 
-    getOptionValue(disOptions.hammingDpieces, parser, "hammingDpieces");
+    getOptionValue(disOptions.hammingDpercentage, parser, "hammingDpercentage");
 
     getOptionValue(disOptions.MappabilityDirectory, parser, "mappability");
 

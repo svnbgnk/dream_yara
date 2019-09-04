@@ -563,7 +563,8 @@ struct OSSContext
     uint32_t itvOccThreshold = 10;
     uint32_t fmTreeThreshold = 1000;
     uint32_t fmTreeBreak = 10;
-    uint32_t hammingDpieces = 0;
+    double hammingDpercentage = 0.0;
+    double hammingDpieces = 0;
 
     uint8_t maxError;
     uint8_t strata;

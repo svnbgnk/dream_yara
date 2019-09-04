@@ -64,7 +64,7 @@ public:
     bool                    noMappability = false;
     bool                    earlyLeaf = false;
     bool                    compare = false;
-    uint32_t                hammingDpieces = 0;
+    double                  hammingDpercentage = 0.0;
     uint32_t                threshold = 11;
     uint32_t                itvOccThreshold = 10;
     uint32_t                fmTreeThreshold = 1000;
@@ -1156,9 +1156,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         bPath += "/";
         if(disOptions.verbose > 1)
             std::cout << "\nLoading Bitvectors: " << bPath << "\n";
-        loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, len);
+        loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, len, (disOptions.verbose > 1));
 
-        if(!me.bitvectors.empty()){
+        if(!me.bitvectors.empty() && disOptions.verbose > 1){
             std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << "\n";
             std::cout << "Index Size: " << length(me.biIndex.fwd.sa) << "\n";
             std::cout << "Number of Sequences: " << length(me.contigs.seqs) << "\n";
@@ -1186,18 +1186,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.earlyLeaf = disOptions.earlyLeaf;
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
     ossContext.noSAfilter = disOptions.noSAfilter;
-    ossContext.hammingDpieces = disOptions.hammingDpieces;
-
-    start(me.timer);
-
-    if(disOptions.hammingDistance)
-        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, mybiIndex, me.bitvectors, readSeqs, HammingDistance());
-    else
-        find(0, me.maxError, me.strata, ossContext, delegate, delegateDirect, mybiIndex, me.bitvectors, readSeqs, EditDistance());
-
-
-    //set sampling rate of compressed suffix array
-//     me.biIndex->sa.samplingRate = myConfig.SAMPLING;
+    ossContext.hammingDpercentage = disOptions.hammingDpercentage;
 
     start(me.timer);
 

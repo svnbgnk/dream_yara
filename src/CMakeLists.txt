@@ -54,7 +54,7 @@ if (DR_YARA_STATIC_BUILD)
     # apple does not support fully static builds, but at least libgcc and libstdc++
     if (APPLE)
         message (WARNING "WARNING: Builds on Mac are never fully static.")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -fconcepts")
     else (APPLE)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
     endif (APPLE)
