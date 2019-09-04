@@ -1915,7 +1915,8 @@ void spawnMapper(Options const & options,
                  TSequencing const & /*sequencing*/,
                  TSeedsDistance const & /*distance*/)
 {
-    uint32_t numFilteredReads = disOptions.origReadIdMap[disOptions.currentBinNo].size();
+
+    uint32_t numFilteredReads = (disOptions.filterType == NONE) ? getReadSeqsCount(mainMapper.reads.seqs) : disOptions.origReadIdMap[disOptions.currentBinNo].size();
     if(disOptions.mmap || numFilteredReads < disOptions.allocThreshold)
     {
         if(disOptions.verbose > 1)
