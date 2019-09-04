@@ -688,10 +688,12 @@ int main(int argc, char const ** argv)
     if (res != ArgumentParser::PARSE_OK)
         return res == ArgumentParser::PARSE_ERROR;
 
-    if (disOptions.numberOfBins == 0){
-    if (!readFilterMetadata(disOptions))
-        return 1;
+    if (disOptions.numberOfBins == 0)
+    {
+        if (!readFilterMetadata(disOptions))
+            return 1;
     }
+    std::cout << "Number of Bins: " << disOptions.numberOfBins <<"\n";
 
     if (!verifyIndicesDir(disOptions.IndicesDirectory, disOptions.numberOfBins))
         return 1;

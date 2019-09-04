@@ -1918,12 +1918,16 @@ void spawnMapper(Options const & options,
     uint32_t numFilteredReads = disOptions.origReadIdMap[disOptions.currentBinNo].size();
     if(disOptions.mmap || numFilteredReads < disOptions.allocThreshold)
     {
+        if(disOptions.verbose > 1)
+            std::cout << "Memory Mapping\n";
         typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TConfig;
         Mapper<void, TConfig> mapper(options);
         runMapper(mapper, mainMapper, disOptions);
     }
     else
     {
+        if(disOptions.verbose > 1)
+            std::cout << "Memory Allocation\n";
         typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, Alloc<>>  TConfig;
 
         Mapper<void, TConfig> mapper(options);
@@ -2045,6 +2049,8 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
             for (uint32_t i=0; i < disOptions.numberOfBins; ++i)
             {
 
+                if(disOptions.verbose > 1)
+                    std::cout << "Load contig from " << i << "bin.\n";
                 TContigs tmpContigs;
                 CharString fileName;
                 appendFileName(fileName, disOptions.IndicesDirectory, i);

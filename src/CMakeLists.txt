@@ -42,7 +42,7 @@ option (DR_YARA_STATIC_BUILD "Include all libraries in the binaries."           
 
 if (DR_YARA_NATIVE_BUILD)
     add_definitions (-DDR_YARA_NATIVE_BUILD=1)
-    set (SEQAN_CXX_FLAGS "${SEQAN_CXX_FLAGS} -static-libgcc -static-libstdc++ -march=native")
+    set (SEQAN_CXX_FLAGS "${SEQAN_CXX_FLAGS} -static-libgcc -static-libstdc++ -march=native -fconcepts")
     if (COMPILER_IS_INTEL)
         set (SEQAN_CXX_FLAGS "${SEQAN_CXX_FLAGS} -xHOST -ipo -no-prec-div -fp-model fast=2")
     endif (COMPILER_IS_INTEL)
@@ -54,7 +54,7 @@ if (DR_YARA_STATIC_BUILD)
     # apple does not support fully static builds, but at least libgcc and libstdc++
     if (APPLE)
         message (WARNING "WARNING: Builds on Mac are never fully static.")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -fconcepts")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
     else (APPLE)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
     endif (APPLE)
