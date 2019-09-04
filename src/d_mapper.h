@@ -80,7 +80,7 @@ public:
     bool                    skipSamHeader = false;
 
     uint32_t                kmerSize = 20;
-    uint32_t                numberOfBins = 64;
+    uint32_t                numberOfBins = 0;
 
     uint32_t                currentBinNo = 0;
     uint64_t                filteredReads = 0;
@@ -1196,8 +1196,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
 
     if(disOptions.verbose > 1){
+        std::cout << "Mapping " << length(readSeqs) << " reads\n";
         std::cout << "maxError: " << (int)me.maxError << "\t" << (int)me.strata << "\n";
-        std::cout << "Use overlap during reporting:  " << !disOptions.noDelayITV << "\n";
     }
 
     if(!disOptions.noMappability){
@@ -1761,6 +1761,9 @@ inline void _mapReadsImplOSS(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCon
 template <typename TSpec, typename TMainConfig, typename TFilter>
 inline void clasifyLoadedReads(Mapper<TSpec, TMainConfig>  & mainMapper, TFilter const & filter, DisOptions & disOptions)
 {
+    if (disOptions.verbose > 1)
+        std::cerr << "Clasify loaded Reads in " << disOptions.numberOfBins << " bin\n";
+
     start(mainMapper.timer);
 
     uint32_t numReads = getReadsCount( mainMapper.reads.seqs);
@@ -1965,7 +1968,8 @@ void spawnMapper(Options const & options,
                  TSequencing const & /*sequencing*/,
                  TSeedsDistance const & /*distance*/)
 {
-    if(disOptions.mmap)
+    uint32_t numFilteredReads = disOptions.origReadIdMap[disOptions.currentBinNo].size();
+    if(disOptions.mmap || numFilteredReads < disOptions.allocThreshold)
     {
         typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum>  TConfig;
         Mapper<void, TConfig> mapper(options);

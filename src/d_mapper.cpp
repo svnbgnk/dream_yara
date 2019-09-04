@@ -286,6 +286,10 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
         "This makes the search only slightly slower, but the index does not have to be loaded into main memory "
         "(which takes some time)."));
 
+    addOption(parser, ArgParseOption("at", "alloc-threshold", "If more than specified reads are for a bin memory allocation is used.", ArgParseOption::INTEGER));
+
+    setDefaultValue(parser, "threads", disOptions.allocThreshold);
+
     addOption(parser, ArgParseOption("t", "threads", "Specify the number of threads to use.", ArgParseOption::INTEGER));
     setMinValue(parser, "threads", "1");
     setMaxValue(parser, "threads", "2048");
@@ -453,6 +457,8 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "mmap")) disOptions.mmap = true;
 
     getOptionValue(disOptions.threadsCount, parser, "threads");
+    getOptionValue(disOptions.allocThreshold, parser, "alloc-threshold");
+
     getOptionValue(disOptions.readsCount, parser, "reads-batch");
 
     // Parse contigs index prefix.
@@ -482,7 +488,6 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     if (isSet(parser, "verbose")) disOptions.verbose = 1;
     if (isSet(parser, "very-verbose")) disOptions.verbose = 2;
-
 
 
     // Get version.
@@ -515,8 +520,8 @@ void configureDisMapper(DisOptions & disOptions,
     }
     else
     {
-        throw RuntimeError("Maximum contig3 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
-//         spawnDisMapper<TContigsSize, TContigsLen, uint64_t>(disOptions, threading, sequencing, distance);
+//         throw RuntimeError("Maximum contig3 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+        spawnDisMapper<TContigsSize, TContigsLen, uint64_t>(disOptions, threading, sequencing, distance);
     }
 }
 
@@ -657,8 +662,9 @@ bool readFilterMetadata(DisOptions &  disOptions)
     in.read((char*)p, x * sizeof(uint64_t));
 
 //    std::cout << metadataVec << std::endl;
-    if(!disOptions.filterType == NONE)
+//     if(!disOptions.filterType == NONE){
         disOptions.numberOfBins = metadataVec[0];
+//     }
     disOptions.kmerSize = metadataVec[2];
     return true;
 }
@@ -678,8 +684,10 @@ int main(int argc, char const ** argv)
     if (res != ArgumentParser::PARSE_OK)
         return res == ArgumentParser::PARSE_ERROR;
 
+    if (disOptions.numberOfBins == 0){
     if (!readFilterMetadata(disOptions))
         return 1;
+    }
 
     if (!verifyIndicesDir(disOptions.IndicesDirectory, disOptions.numberOfBins))
         return 1;
