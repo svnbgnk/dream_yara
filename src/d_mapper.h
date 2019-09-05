@@ -1092,6 +1092,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           StringSet<TReadSeqs, TSeqsSpec> & readSeqs,
                           DisOptions & disOptions)
 {
+    // add Option to automatically turn off ITV and Delayed ITV if index is to short length(me.biIndex.fwd.sa) more than 10.000.000
+    // calculate threshold? ceil(indexlength/64*10^5)
+
     uint32_t len;
     if(disOptions.readLength != 0)
         len = disOptions.readLength;
@@ -1119,18 +1122,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
 
-/*
-    typedef typename TTraits::TIndexConfig                      TIndexConfig;
-    TIndexConfig::SAMPLING = me.samplingRate;
-
-    typedef FMIndex<void, TIndexConfig>                             TIndexSpec;
-    typedef BidirectionalIndex<TIndexSpec>                          TBiIndexSpec;
-    typedef Index<typename TIndexConfig::Text, TIndexSpec>          TIndex;
-    typedef Index<typename TIndexConfig::Text, TBiIndexSpec>        TBiIndex;
-
-    TBiIndex & mybiIndex = me.biIndex;
-
-    */
 
     TMatchesAppender appender(me.matchesByCoord);
     bool noOverlap = disOptions.noSAfilter && (disOptions.determineExactSecondaryPos || disOptions.noDelayITV || disOptions.hammingDistance);
@@ -1179,6 +1170,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
     ossContext.delayITV = !disOptions.noDelayITV;
+    ossContext.anyITV = !disOptions.noITV || !disOptions.noDelayITV;
     ossContext.earlyLeaf = disOptions.earlyLeaf;
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
     ossContext.noSAfilter = disOptions.noSAfilter;

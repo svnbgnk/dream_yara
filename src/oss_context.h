@@ -558,6 +558,7 @@ struct OSSContext
     bool trackReadCount = false;
     bool itv = true;
     bool delayITV = false;
+    bool anyITV = false;
     bool noSAfilter = false;
     bool earlyLeaf = false;
     uint32_t itvOccThreshold = 10;
@@ -654,7 +655,7 @@ struct OSSContext
                       uint8_t const blockIndex,
                       TSALength ivalOne)
     {
-        return(itv && ivalOne < itvOccThreshold/*(static_cast<int>(s.pi.size()) - blockIndex - 1 + normal.directsearchblockoffset) * normal.directsearch_th*/);
+        return(anyITV && ivalOne < itvOccThreshold/*(static_cast<int>(s.pi.size()) - blockIndex - 1 + normal.directsearchblockoffset) * normal.directsearch_th*/);
     }
 
 
@@ -667,7 +668,7 @@ struct OSSContext
                           OptimalSearch<nbrBlocks> const & s,
                           uint8_t const blockIndex)
     {
-        return(itv && iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 < itvOccThreshold/*< (s.pi.size() - blockIndex - 1 + comp.directsearchblockoffset) * comp.directsearch_th*/);
+        return(anyITV && iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 < itvOccThreshold/*< (s.pi.size() - blockIndex - 1 + comp.directsearchblockoffset) * comp.directsearch_th*/);
     }
 
     template <typename TSALength>
