@@ -1022,23 +1022,17 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     }
     else
     {
-        minErrors = 0;
+        minErrors = getErrorsOSS(match);
     }
 
 
     TFinder finder(text);
     int mErrors = maxErrors * 4;
     TContigsLen endPos = 0;
-    int tmpErrors = 99999;
     while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 4)))
     {
         int currentEnd = position(finder) + 1;
         int currentErrors = -getScore(pattern);
-        if (currentErrors <= tmpErrors)
-            tmpErrors = currentErrors;
-//         if (getValue(text, currentEnd) != back(needle))
-//             ++currentErrors;
-//         std::cout << currentErrors << "\t" << currentEnd << "\n";
         if (currentErrors <= mErrors)
         {
             mErrors = currentErrors;
@@ -1047,33 +1041,35 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     }
 
     SEQAN_ASSERT_NOT(endPos == 0);
-/*
-    if(endPos == 0){
-        std::cout << "EndPos failed\n" << "Current: " << tmpErrors << "\n";
-        write(std::cout, match);
-        std::cout << text << "\n" << needle << "\n";
-    }*/
 
-//     TContigSeqInfix infixPrefix = infix(text, 0, endPos);
-    TStringInfixRev infixRev(text);
-    TNeedleInfixRev needleRev(needle);
-    TFinder2 finder2(infixRev);
-
-    mErrors = maxErrors * 4;
-    TContigsLen startPos = endPos;
-
-    while (find(finder2, needleRev, patternRev, -static_cast<int>(maxErrors * 4)))
+    TContigsLen startPos;
+    if (minErrors == 0)
     {
-        int currentEnd = position(finder2) + 1;
-        int currentErrors = -getScore(patternRev);
-//         std::cout << currentErrors << "\t" << currentEnd << "\n";
-        if (currentErrors <= mErrors)
-        {
-            mErrors = currentErrors;
-            startPos = currentEnd;
-        }
+        startPos = length(text) - (endPos - length(needle));
     }
+    else
+    {
+    //     TContigSeqInfix infixPrefix = infix(text, 0, endPos);
+        TStringInfixRev infixRev(text);
+        TNeedleInfixRev needleRev(needle);
+        TFinder2 finder2(infixRev);
 
+        startPos = endPos;
+        mErrors = maxErrors * 4;
+
+        while (find(finder2, needleRev, patternRev, -static_cast<int>(maxErrors * 4)))
+        {
+            int currentEnd = position(finder2) + 1;
+            int currentErrors = -getScore(patternRev);
+    //         std::cout << currentErrors << "\t" << currentEnd << "\n";
+            if (currentErrors <= mErrors)
+            {
+                mErrors = currentErrors;
+                startPos = currentEnd;
+            }
+        }
+        SEQAN_ASSERT_GEQ(endPos - startPos + minErrors, length(needle));
+    }
 
     //there is no need to report the minimum error or that a read mapped since this case in already in-text-Verification inside the optimal search schemes.
     TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
@@ -2051,7 +2047,7 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
             {
 
                 if(disOptions.verbose > 1)
-                    std::cout << "Load contig from " << i << "bin.\n";
+                    std::cout << "Load contig from bin" << i << ".\n";
                 TContigs tmpContigs;
                 CharString fileName;
                 appendFileName(fileName, disOptions.IndicesDirectory, i);

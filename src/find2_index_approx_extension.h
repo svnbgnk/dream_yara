@@ -644,26 +644,34 @@ inline void inTextVerificationN(TContex & ossContext,
         }
     }
 
-    // no longer use known prefix to calculate start position
-    // just reverse both sequences
-//     TString infixPrefix = infix(ex_infix, 0, endPos);
-
-    TStringInfixRev infixRev(ex_infix);
-    TNeedleInfixRev needleRev(needle);
-    TFinder2 finder2(infixRev);
-
-    mErrors = max_e * 4;
-    TContigsLen startPos = endPos;
-
-    while (find(finder2, needleRev, patternRev, -static_cast<int>(max_e * 4)))
+    TContigsLen startPos;
+    if(minErrors == 0){
+        startPos = length(ex_infix) - (endPos - length(needle));
+    }
+    else
     {
-        int currentEnd = position(finder2) + 1;
-        int currentErrors = -getScore(patternRev);
 
-        if (currentErrors <= mErrors)
+        // no longer use known prefix to calculate start position
+        // just reverse both sequences
+    //     TString infixPrefix = infix(ex_infix, 0, endPos);
+
+        TStringInfixRev infixRev(ex_infix);
+        TNeedleInfixRev needleRev(needle);
+        TFinder2 finder2(infixRev);
+
+        mErrors = max_e * 4;
+        TContigsLen startPos = endPos;
+
+        while (find(finder2, needleRev, patternRev, -static_cast<int>(max_e * 4)))
         {
-            mErrors = currentErrors;
-            startPos = currentEnd;
+            int currentEnd = position(finder2) + 1;
+            int currentErrors = -getScore(patternRev);
+
+            if (currentErrors <= mErrors)
+            {
+                mErrors = currentErrors;
+                startPos = currentEnd;
+            }
         }
     }
 
@@ -678,7 +686,7 @@ inline void inTextVerificationN(TContex & ossContext,
     call delegateDirect with delegateDirect(ossContext, sa_info_tmp, ...
     */
 
-    delegateDirect(ossContext, posAdd(sa_info_tmp, length(infixRev) - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
+    delegateDirect(ossContext, posAdd(sa_info_tmp, length(ex_infix) - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
 }
 
 template <typename TSpec, typename TConfig,
