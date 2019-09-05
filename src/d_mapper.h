@@ -1224,7 +1224,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         clear(me.matchesByCoord);
         aggregateMatchesOSS(me2, readSeqs);
     }
-    else if(!ossContext.delayITV)
+    else if(!ossContext.delayITV && noOverlap)
     {
         std::cout << "ITV during Search\n";
         aggregateMatchesOSS(me, readSeqs);
@@ -1389,6 +1389,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         me.stats.inTextVerification += getValue(me.timer);
 
         if(disOptions.verbose > 1){
+            std::cout << "ITV time: " << me.timer << "\n";
             std::cout << "Hits accepted: " << valids << " OSS: " << oss << " merges: " << merges << " dups: " << dups << " from: " << lengthSum(me.matchesSetByCoord) << "\n";
         }
     }
