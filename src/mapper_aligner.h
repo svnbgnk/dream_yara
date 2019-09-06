@@ -218,9 +218,9 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
                                              getMember(match, ContigBegin()),
                                              getMember(match, ContigEnd()));
 
-        TContigInfix const & contigInfix2 = infix(me.contigSeqs[getMember(match, ContigId())],
-                                             getMember(match, ContigBegin()) - 3,
-                                             getMember(match, ContigEnd()) + 3);
+    TContigInfix const & contigInfix2 = infix(me.contigSeqs[getMember(match, ContigId())],
+                                             getMember(match, ContigBegin()) - me.maxError,
+                                             getMember(match, ContigEnd()) + me.maxError);
 
     SEQAN_ASSERT_LEQ(length(contigInfix), length(readSeq) * 2);
 
@@ -253,13 +253,59 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         else
             dpErrors = _align(contigGaps, readGaps, 2*errors);
 
+
+        if(dpErrors > (int)errors)
+    {
+            std::cout << "Errors: " << (int)errors << "\t dpErrors: " << dpErrors << "\n";
+            std::cout << "K-band " << (int)(4 * me.maxError) << "\n";
+            write(std::cout, *matchIt);
+            std::cout << readSeq << "\n";
+            std::cout << contigInfix << "\n";
+            std::cout << contigInfix2 << "display max bases in both directions" << "\n";
+            std::cout << readGaps2 << "\n";
+            std::cout << contigGaps2 << "\n\n";
+            std::cout << readGaps << "\n" << contigGaps << "\n";
+            print_cigar(me.cigar);
+
+
+            clear(me.contigAnchors);
+            clear(me.readAnchors);
+            TContigGaps contigGaps2(contigInfix2, me.contigAnchors);
+            TReadGaps readGaps2(readSeq, me.readAnchors);
+            contigGaps = contigGaps2;
+            readGaps = readGaps2;
+
+            if(!me.options.hammingDistance)
+                dpErrors = _align(contigGaps, readGaps, 4 * me.maxError, TSpec());
+            //TODO check this //2*maxError == Overlap + 2*errors since insertion cause an additional overlap error
+            else
+                dpErrors = _align(contigGaps, readGaps, 2*errors);
+
+
+
+            if(dpErrors > (int)errors){
+                std::cout << readSeq << "\n";
+                std::cout << contigInfix << "\n";
+                setInvalid(match);
+                std::cout << "No valid alignment found\n";
+                return;
+            }
+
+            if (me.options.errorRate <  (double)dpErrors / length(readSeq)){
+                std::cout << "Error Rate to high alignment\n";
+                setInvalid(match);
+                return;
+            }
+
+        }
+
         SEQAN_ASSERT_LEQ(dpErrors, (int)errors);
         ignoreUnusedVariableWarning(dpErrors);
 
 //         std::cout << readGaps  << "\n" << contigGaps<< "\n\n";
         clipSemiGlobal(contigGaps, readGaps);
 
-//         std::cout << readGaps << "\n" << contigGaps << "\n";
+
 
         // Shrink the match after realigning and clipping.
         TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
@@ -271,6 +317,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         if(getSeqOffset(contigEnd) >= length(me.contigSeqs[getMember(match, ContigId())]))
         {
             std::cout << "Endposition after chromosom\n";
+            std::cout << readGaps << "\n" << contigGaps << "\n";
             setSeqOffset(contigEnd, length(me.contigSeqs[getMember(match, ContigId())]));
 //             setInvalid(match);
             return;
@@ -297,20 +344,6 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     clear(me.cigar);
     getCigarString(me.cigar, contigGaps, readGaps, length(contigInfix));
 
-    if(length(me.cigar) > length(me.cigarSet[matchId])){
-        std::cout << "Errors: " << (int)errors << "\t dpErrors: " << dpErrors << "\n";
-        std::cout << "K-band " << (int)(4 * me.maxError) << "\n";
-        write(std::cout, *matchIt);
-        std::cout << readSeq << "\n";
-        std::cout << contigInfix << "\n";
-        std::cout << "display +3 bases in both directions: " << contigInfix2 << "\n";
-        std::cout << readGaps2 << "\n";
-        std::cout << contigGaps2 << "\n\n";
-        std::cout << readGaps << "\n" << contigGaps << "\n";
-        print_cigar(me.cigar);
-        setInvalid(match);
-        return;
-    }
 
 //     SEQAN_CHECK(_getQueryLength(me.cigar) == length(readSeq), "CIGAR error.");
 

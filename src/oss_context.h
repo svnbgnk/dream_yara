@@ -567,6 +567,9 @@ struct OSSContext
     double hammingDpercentage = 0.0;
     double hammingDpieces = 0;
 
+    double errorRate;
+    double strataRate;
+
     uint8_t maxError;
     uint8_t strata;
     uint32_t readLength;
@@ -640,9 +643,11 @@ struct OSSContext
         uni.print();
     }
 
-    void loadInputParameters(uint8_t inMaxError, uint8_t inStrata, uint32_t inReadLength, uint32_t inNumberOfSequences, uint32_t inSamplingRate, uint32_t inFmTreeThreshold, uint32_t infmTreeBreak){
+    void loadInputParameters(uint8_t inMaxError, uint8_t inStrata, double inErrorRate, double inStrataRate, uint32_t inReadLength, uint32_t inNumberOfSequences, uint32_t inSamplingRate, uint32_t inFmTreeThreshold, uint32_t infmTreeBreak){
         maxError = inMaxError;
         strata = inStrata;
+        errorRate = inErrorRate;
+        strataRate = inStrataRate;
         readLength = inReadLength;
         numberOfSequences = inNumberOfSequences;
         samplingRate = inSamplingRate;
@@ -676,7 +681,7 @@ struct OSSContext
                          uint8_t const blockIndex,
                          TSALength ivalOne)
     {
-        return(itv && ivalOne < itvOccThreshold/*(static_cast<int>(blockSize) - blockIndex - 1 + uni.directsearchblockoffset) * uni.directsearch_th*/);
+        return(anyITV && ivalOne < itvOccThreshold/*(static_cast<int>(blockSize) - blockIndex - 1 + uni.directsearchblockoffset) * uni.directsearch_th*/);
     }
 
     template<size_t nbrBlocks>

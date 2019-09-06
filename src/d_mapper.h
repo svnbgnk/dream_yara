@@ -57,7 +57,7 @@ public:
 
     CharString              MappabilityDirectory;
     bool                    ossOff = false;
-    bool                    noITV = false;
+    bool                    itv = false;
     bool                    noSAfilter = false;
     bool                    noDelayITV = false;
     bool                    determineExactSecondaryPos = true;
@@ -139,6 +139,11 @@ struct DelegateDirect
         hit.errors = errors;
         setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
+        if (errors <= ossContext.maxError && ossContext.errorRate < getErrorRate(hit, ossContext.readSeqs)){
+            std::cout << "Error Rate to high Direct\n";
+            return;
+        }
+
         appendValue(matches, hit, Generous(), typename Traits::TThreading());
 
         if(errors <= ossContext.maxError){
@@ -201,14 +206,10 @@ struct Delegate
         hit.errors = rangeInfo.errors;
         setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
-/*
-        if (!noOverlap && (getMember(hit, ContigEnd()) - getMember(hit, ContigBegin())) <= ossContext.readLength)
-        {
-            std::cout << "After adding overlap Match\n";
-            write(std::cout, hit);
-            std::cout << "maxError: " << maxError << "\n";
-            std::cout << "pos " << pos << "\t" << occLength << "\n";
-        }*/
+          if (ossContext.errorRate < getErrorRate(hit, ossContext.readSeqs)){
+            std::cout << "Error Rate to high del\n";
+            return;
+        }
 
 
         appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
@@ -1103,8 +1104,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     disOptions.readLength = len;
 
-    me.maxError = std::ceil(me.options.errorRate * len);
-    me.strata = std::ceil(disOptions.strataRate * len);
+    me.maxError = std::floor(disOptions.errorRate * len);
+    me.strata = std::floor(disOptions.strataRate * len);
     Mapper<void, TConfig> me2(disOptions);
 
     //tracking
@@ -1135,6 +1136,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     if(disOptions.verbose > 1){
         std::cout << "Mapping " << length(readSeqs) << " reads\n";
         std::cout << "maxError: " << (int)me.maxError << "\t" << (int)me.strata << "\n";
+        std::cout << "ITV:" << disOptions.itv << "\t" << !disOptions.noDelayITV << "\n";
+        std::cout << "SuffixFilter: " << !disOptions.noSAfilter << "\n";
     }
 
     if(!disOptions.noMappability){
@@ -1165,12 +1168,12 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     if(disOptions.verbose > 1)
         std::cout << "SAMPLING RATE: " << me.samplingRate << "\n";
 
-    ossContext.loadInputParameters(me.maxError, me.strata, len, length(me.contigs.seqs), me.samplingRate, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
-    ossContext.itv = !disOptions.noITV;
+    ossContext.loadInputParameters(me.maxError, me.strata, disOptions.errorRate, disOptions.strataRate, len, length(me.contigs.seqs), me.samplingRate, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
+    ossContext.itv = disOptions.itv;
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
     ossContext.delayITV = !disOptions.noDelayITV;
-    ossContext.anyITV = !disOptions.noITV || !disOptions.noDelayITV;
+    ossContext.anyITV = (disOptions.itv || !disOptions.noDelayITV);
     ossContext.earlyLeaf = disOptions.earlyLeaf;
     ossContext.itvOccThreshold = disOptions.itvOccThreshold;
     ossContext.noSAfilter = disOptions.noSAfilter;
@@ -1283,38 +1286,73 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
                 oss += ossMatch;
 
-                //check Neighborhood
-                if(matchIt != lValid && extendedLength <= (me.maxError * 10) &&
-                   !disOptions.determineExactSecondaryPos &&
-                   getMember(*matchIt, ContigId()) == getMember(*lValid, ContigId()) &&
-                   !(onForwardStrand(*matchIt) ^ onForwardStrand(*lValid)) &&
-                   getMember(*lValid, ContigBegin()) + 2 * me.maxError >= getMember(*matchIt, ContigBegin()))
-                {
-                    bool valid = true;
-                    if(!ossMatch)
+                if(!disOptions.determineExactSecondaryPos){
+                    //check Neighborhood
+                    if(matchIt != lValid && extendedLength <= (me.maxError * 10) &&
+                      getMember(*matchIt, ContigId()) == getMember(*lValid, ContigId()) &&
+                      !(onForwardStrand(*matchIt) ^ onForwardStrand(*lValid)) &&
+                    getMember(*lValid, ContigBegin()) + 2 * me.maxError >= getMember(*matchIt, ContigBegin()))
                     {
-                        uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
-                        uint32_t readId = getReadId(readSeqs, readSeqId);
-                        valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
-                        ++itvJobsDone;
-                        if(valid){
-                            setMapped(me.ctx, readId);
-                            setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
-                        }
-                    }
-                    // extend the last valid match if the current match is valid
-                    if(valid){
-                        int32_t shift = static_cast<int32_t>(getMember(*matchIt, ContigEnd())) - getMember(*lValid, ContigEnd());
-                        if(shift > 0)
+                        bool valid = true;
+                        if(!ossMatch)
                         {
-                            extendedLength += shift;
-                            //merge oss and ITV if extendedLength is under threshold into the lastValid match
-                            shiftEnd(*lValid, shift);
+                            uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
+                            uint32_t readId = getReadId(readSeqs, readSeqId);
+                            valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                            ++itvJobsDone;
+                            if(valid){
+                                setMapped(me.ctx, readId);
+                                setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
+                            }
                         }
-                        ++merges;
+                        if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
+                            std::cout << "Error Rate to high delayed Intext ap merge\n";
+                            valid = false;
+                        }
+
+                        // extend the last valid match if the current match is valid
+                        if(valid){
+                            int32_t shift = static_cast<int32_t>(getMember(*matchIt, ContigEnd())) - getMember(*lValid, ContigEnd());
+                            if(shift > 0)
+                            {
+                                extendedLength += shift;
+                                //merge oss and ITV if extendedLength is under threshold into the lastValid match
+                                shiftEnd(*lValid, shift);
+                            }
+                            ++merges;
+                        }
+                        setInvalid(*matchIt);
+                        ++dups;
                     }
-                    setInvalid(*matchIt);
-                    ++dups;
+                    else
+                    {
+                        bool valid = true;
+                        if(!ossMatch)
+                        {
+                            uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
+                            uint32_t readId = getReadId(readSeqs, readSeqId);
+                            valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                            ++itvJobsDone;
+                            if(valid){
+                                ++valids;
+                                setMapped(me.ctx, readId);
+                                setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
+                            }
+                        }
+                        if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
+                            std::cout << "Error Rate to high delayed Intext ap\n";
+                            valid = false;
+                        }
+                        if(!valid){
+                            setInvalid(*matchIt);
+                            ++dups;
+                        }
+                        else
+                        {
+                            lValid = matchIt;
+                            extendedLength = 0;
+                        }
+                    }
                 }
                 else
                 {
@@ -1341,22 +1379,22 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         }
                         if(!ossMatch)
                             ++itvJobsDone;
+
+                        if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
+                            std::cout << "Error Rate to high delayed Intext\n";
+                            valid = false;
+                        }
+
+
                         if(valid){
                             setMapped(me.ctx, readId);
                             setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
                             ++valids;
-                            lValid = matchIt;
-                            extendedLength = 0;
                         }
                         else
                         {
                             setInvalid(*matchIt);
                         }
-                    }
-                    else
-                    {
-                        lValid = matchIt;
-                        extendedLength = 0;
                     }
                 }
                 ++matchIt;

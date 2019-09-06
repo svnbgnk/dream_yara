@@ -155,11 +155,11 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("nM", "noMappability", "Do not use Mappability in Search Schemes"));
 
-    addOption(parser, ArgParseOption("nI", "noITV", "Only use Optimum Search Schemes to find and verify occurrences"));
+    addOption(parser, ArgParseOption("I", "ITV", "Use In Text Verification to align potential occurrences found Optimum Search Schemes immediatly, this makes sense for large bins with reads occurring often."));
 
     addOption(parser, ArgParseOption("nS", "noSAfilter", "Do not filter suffix array values before reporting them"));
 
-    addOption(parser, ArgParseOption("nD", "noDelayITV", "Use In Text Verification right after finding a a potential Position"));
+    addOption(parser, ArgParseOption("nD", "noDelayITV", "Use In Text Verification right after finding a potential Position"));
 
     addOption(parser, ArgParseOption("ap", "approximateITVJobs", "Do not determine exact starting and endposition of secondary matches (Instead a range which contains the match is given.)"));
 
@@ -376,7 +376,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "hammingD")) disOptions.hammingDistance = true;
     if (isSet(parser, "compare")) disOptions.compare = true;
     if (isSet(parser, "noMappability")) disOptions.noMappability = true;
-    if (isSet(parser, "noITV")) disOptions.noITV = true;
+    if (isSet(parser, "ITV")) disOptions.itv = true;
     if (isSet(parser, "noSAfilter")) disOptions.noSAfilter = true;
     if (isSet(parser, "noDelayITV")) disOptions.noDelayITV = true;
     if (isSet(parser, "approximateITVJobs")) disOptions.determineExactSecondaryPos = false;
