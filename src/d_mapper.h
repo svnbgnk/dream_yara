@@ -1096,16 +1096,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     // add Option to automatically turn off ITV and Delayed ITV if index is to short length(me.biIndex.fwd.sa) more than 10.000.000
     // calculate threshold? ceil(indexlength/64*10^5)
 
-    uint32_t len;
-    if(disOptions.readLength != 0)
-        len = disOptions.readLength;
-    else
-        len = length(readSeqs[0]);
-
-    disOptions.readLength = len;
-
-    me.maxError = std::floor(disOptions.errorRate * len);
-    me.strata = std::floor(disOptions.strataRate * len);
+    me.maxError = disOptions.error;
+    me.strata = disOptions.strata;
     Mapper<void, TConfig> me2(disOptions);
 
     //tracking
@@ -1146,7 +1138,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         bPath += "/";
         if(disOptions.verbose > 1)
             std::cout << "\nLoading Bitvectors: " << bPath << "\n";
-        loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, len, (disOptions.verbose > 1));
+        loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, disOptions.readLength, (disOptions.verbose > 1));
 
         if(!me.bitvectors.empty() && disOptions.verbose > 1){
             std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << "\n";
@@ -1168,7 +1160,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     if(disOptions.verbose > 1)
         std::cout << "SAMPLING RATE: " << me.samplingRate << "\n";
 
-    ossContext.loadInputParameters(me.maxError, me.strata, disOptions.errorRate, disOptions.strataRate, len, length(me.contigs.seqs), me.samplingRate, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
+    ossContext.loadInputParameters(me.maxError, me.strata, disOptions.errorRate, disOptions.strataRate, disOptions.readLength, length(me.contigs.seqs), me.samplingRate, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
     ossContext.itv = disOptions.itv;
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
@@ -1203,10 +1195,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     {
         std::cout << "\nOptimum Search time:\t\t" << me.timer << std::endl;
         std::cout << "Matches count:\t\t\t" << lengthSum(me.matchesByCoord) << std::endl;
-        std::cout << "Default Locates:\t\t" << ossContext.defaultLocates << std::endl;
-        std::cout << "FM-Tree Locates:\t\t" << ossContext.fmtreeLocates << std::endl;
-        std::cout << "FM-Tree FM-LF-Mappings:\t\t" << ossContext.fmtreeBacktrackings << std::endl;
-        std::cout << "FM-Tree Thres LF-Mappings:\t\t" << ossContext.fmtreeBreakLocates << std::endl;
+//         std::cout << "Default Locates:\t\t" << ossContext.defaultLocates << std::endl;
+//         std::cout << "FM-Tree Locates:\t\t" << ossContext.fmtreeLocates << std::endl;
+//         std::cout << "FM-Tree FM-LF-Mappings:\t\t" << ossContext.fmtreeBacktrackings << std::endl;
+//         std::cout << "FM-Tree Thres LF-Mappings:\t\t" << ossContext.fmtreeBreakLocates << std::endl;
 
     }
 
@@ -2423,11 +2415,25 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
     openOutputFile(mainMapper, disOptions);
     openReads(mainMapper);
 
+    bool firstBatch = true;
     while (true)
     {
         if (mainMapper.options.verbose > 1) printRuler(std::cout);
         loadReads(mainMapper);
         if (empty(mainMapper.reads.seqs)) break;
+
+        if(firstBatch)
+        {
+            if(disOptions.readLength == 0)
+                disOptions.readLength = length(mainMapper.reads.seqs[0]);
+            std::cout << "Longest Read Length" << disOptions.readLength << "\n";
+            disOptions.error = std::floor(disOptions.errorRate * disOptions.readLength);
+            disOptions.strata = std::floor(disOptions.strataRate * disOptions.readLength);
+            mainMapper.maxError = disOptions.error;
+            mainMapper.strata = disOptions.strata;
+            firstBatch = false;
+        }
+
         prepairMainMapper(mainMapper, filter, disOptions);
 
         if(disOptions.filterType == NONE){

@@ -213,14 +213,12 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     if (isInvalid(match)) return;
 
     unsigned errors = getMember(match, Errors());
+
     TReadSeq const & readSeq = me.readSeqs[getReadSeqId(match, me.readSeqs)];
     TContigInfix const & contigInfix = infix(me.contigSeqs[getMember(match, ContigId())],
                                              getMember(match, ContigBegin()),
                                              getMember(match, ContigEnd()));
 
-    TContigInfix const & contigInfix2 = infix(me.contigSeqs[getMember(match, ContigId())],
-                                             getMember(match, ContigBegin()) - me.maxError,
-                                             getMember(match, ContigEnd()) + me.maxError);
 
     SEQAN_ASSERT_LEQ(length(contigInfix), length(readSeq) * 2);
 
@@ -256,6 +254,11 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
 
         if(dpErrors > (int)errors)
     {
+            uint8_t ov = (getMember(match, ContigBegin()) > me.maxError) ? me.maxError : 0;
+            TContigInfix const & contigInfix2 = infix(me.contigSeqs[getMember(match, ContigId())],
+                                             getMember(match, ContigBegin()) - ov,
+                                             getMember(match, ContigEnd()) + me.maxError);
+
             std::cout << "Errors: " << (int)errors << "\t dpErrors: " << dpErrors << "\n";
             std::cout << "K-band " << (int)(4 * me.maxError) << "\n";
             write(std::cout, *matchIt);
@@ -317,6 +320,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         if(getSeqOffset(contigEnd) >= length(me.contigSeqs[getMember(match, ContigId())]))
         {
             std::cout << "Endposition after chromosom\n";
+            write(std::cout, match);
             std::cout << readGaps << "\n" << contigGaps << "\n";
             setSeqOffset(contigEnd, length(me.contigSeqs[getMember(match, ContigId())]));
 //             setInvalid(match);

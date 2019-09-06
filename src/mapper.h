@@ -73,6 +73,9 @@ struct Options
     float               errorRate;
     float               indelRate;
     float               strataRate;
+    uint8_t             error;
+    uint8_t             strata;
+    uint32_t            readLength = 0;
     uint64_t            strataCount;
     Sensitivity         sensitivity;
     TList               sensitivityList;
