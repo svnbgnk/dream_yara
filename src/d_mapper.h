@@ -1029,7 +1029,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
     TFinder finder(text);
     int mErrors = maxErrors * 4;
-    TContigsLen endPos = 0;
+    TContigsLen endPos = length(needle);
     while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 4)))
     {
         int currentEnd = position(finder) + 1;
@@ -1077,13 +1077,15 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         }
         SEQAN_ASSERT_GEQ(endPos - startPos + minErrors, length(needle));
     }
-
     bool verbose = false;
-    if(endPos - startPos - minErrors >= length(needle)){
+/*
+ * Is this right or one off?
+
+    if(endPos - startPos - minErrors > length(needle)){
         std::cout << "ERROR match to long\n";
         write(std::cout, match);
         verbose = true;
-    }
+    }*/
 
     if(mErrors == maxErrors * 4)
     {
@@ -1092,13 +1094,17 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         std::cout << infixRev << "\n" << needleRev << "\n";
         verbose = true;
     }
+
 /*
-    if(endPos - startPos + minErrors <= length(needle))
+ *  Is this right or one off?
+    if(endPos - startPos + minErrors < length(needle))
     {
         std::cout << "match to short\n";
         write(std::cout, match);
         verbose = true;
     }*/
+
+
 
 
     //there is no need to report the minimum error or that a read mapped since this case in already in-text-Verification inside the optimal search schemes.
