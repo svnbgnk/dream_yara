@@ -949,40 +949,8 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
     TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
 
-
+    bool dp = (seqOffset == 0 && length(text) <= length(needle));
     // Fix rare edge Case
-    if (seqOffset == 0 && length(text) <= length(needle))
-    {
-        TGapAnchors contigAnchors;
-        TGapAnchors readAnchors;
-        TContigGaps contigGaps(text, contigAnchors);
-        TReadGaps needleGaps(needle, readAnchors);
-
-//         TContigSeqInfix text_c = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
-//         TContigGaps contigGaps(text_c);
-//         Gaps<TNeedle> needleGaps(needle);
-
-        Score<int, Simple> scoringScheme(0, -999, -1000);
-        int score = globalAlignment(contigGaps, needleGaps, scoringScheme, AlignConfig<true, false, false, true>()) / -999;
-        clipSemiGlobal(contigGaps, needleGaps);
-/*
-        std::cout << contigGaps << "\n" << needleGaps << "\n";
-        std::cout << beginPosition(contigGaps) << "\n" << endPosition(contigGaps) << "\n";
-        std::cout << beginPosition(needleGaps) << "\n" << endPosition(needleGaps) << "\n";
-        std::cout << "Score " << (int)score << "\n";
-        std::cout << "Before:\n";
-        write(std::cout, match);*/
-
-        setErrors(match, score);
-
-        TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
-        TContigPos contigEnd = contigBegin;
-        contigEnd = posAdd(contigEnd, endPosition(contigGaps));
-        contigBegin = posAdd(contigBegin, beginPosition(contigGaps));
-        setContigPosition(match, contigBegin, contigEnd);
-//         write(std::cout, match);
-        return score <= maxErrors;
-    }
 
     typedef Finder<TContigSeqInfix>                        TFinder;
     typedef Finder<TStringInfixRev>                       TFinder2;
@@ -1028,9 +996,9 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
 
     TFinder finder(text);
-    int mErrors = maxErrors * 4;
-    TContigsLen endPos = length(needle);
-    while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 4)))
+    int mErrors = maxErrors * 5 + 1;
+    TContigsLen endPos = 0;
+    while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 5)))
     {
         int currentEnd = position(finder) + 1;
         int currentErrors = -getScore(pattern);
@@ -1043,10 +1011,13 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
     SEQAN_ASSERT_NOT(endPos == 0);
 
+    bool verbose = false;
     if(endPos == 0)
     {
         std::cout << "ERROR no forward alignment found\n";
         std::cout << text << "\n" << needle << "\n";
+        verbose = true;
+        dp = true;
     }
 
 //     TContigSeqInfix infixPrefix = infix(text, 0, endPos);
@@ -1054,7 +1025,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     TNeedleInfixRev needleRev(needle);
 
 
-    TContigsLen startPos = length(text);
+    TContigsLen startPos = 0;
     if (minErrors == 0)
     {
         startPos = length(text) - (endPos - length(needle));
@@ -1062,9 +1033,9 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     else
     {
         TFinder2 finder2(infixRev);
-        mErrors = maxErrors * 4;
+        mErrors = maxErrors * 5 + 1;
 
-        while (find(finder2, needleRev, patternRev, -static_cast<int>(maxErrors * 4)))
+        while (find(finder2, needleRev, patternRev, -static_cast<int>(maxErrors * 5)))
         {
             int currentEnd = position(finder2) + 1;
             int currentErrors = -getScore(patternRev);
@@ -1077,7 +1048,6 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         }
         SEQAN_ASSERT_GEQ(endPos - startPos + minErrors, length(needle));
     }
-    bool verbose = false;
 /*
  * Is this right or one off?
 
@@ -1087,12 +1057,49 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         verbose = true;
     }*/
 
-    if(mErrors == maxErrors * 4)
+    if(startPos == 0)
     {
         std::cout << "ERROR no reverse alignment found\n";
         write(std::cout, match);
         std::cout << infixRev << "\n" << needleRev << "\n";
         verbose = true;
+        dp = true;
+    }
+
+    if (dp)
+    {
+        TGapAnchors contigAnchors;
+        TGapAnchors readAnchors;
+        TContigGaps contigGaps(text, contigAnchors);
+        TReadGaps needleGaps(needle, readAnchors);
+
+//         TContigSeqInfix text_c = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
+//         TContigGaps contigGaps(text_c);
+//         Gaps<TNeedle> needleGaps(needle);
+
+        Score<int, Simple> scoringScheme(0, -999, -1000);
+        int score = globalAlignment(contigGaps, needleGaps, scoringScheme, AlignConfig<true, false, false, true>()) / -999;
+        if (score > maxErrors)
+            return false;
+        clipSemiGlobal(contigGaps, needleGaps);
+/*
+        std::cout << contigGaps << "\n" << needleGaps << "\n";
+        std::cout << beginPosition(contigGaps) << "\n" << endPosition(contigGaps) << "\n";
+        std::cout << beginPosition(needleGaps) << "\n" << endPosition(needleGaps) << "\n";
+        std::cout << "Score " << (int)score << "\n";
+        std::cout << "Before:\n";
+        write(std::cout, match);*/
+
+        setErrors(match, score);
+
+        TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
+        TContigPos contigEnd = contigBegin;
+        contigEnd = posAdd(contigEnd, endPosition(contigGaps));
+        contigBegin = posAdd(contigBegin, beginPosition(contigGaps));
+        setContigPosition(match, contigBegin, contigEnd);
+        std::cout << "DP; start:" << beginPosition(contigGaps) << "\tend: " << endPosition(contigGaps) << "\n";
+        write(std::cout, match);
+        return score <= maxErrors;
     }
 
 /*
@@ -1252,7 +1259,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     }
     else if(!ossContext.delayITV && noOverlap)
     {
-        std::cout << "ITV during Search\n";
+        std::cout << "No overlap was used there for filtering without alignment\n";
         aggregateMatchesOSS(me, readSeqs);
 
     }
