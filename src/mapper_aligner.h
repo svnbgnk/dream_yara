@@ -264,7 +264,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
             write(std::cout, *matchIt);
             std::cout << readSeq << "\n";
             std::cout << contigInfix << "\n";
-            std::cout << contigInfix2 << "display max bases in both directions" << "\n";
+            std::cout << contigInfix2 << " display max bases in both directions" << "\n";
             std::cout << readGaps2 << "\n";
             std::cout << contigGaps2 << "\n\n";
             std::cout << readGaps << "\n" << contigGaps << "\n";

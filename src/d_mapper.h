@@ -1043,19 +1043,25 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
     SEQAN_ASSERT_NOT(endPos == 0);
 
-    TContigsLen startPos;
+    if(endPos == 0)
+    {
+        std::cout << "ERROR no forward alignment found\n";
+        std::cout << text << "\n" << needle << "\n";
+    }
+
+//     TContigSeqInfix infixPrefix = infix(text, 0, endPos);
+    TStringInfixRev infixRev(text);
+    TNeedleInfixRev needleRev(needle);
+
+
+    TContigsLen startPos = length(text);
     if (minErrors == 0)
     {
         startPos = length(text) - (endPos - length(needle));
     }
     else
     {
-    //     TContigSeqInfix infixPrefix = infix(text, 0, endPos);
-        TStringInfixRev infixRev(text);
-        TNeedleInfixRev needleRev(needle);
         TFinder2 finder2(infixRev);
-
-        startPos = endPos;
         mErrors = maxErrors * 4;
 
         while (find(finder2, needleRev, patternRev, -static_cast<int>(maxErrors * 4)))
@@ -1072,12 +1078,39 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         SEQAN_ASSERT_GEQ(endPos - startPos + minErrors, length(needle));
     }
 
+    bool verbose = false;
+    if(endPos - startPos - minErrors >= length(needle)){
+        std::cout << "ERROR match to long\n";
+        write(std::cout, match);
+        verbose = true;
+    }
+
+    if(mErrors == maxErrors * 4)
+    {
+        std::cout << "ERROR no reverse alignment found\n";
+        write(std::cout, match);
+        std::cout << infixRev << "\n" << needleRev << "\n";
+        verbose = true;
+    }
+/*
+    if(endPos - startPos + minErrors <= length(needle))
+    {
+        std::cout << "match to short\n";
+        write(std::cout, match);
+        verbose = true;
+    }*/
+
+
     //there is no need to report the minimum error or that a read mapped since this case in already in-text-Verification inside the optimal search schemes.
     TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
     TContigPos contigEnd = contigBegin;
     contigEnd = posAdd(contigEnd, endPos);
     contigBegin = posAdd(contigBegin, length(text) - startPos);
     setContigPosition(match, contigBegin, contigEnd);
+
+    if(verbose){
+        write(std::cout, match);
+    }
 
     return(minErrors <= maxErrors);
 }
@@ -1127,8 +1160,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
     if(disOptions.verbose > 1){
         std::cout << "Mapping " << length(readSeqs) << " reads\n";
-        std::cout << "maxError: " << (int)me.maxError << "\t" << (int)me.strata << "\n";
-        std::cout << "ITV:" << disOptions.itv << "\t" << !disOptions.noDelayITV << "\n";
+        std::cout << "maxError: " << (int)me.maxError << "\tstrata: " << (int)me.strata << "\treadLength: " << disOptions.readLength << "\n";
+        std::cout << "ITV:" << disOptions.itv << "\tDelayITV: " << !disOptions.noDelayITV << "\n";
         std::cout << "SuffixFilter: " << !disOptions.noSAfilter << "\n";
     }
 
@@ -2426,7 +2459,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
         {
             if(disOptions.readLength == 0)
                 disOptions.readLength = length(mainMapper.reads.seqs[0]);
-            std::cout << "Longest Read Length" << disOptions.readLength << "\n";
+            std::cout << "Longest Read Length: " << disOptions.readLength << "\n";
             disOptions.error = std::floor(disOptions.errorRate * disOptions.readLength);
             disOptions.strata = std::floor(disOptions.strataRate * disOptions.readLength);
             mainMapper.maxError = disOptions.error;
