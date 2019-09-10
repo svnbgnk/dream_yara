@@ -947,6 +947,13 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     TContigsLen seqOffsetEnd = getMember(match, ContigEnd());
 
 
+    if (length(contigSeqs[seqNo]) < seqOffset){
+        std::cout << "Match end overlaps sequence\n";
+        seqOffset = length(contigSeqs[seqNo]);
+
+        TContigPos newContigEnd(getMember(match, ContigId()), seqOffset);
+        setContigPosition(match, getMember(match, ContigBegin()), newContigEnd);
+    }
     TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
 
     bool dp = (seqOffset == 0 && length(text) <= length(needle));
@@ -1100,6 +1107,10 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         std::cout << "DP; start:" << beginPosition(contigGaps) << "\tend: " << endPosition(contigGaps) << "\n";
         write(std::cout, match);
         return score <= maxErrors;
+        //minErrors = score;
+        //startPos = beginPosition(contigGaps);
+        //endPos = endPosition(contigGaps);
+
     }
 
 /*
