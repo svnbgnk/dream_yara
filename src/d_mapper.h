@@ -935,64 +935,56 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     typedef ModifiedString<TNeedle, ModReverse>                 TNeedleInfixRev;
     typedef ModifiedString<TContigSeqInfix, ModReverse>        TStringInfixRev;
 
-    typedef String<GapAnchor<int> >            TGapAnchors;
-    typedef AnchorGaps<TGapAnchors>            TAnchorGaps;
-    typedef Gaps<TContigSeqInfix, TAnchorGaps>     TContigGaps;
-    typedef Gaps<TNeedle, TAnchorGaps>             TReadGaps;
+    typedef Finder<TContigSeqInfix>                        TFinder;
+    typedef Finder<TStringInfixRev>                        TFinderRev;
 
+    typedef Pattern<TNeedleInfix const, Myers<FindInfix> >   TPatternInfix;
+    typedef typename PatternState<TPatternInfix>::Type TPatternInfixState;
+
+    typedef Pattern<TNeedleInfix const, Myers<FindPrefix> >   TPatternPrefix;
+    typedef typename PatternState<TPatternPrefix>::Type TPatternPrefixState;
+
+    typedef Pattern<TNeedleInfixRev const, Myers<FindPrefix> >   TPatternPrefixRev;
+    typedef typename PatternState<TPatternPrefixRev>::Type TPatternPrefixRevState;
+
+    TPatternInfixState  patternInfixState;
+    TPatternPrefixState patternPrefixState;
+    TPatternPrefixRevState patternPrefixStateRev;
+
+    //get Infix
     TContigSeqs & contigSeqs = me.contigs.seqs;
-
     TContigsSize seqNo = getMember(match, ContigId());
     TContigsLen seqOffset = getMember(match, ContigBegin());
     TContigsLen seqOffsetEnd = getMember(match, ContigEnd());
 
-
-    if (length(contigSeqs[seqNo]) < seqOffset){
+    if (length(contigSeqs[seqNo]) < seqOffsetEnd){
         std::cout << "Match end overlaps sequence\n";
-        seqOffset = length(contigSeqs[seqNo]);
-
-        TContigPos newContigEnd(getMember(match, ContigId()), seqOffset);
-        setContigPosition(match, getMember(match, ContigBegin()), newContigEnd);
+        seqOffsetEnd = length(contigSeqs[seqNo]);
+        TContigPos contigBegin(seqNo, getMember(match, ContigBegin()));
+        TContigPos newContigEnd(seqNo, seqOffsetEnd);
+        setContigPosition(match, contigBegin, newContigEnd);
     }
+
     TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
 
-    bool dp = (seqOffset == 0 && length(text) <= length(needle));
-    // Fix rare edge Case
-
-    typedef Finder<TContigSeqInfix>                        TFinder;
-    typedef Finder<TStringInfixRev>                       TFinder2;
-    typedef AlignTextBanded</*FindPrefix*/FindInfix,
-                            NMatchesNone_,
-                            NMatchesNone_>                     TMyersSpecInfix;
-    typedef Myers<TMyersSpecInfix, True, void>                 TAlgorithmInfix;
-    typedef PatternState_<TContigSeqInfix, TAlgorithmInfix>   TPatternInfix;
-    TPatternInfix patternInfix;
-
-    typedef AlignTextBanded<FindPrefix,
-                            NMatchesNone_,
-                            NMatchesNone_>               TMyersSpec;
-    typedef Myers<TMyersSpec, True, void>                TAlgorithm;
-    typedef PatternState_<TNeedle, TAlgorithm>  TPattern;
-    TPattern pattern;
-    typedef PatternState_<TNeedleInfixRev, TAlgorithm>  TPatternRev;
-    TPatternRev patternRev;
+    bool dp = false;
 
     int minErrors;
     // for ossMatch we know match is valid and only need to determine start and end position of the match (we added overlap so suffix filter works)
     if(!ossMatch){
         minErrors = maxErrors + 1;
         TFinder finderInfix(text);
+        TPatternInfix patternInfix = needle;
 
-        while (find(finderInfix, needle, patternInfix, -static_cast<int>(maxErrors + 1)))
+        while (find(finderInfix, patternInfix, patternInfixState, -static_cast<int>(maxErrors + 1)))
         {
-            int currentErrors = -getScore(patternInfix);
+            int currentErrors = -getScore(patternInfixState);
             if(minErrors > currentErrors)
                 minErrors = currentErrors;
         }
 
         if(minErrors <= maxErrors)
             setErrors(match, minErrors);
-//             match.errors = minErrors;
         else
             return false;
     }
@@ -1002,13 +994,14 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     }
 
 
-    TFinder finder(text);
+    TFinder finderPrefix(text);
+    TPatternPrefix patternPrefix = needle;
     int mErrors = maxErrors * 5 + 1;
     TContigsLen endPos = 0;
-    while (find(finder, needle, pattern, -static_cast<int>(maxErrors * 5)))
+    while (find(finderPrefix, patternPrefix, patternPrefixState, -static_cast<int>(maxErrors * 5)))
     {
-        int currentEnd = position(finder) + 1;
-        int currentErrors = -getScore(pattern);
+        int currentEnd = position(finderPrefix) + 1;
+        int currentErrors = -getScore(patternPrefixState);
         if (currentErrors <= mErrors)
         {
             mErrors = currentErrors;
@@ -1023,46 +1016,35 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     {
         std::cout << "ERROR no forward alignment found\n";
         std::cout << text << "\n" << needle << "\n";
+        endPos == length(text);
         verbose = true;
         dp = true;
+
     }
 
-//     TContigSeqInfix infixPrefix = infix(text, 0, endPos);
-    TStringInfixRev infixRev(text);
+
+    TContigSeqInfix infixPrefix = infix(text, 0, endPos);
+    TStringInfixRev infixRev(infixPrefix);
     TNeedleInfixRev needleRev(needle);
 
+    TFinderRev finderRev(infixRev);
+    TPatternPrefixRev patternPrefixRev = needleRev;
 
+    mErrors = maxErrors * 5 + 1;
     TContigsLen startPos = 0;
-    if (minErrors == 0)
-    {
-        startPos = length(text) - (endPos - length(needle));
-    }
-    else
-    {
-        TFinder2 finder2(infixRev);
-        mErrors = maxErrors * 5 + 1;
 
-        while (find(finder2, needleRev, patternRev, -static_cast<int>(maxErrors * 5)))
-        {
-            int currentEnd = position(finder2) + 1;
-            int currentErrors = -getScore(patternRev);
+    while (find(finderRev, patternPrefixRev, patternPrefixStateRev, -static_cast<int>(maxErrors * 5)))
+    {
+        int currentEnd = position(finderRev) + 1;
+        int currentErrors = -getScore(patternPrefixStateRev);
     //         std::cout << currentErrors << "\t" << currentEnd << "\n";
-            if (currentErrors <= mErrors)
-            {
-                mErrors = currentErrors;
-                startPos = currentEnd;
-            }
+        if (currentErrors <= mErrors)
+        {
+            mErrors = currentErrors;
+            startPos = currentEnd;
         }
-        SEQAN_ASSERT_GEQ(endPos - startPos + minErrors, length(needle));
     }
-/*
- * Is this right or one off?
-
-    if(endPos - startPos - minErrors > length(needle)){
-        std::cout << "ERROR match to long\n";
-        write(std::cout, match);
-        verbose = true;
-    }*/
+    SEQAN_ASSERT_GEQ(endPos - startPos + minErrors, length(needle));
 
     if(startPos == 0)
     {
@@ -1075,27 +1057,25 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
     if (dp)
     {
+
+        typedef String<GapAnchor<int> >            TGapAnchors;
+        typedef AnchorGaps<TGapAnchors>            TAnchorGaps;
+        typedef Gaps<TContigSeqInfix, TAnchorGaps>     TContigGaps;
+        typedef Gaps<TNeedle, TAnchorGaps>             TReadGaps;
+
         TGapAnchors contigAnchors;
         TGapAnchors readAnchors;
         TContigGaps contigGaps(text, contigAnchors);
         TReadGaps needleGaps(needle, readAnchors);
 
-//         TContigSeqInfix text_c = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
-//         TContigGaps contigGaps(text_c);
-//         Gaps<TNeedle> needleGaps(needle);
-
         Score<int, Simple> scoringScheme(0, -999, -1000);
         int score = globalAlignment(contigGaps, needleGaps, scoringScheme, AlignConfig<true, false, false, true>()) / -999;
-        if (score > maxErrors)
+        if (score > maxErrors){
+//             std::cout << "Contex\n" << infix(contigSeqs[seqNo], seqOffset -5, seqOffsetEnd + 5) << "\n";
             return false;
+        }
         clipSemiGlobal(contigGaps, needleGaps);
-/*
-        std::cout << contigGaps << "\n" << needleGaps << "\n";
-        std::cout << beginPosition(contigGaps) << "\n" << endPosition(contigGaps) << "\n";
-        std::cout << beginPosition(needleGaps) << "\n" << endPosition(needleGaps) << "\n";
-        std::cout << "Score " << (int)score << "\n";
-        std::cout << "Before:\n";
-        write(std::cout, match);*/
+
 
         setErrors(match, score);
 
@@ -1113,23 +1093,11 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
     }
 
-/*
- *  Is this right or one off?
-    if(endPos - startPos + minErrors < length(needle))
-    {
-        std::cout << "match to short\n";
-        write(std::cout, match);
-        verbose = true;
-    }*/
-
-
-
-
     //there is no need to report the minimum error or that a read mapped since this case in already in-text-Verification inside the optimal search schemes.
     TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
     TContigPos contigEnd = contigBegin;
     contigEnd = posAdd(contigEnd, endPos);
-    contigBegin = posAdd(contigBegin, length(text) - startPos);
+    contigBegin = posAdd(contigBegin, length(infixRev) - startPos);
     setContigPosition(match, contigBegin, contigEnd);
 
     if(verbose){

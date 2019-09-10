@@ -198,6 +198,7 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     typedef typename StringSetPosition<TContigSeqs const>::Type TContigPos;
     typedef typename Infix<TContigSeq>::Type        TContigInfix;
     typedef typename Size<TMatches>::Type           TSize;
+//     typedef typename Traits::TConfig::TContigsLen           TContigsLen;
 
     typedef typename Traits::TReadSeqs              TReadSeqs;
     typedef typename Value<TReadSeqs const>::Type   TReadSeq;
@@ -213,6 +214,17 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
     if (isInvalid(match)) return;
 
     unsigned errors = getMember(match, Errors());
+
+    // cant acces ContigLen here no mapper configuration
+    uint64_t chromlength = length(me.contigSeqs[getMember(match, ContigId())]);
+    uint64_t seqOffsetEnd = getMember(match, ContigEnd());
+    if (chromlength < seqOffsetEnd)
+    {
+        std::cout << "Match end overlaps sequence\n";
+        TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigEnd()));
+        TContigPos newContigEnd(getMember(match, ContigId()), chromlength);
+        setContigPosition(match, contigBegin, newContigEnd);
+    }
 
     TReadSeq const & readSeq = me.readSeqs[getReadSeqId(match, me.readSeqs)];
     TContigInfix const & contigInfix = infix(me.contigSeqs[getMember(match, ContigId())],
@@ -315,17 +327,6 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         TContigPos contigEnd = contigBegin;
         contigEnd = posAdd(contigEnd, endPosition(contigGaps));
         contigBegin = posAdd(contigBegin, beginPosition(contigGaps));
-
-        // do to overlap selected endposition is to long
-        if(getSeqOffset(contigEnd) >= length(me.contigSeqs[getMember(match, ContigId())]))
-        {
-            std::cout << "Endposition after chromosom\n";
-            write(std::cout, match);
-            std::cout << readGaps << "\n" << contigGaps << "\n";
-            setSeqOffset(contigEnd, length(me.contigSeqs[getMember(match, ContigId())]));
-//             setInvalid(match);
-            return;
-        }
         setContigPosition(match, contigBegin, contigEnd);
 //        setErrors(match, dpErrors);
     }
