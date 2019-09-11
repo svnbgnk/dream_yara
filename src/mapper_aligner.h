@@ -265,7 +265,8 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
 
 
         if(dpErrors > (int)errors)
-    {
+        {
+            std::cout << "Cannot find reported alignment score\n";
             uint8_t ov = (getMember(match, ContigBegin()) > me.maxError) ? me.maxError : 0;
             TContigInfix const & contigInfix2 = infix(me.contigSeqs[getMember(match, ContigId())],
                                              getMember(match, ContigBegin()) - ov,
@@ -320,12 +321,12 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
 //         std::cout << readGaps  << "\n" << contigGaps<< "\n\n";
         clipSemiGlobal(contigGaps, readGaps);
 
-
+/*
         if(beginPosition(contigGaps) > 0 || endPosition(contigGaps) < length(contigInfix))
         {
             std::cout << "realigned " << beginPosition(contigGaps) << "\t" << endPosition(contigGaps) << "\n";
             std::cout << readSeq << "\n" << contigInfix << "\n";
-        }
+        }*/
 
         // Shrink the match after realigning and clipping.
         TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));
