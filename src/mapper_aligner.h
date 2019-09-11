@@ -321,6 +321,11 @@ inline void _alignMatchImpl(MatchesAligner<TSpec, Traits, TMatches> & me, TMatch
         clipSemiGlobal(contigGaps, readGaps);
 
 
+        if(beginPosition(contigGaps) > 0 || endPosition(contigGaps) < length(contigInfix))
+        {
+            std::cout << "realigned " << beginPosition(contigGaps) << "\t" << endPosition(contigGaps) << "\n";
+            std::cout << readSeq << "\n" << contigInfix << "\n";
+        }
 
         // Shrink the match after realigning and clipping.
         TContigPos contigBegin(getMember(match, ContigId()), getMember(match, ContigBegin()));

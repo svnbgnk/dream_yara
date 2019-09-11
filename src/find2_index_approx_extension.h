@@ -174,8 +174,8 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
                 std::cout << "All forward Pos: " << pos2 << "\t(" << i << ")\n";
             }*/
 
-            bool goRight2 = ossContext.earlyLeaf && saRange.goRight;
-            fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(ossContext.earlyLeaf), counter);
+            bool goRight2 = /*ossContext.earlyLeaf*/false && saRange.goRight;
+            fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(0/*ossContext.earlyLeaf*/), counter);
 //             ossContext.fmtreeBacktrackings += 2 * counter;
     }
     else
@@ -1619,7 +1619,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                 ossContext.fmtreeLocates += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
                 auto uniIter = (ossContext.earlyLeaf && goRight) ? iter.revIter : iter.fwdIter;
                 uint32_t counter = 0;
-
+/*
                 //early leaf node calculation (corresponds to the last level of the fm_tree)
                 if(ossContext.earlyLeaf){
                     TContigsSum ssp = getRank(uniIter.index->sa.sparseString.indicators, uniIter._parentDesc.range.i1 - 1);
@@ -1664,10 +1664,10 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                             }
                         }
                     }
-                }
+                }*/
 
-                bool goRight2 = ossContext.earlyLeaf && goRight;
-                fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(ossContext.earlyLeaf), counter);
+                bool goRight2 = /*ossContext.earlyLeaf*/false && goRight;
+                fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(0/*ossContext.earlyLeaf*/), counter);
             }
             else
             {
