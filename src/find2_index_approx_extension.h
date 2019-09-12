@@ -19,7 +19,7 @@ struct SARange
 //     Pair<TContigsSum, TContigsSum> revRange;
 //     Pair<TContigsSum, TContigsSum> parentRange;
 //     Pair<TContigsSum, TContigsSum> parentRevRange;
-    Dna lastChar;
+//     Dna lastChar;
     uint32_t repLength;
     uint8_t errors;
     bool goRight;
@@ -797,7 +797,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
 
 //                 std::cout << ossContext.strata + s.l[s.l.size() - 1] << "\t" << ossContext.maxError << "\n";
                 //TODO search <0, 2> need to search till 0 is found or 1
-                if(!ossContext.itv ||  ossContext.delayITV && (isMapped(ossContext.ctx, readId && getMinErrors(ossContext.ctx, readId) + ossContext.strata <= upper) || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError))
+                if(!ossContext.itv ||  ossContext.delayITV && (isMapped(ossContext.ctx, readId && getMinErrors(ossContext.ctx, readId) + ossContext.strata <= upper) || getMinErrors(ossContext.ctx, readId) <= s.l[s.l.size() - 1] || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError))
                 {
                     delegateDirect(ossContext, posAdd(sa_info, 0 - overlap_l_tmp), posAdd(sa_info, needleL + overlap_r), needleId, 127);
                 }
@@ -1318,12 +1318,13 @@ inline void _optimalSearchSchemeExact(TContex & ossContext,
         uint32_t infixPosLeft = needleRightPos - 1;
         uint32_t infixPosRight = needleLeftPos + s.blocklength[blockIndex] - 1;
 
-	while(infixPosLeft < infixPosRight + 1){
-          //  if (!goDown(iter, infix(needle, infixPosLeft, infixPosRight + 1), TDir()))
-            if (!goDown(iter, needle[infixPosLeft], TDir()))
+        //  if (!goDown(iter, infix(needle, infixPosLeft, infixPosRight + 1), TDir()))
+        while(infixPosLeft < infixPosRight + 1){
+            if (!goDown(iter, needle[infixPosLeft], TDir())){
                 return;
-	    ++infixPosLeft;
-	}
+            }
+	         ++infixPosLeft;
+	    }
         if (goToRight2)
             _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, infixPosRight + 2, errors, s, blockIndex2, false, Rev(), TDistanceTag());
         else
@@ -1422,8 +1423,13 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     bool const checkMappa = !bitvectors.empty();
     bool const nowEdit = !std::is_same<TDistanceTag, EditDistance>::value && ossContext.hammingDpieces <=  blockIndex;
 
-//     if(!std::is_same<TDistanceTag, EditDistance>::value)
-//         exit(0);
+
+    //TODO remove
+    if (ossContext.readSeqs[needleId] != needle){
+        std::cout << "needle != reads \n" << needle << "\n" << ossContext.readSeqs[needleId] << "\n";
+    }
+
+
     // Done. (Last step)
     if (done)
     {
@@ -1536,6 +1542,73 @@ inline void _optimalSearchScheme(TContex & ossContext,
         _optimalSearchScheme(ossContext, delegate, delegateDirect, it, needle, needleId, bitvectors, s.startPos, s.startPos + 1, 0, s, 0, false, Fwd(), TDistanceTag());
 }
 
+template<typename TSpec, typename TConfig, typename TIndex, typename TMatch, typename TNeedle, typename TError>
+inline int inTextVerification(OSSContext<TSpec, TConfig> & ossContext,
+                              Iter<TIndex, VSTree<TopDown<> > > iter,
+                              TMatch & range,
+                              TNeedle const & needle,
+                              TError maxErrors)
+{
+    typedef MapperTraits<TSpec, TConfig>                        TTraits;
+    typedef typename TConfig::TContigsLen                       TContigsLen;
+    typedef typename TConfig::TContigsSum                       TContigsSum;
+    typedef typename TConfig::TContigsSize                      TContigsSize;
+
+    typedef typename TTraits::TSA                            TSA;
+    typedef typename Value<TSA>::Type                        TSAValue;
+
+    typedef typename TTraits::TContigSeqs                       TContigSeqs;
+    typedef typename Value<TContigSeqs const>::Type              TContigSeq;
+//     typedef typename Value<TContigSeqs>::Type                       TContig;
+    typedef typename StringSetPosition<TContigSeqs const>::Type TContigPos;
+    typedef typename InfixOnValue<TContigSeq const>::Type      TContigSeqInfix;
+    typedef typename InfixOnValue<TNeedle const>::Type          TNeedleInfix;
+
+    typedef Finder<TContigSeqInfix>                        TFinder;
+
+    typedef Pattern<TNeedleInfix const, Myers<FindInfix> >   TPatternInfix;
+    typedef typename PatternState<TPatternInfix>::Type TPatternInfixState;
+
+    TPatternInfixState  patternInfixState;
+
+    //get Infix
+    int minErrors = maxErrors + 1;
+    for(TContigsSum i = range.range.i1; i < range.range.i2; ++i){
+        //locate on forward Index
+        TSAValue sa_value = iter.fwdIter.index->sa[i];
+        uint32_t repLen = range.repLength;
+        TContigSeqInfix aligned_text = infix(ossContext.contigSeqs[getSeqNo(sa_value)], getSeqOffset(sa_value), getSeqOffset(sa_value) + repLen);
+
+        TContigSeqInfix ex_aligned_text = infix(ossContext.contigSeqs[getSeqNo(sa_value)], getSeqOffset(sa_value) - maxErrors, getSeqOffset(sa_value) + repLen + maxErrors);
+
+//     TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
+
+
+        TFinder finderInfix(aligned_text);
+        TPatternInfix patternInfix = needle;
+
+        while (find(finderInfix, patternInfix, patternInfixState, -static_cast<int>(maxErrors + 1)))
+        {
+            int currentErrors = -getScore(patternInfixState);
+            if(minErrors > currentErrors)
+                minErrors = currentErrors;
+        }
+
+        if(minErrors > range.errors)
+        {
+            if(true){
+                std::cout << "OSS delegate error" << "\n";
+                std::cout << "myers error: " << minErrors << "\tOSS error: " << (int)range.errors << "\n";
+                std::cout << ex_aligned_text << "\n" << aligned_text << "\n" << needle << "\n";
+            }
+            range.errors = minErrors;
+        }
+    }
+
+    return minErrors;
+}
+
+
 template <typename TSpec, typename TConfig,
           typename TDelegate,
           typename TDelegateD,
@@ -1568,21 +1641,38 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             //only required for stats
             ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
         //         std::cout << "Using new delegate: \n";
-            uint32_t readId = getReadId(ossContext.readSeqs, needleId);
+
             SARange<TContigsSum> range;
             range.errors = errors;
             range.range = Pair<TContigsSum, TContigsSum> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
 //             range.revRange = Pair<TContigsSum, TContigsSum> (iter.revIter.vDesc.range.i1, iter.revIter.vDesc.range.i2);
 //             range.parentRange = Pair<TContigsSum, TContigsSum> (iter.fwdIter._parentDesc.range.i1, iter.fwdIter._parentDesc.range.i2);
 //             range.parentRevRange = Pair<TContigsSum, TContigsSum> (iter.revIter._parentDesc.range.i1, iter.revIter._parentDesc.range.i2);
+//             range.lastChar = (goRight) ? iter.revIter.vDesc.lastChar : iter.fwdIter.vDesc.lastChar;
             range.repLength = repLength(iter);
-            range.lastChar = (goRight) ? iter.revIter.vDesc.lastChar : iter.fwdIter.vDesc.lastChar;
             range.goRight = goRight;
-            ranges.push_back(range);
 
-            setMapped(ossContext.ctx, readId);
-            setMinErrors(ossContext.ctx, readId, errors);
+            //check OSS match since randomized Ns or index error
+            bool valid = true;
+            uint32_t readId = getReadId(ossContext.readSeqs, needleId);
+            if(!ossContext.delayContex && getMinErrors(ossContext.ctx, readId) > errors)
+            {
+                //TODO remove ranges containing higher error than scheme but need acces to schemes
+//                  uint8_t upper = s.u[s.u.size() - 1];
 
+                if(ossContext.maxError >= inTextVerification(ossContext, iter, range, ossContext.readSeqs[needleId], ossContext.maxError))
+                {
+                    setMapped(ossContext.ctx, readId);
+                    setMinErrors(ossContext.ctx, readId, range.errors);
+                }
+                else
+                {
+                    valid = false;
+                }
+            }
+            //NOTE even though in best mapping matches with the same amount of errors are supposed to be together due to randomized Ns higer error matches are still merged (the algorithm works for all-mapping so this is fine)
+            if(valid)
+                ranges.push_back(range);
         };
 
         for (auto & s : ss){
@@ -1599,20 +1689,31 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 //         std::cout << "no SA filter\n";
         auto delegateFMTree = [&delegate](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto const needleId, uint8_t const errors, bool const goRight)
         {
-            TContigSeqs const & genome = ossContext.contigSeqs;
+//             TContigSeqs const & genome = ossContext.contigSeqs;
 
             //only required for stats
 //             ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
 
             SARange<TContigsSum> saRange;
             saRange.repLength = repLength(iter);
-            //TODO check errors
             saRange.errors = errors;
 
             uint32_t readId = getReadId(ossContext.readSeqs, needleId);
-            setMapped(ossContext.ctx, readId);
-            setMinErrors(ossContext.ctx, readId, errors);
+            if(!ossContext.delayContex && getMinErrors(ossContext.ctx, readId) > errors)
+            {
+                //TODO remove ranges containing higher error than scheme but need acces to schemes
+//                  uint8_t upper = s.u[s.u.size() - 1];
 
+                if(ossContext.maxError >= inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError))
+                {
+                    setMapped(ossContext.ctx, readId);
+                    setMinErrors(ossContext.ctx, readId, saRange.errors);
+                }
+                else
+                {
+                    return;
+                }
+            }
 
             if(ossContext.fmTreeThreshold < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 && ossContext.samplingRate > 1)
             {
@@ -1785,9 +1886,7 @@ find(OSSContext<TSpec, TConfig> & ossContext,
 //             std::cout << "ReadId: " << readId << "\n";
 
         if(isMapped(ossContext.ctx, readId)){
-//                 std::cout << "MinErrors: " << (int)getMinErrors(ossContext.ctx, readId) << "\n";
             if(static_cast<uint8_t>(getMinErrors(ossContext.ctx, readId)) + ossContext.strata < minErrors){
-//                     std::cout << "Skip" << "\n";
                 skip = true;
             }
         }

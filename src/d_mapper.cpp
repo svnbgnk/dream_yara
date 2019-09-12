@@ -141,6 +141,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("v", "verbose", "Displays global statistics."));
     addOption(parser, ArgParseOption("vv", "very-verbose", "Displays extensive statistics for each batch of reads."));
+    addOption(parser, ArgParseOption("vvv", "very-very-verbose", "Use for debugging."));
+    hideOption(getOption(parser, "very-very-verbose"));
 
     addOption(parser, ArgParseOption("m", "mappability", "Path to mappability directory", ArgParseArgument::INPUT_FILE, "IN"));
 
@@ -154,6 +156,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     hideOption(getOption(parser, "compare"));
 
     addOption(parser, ArgParseOption("nM", "noMappability", "Do not use Mappability in Search Schemes"));
+
+    addOption(parser, ArgParseOption("nDC", "noDelayContex", "Do not delay the update on the read context after the in text verification. This strategy has a runtime advantage for large bins and high error rates"));
 
     addOption(parser, ArgParseOption("I", "ITV", "Use In Text Verification to align potential occurrences found Optimum Search Schemes immediatly, this makes sense for large bins with reads occurring often."));
 
@@ -372,6 +376,8 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     getOptionValue(disOptions.fmTreeBreak, parser, "fmTreeBreak");
 
+
+    if (isSet(parser, "noDelayContex")) disOptions.noDelayContex = true;
     if (isSet(parser, "ossOff")) disOptions.ossOff = true;
     if (isSet(parser, "hammingD")) disOptions.hammingDistance = true;
     if (isSet(parser, "compare")) disOptions.compare = true;
@@ -492,6 +498,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 
     if (isSet(parser, "verbose")) disOptions.verbose = 1;
     if (isSet(parser, "very-verbose")) disOptions.verbose = 2;
+    if (isSet(parser, "very-very-verbose")) disOptions.verbose = 3;
 
 
     // Get version.

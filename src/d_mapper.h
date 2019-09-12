@@ -56,6 +56,7 @@ public:
     CharString              superOutputFile;
 
     CharString              MappabilityDirectory;
+    bool                    noDelayContex = false;
     bool                    ossOff = false;
     bool                    itv = false;
     bool                    noSAfilter = false;
@@ -868,54 +869,69 @@ inline void trimHit(Mapper<TSpec, TConfig> & me, TReadSeqs & readSeqs)
 // ----------------------------------------------------------------------------
 
 template<typename TSpec, typename TConfig, typename TMatch, typename TNeedle, typename TError>
-inline bool inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNeedle const & needle, TError maxErrors)
+inline int inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNeedle const & needle, TError maxErrors)
 {
     typedef MapperTraits<TSpec, TConfig>                        TTraits;
     typedef typename TConfig::TContigsLen                       TContigsLen;
     typedef typename TConfig::TContigsSize                      TContigsSize;
 
+
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
-    typedef typename InfixOnValue<TContigSeqs const>::Type      TContigSeqsInfix;
+    typedef typename Value<TContigSeqs const>::Type              TContigSeq;
+//     typedef typename Value<TContigSeqs>::Type                       TContig;
+    typedef typename StringSetPosition<TContigSeqs const>::Type TContigPos;
+    typedef typename InfixOnValue<TContigSeq const>::Type      TContigSeqInfix;
     typedef typename InfixOnValue<TNeedle const>::Type          TNeedleInfix;
 
-    TContigSeqs & contigSeqs = me.contigs.seqs;
+    typedef Finder<TContigSeqInfix>                        TFinder;
 
-//     std::cout << "Needle: \n" << needle << "\n";
+    typedef Pattern<TNeedleInfix const, Myers<FindInfix> >   TPatternInfix;
+    typedef typename PatternState<TPatternInfix>::Type TPatternInfixState;
+
+    TPatternInfixState  patternInfixState;
+
+    //get Infix
+    TContigSeqs & contigSeqs = me.contigs.seqs;
     TContigsSize seqNo = getMember(match, ContigId());
     TContigsLen seqOffset = getMember(match, ContigBegin());
-    TContigsLen seqOffsetEnd = getMember(match, ContigEnd());;
-    TContigSeqsInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
-//     std::cout << text << "\n";
+    TContigsLen seqOffsetEnd = getMember(match, ContigEnd());
 
-    typedef Finder<TContigSeqsInfix>                        TFinder;
-    typedef AlignTextBanded</*FindPrefix*/FindInfix,
-                            NMatchesNone_,
-                            NMatchesNone_>                  TMyersSpec;
-    typedef Myers<TMyersSpec, True, void>                   TAlgorithm;
-    typedef PatternState_<TContigSeqsInfix, TAlgorithm>     TPattern;
-    TPattern pattern;
-
-    int minErrors = maxErrors + 1;
-    TFinder finder(text);
-
-    while (find(finder, needle, pattern, -static_cast<int>(maxErrors + 1)))
-    {
-        int currentErrors = -getScore(pattern);
-        if(minErrors > currentErrors)
-            minErrors = currentErrors;
-
-//         std::cout << "cScore: " << currentErrors << "\t";
+    if (length(contigSeqs[seqNo]) < seqOffsetEnd){
+        std::cout << "Match end overlaps sequence\n";
+        seqOffsetEnd = length(contigSeqs[seqNo]);
+        TContigPos contigBegin(seqNo, getMember(match, ContigBegin()));
+        TContigPos newContigEnd(seqNo, seqOffsetEnd);
+        setContigPosition(match, contigBegin, newContigEnd);
     }
 
-//     std::cout << "\nScore: " << (int)minErrors << "\n";
-    if(minErrors <= maxErrors)
-        match.errors = minErrors;
+    TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
 
-    return(minErrors <= maxErrors);
+    int minErrors = maxErrors + 1;
+    TFinder finderInfix(text);
+    TPatternInfix patternInfix = needle;
+
+    while (find(finderInfix, patternInfix, patternInfixState, -static_cast<int>(maxErrors + 1)))
+    {
+        int currentErrors = -getScore(patternInfixState);
+        if(minErrors > currentErrors)
+            minErrors = currentErrors;
+    }
+
+    if(minErrors > getErrorsOSS(match)){
+        if(true){
+            std::cout << "OSS delegate error" << "\n";
+            std::cout << "myers error: " << minErrors << "\tOSS error: " << (int)getErrorsOSS(match) << "\n";
+            write(std::cout, match);
+            std::cout << text << "\n" << needle << "\n";
+        }
+        setErrors(match, minErrors);
+    }
+
+    return minErrors;
 }
 
 // ----------------------------------------------------------------------------
-// Function inTextVerification()
+// Function inTextVerificationE()
 // ----------------------------------------------------------------------------
 
 template<typename TSpec, typename TConfig, typename TMatch, typename TNeedle, typename TError>
@@ -924,7 +940,6 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     typedef MapperTraits<TSpec, TConfig>                        TTraits;
     typedef typename TConfig::TContigsLen                       TContigsLen;
     typedef typename TConfig::TContigsSize                      TContigsSize;
-
 
     typedef typename TTraits::TContigSeqs                       TContigSeqs;
     typedef typename Value<TContigSeqs const>::Type              TContigSeq;
@@ -965,9 +980,8 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         setContigPosition(match, contigBegin, newContigEnd);
     }
 
-    TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
-
     bool dp = false;
+    TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
 
     int minErrors = maxErrors + 1;
     TFinder finderInfix(text);
@@ -980,15 +994,19 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
             minErrors = currentErrors;
     }
 
-    if(verbose && minErrors > getErrorsOSS(match)){
-        std::cout << "OSS wrong error" << "\n";
-        write(std::cout, match);
+    if(minErrors > getErrorsOSS(match)){
+        if(verbose){
+            std::cout << "OSS wrong error" << "\n";
+            std::cout << "myers error: " << minErrors << "\tOSS error: " << (int)getErrorsOSS(match) << "\n";
+            write(std::cout, match);
+            std::cout << text << "\n" << needle << "\n";
+        }
     }
     if(minErrors <= maxErrors)
         setErrors(match, minErrors);
     else
         return false;
-//         minErrors = getErrorsOSS(match);
+
 
 
     TFinder finderPrefix(text);
@@ -1056,6 +1074,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         if(verbose)
         {
             std::cout << "ERROR no reverse alignment found\n";
+            std::cout << text << "\n" << needle << "\n";
             std::cout << infixRev << "\n" << needleRev << "\n";
         }
         dp = true;
@@ -1065,6 +1084,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     {
         if(verbose)
         {
+            std::cout << "DP alignment\n";
             write(std::cout, match);
             std::cout << "Text: \n" << text << "\n" << needle << "\n";
         }
@@ -1097,7 +1117,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
         setContigPosition(match, contigBegin, contigEnd);
         if(verbose)
         {
-            std::cout << "DP; start:" << beginPosition(contigGaps) << "\tend: " << endPosition(contigGaps) << "\n";
+            std::cout << "start:" << beginPosition(contigGaps) << "\tend: " << endPosition(contigGaps) << "\n";
             write(std::cout, match);
         }
         return score <= maxErrors;
@@ -1196,6 +1216,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         std::cout << "SAMPLING RATE: " << me.samplingRate << "\n";
 
     ossContext.loadInputParameters(me.maxError, me.strata, disOptions.errorRate, disOptions.strataRate, disOptions.readLength, length(me.contigs.seqs), me.samplingRate, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
+    ossContext.delayContex = !disOptions.noDelayContex;
     ossContext.itv = disOptions.itv;
     ossContext.normal.suspectunidirectional = false;
 //     ossContext.saFilter = !disOptions.noSAfilter;
@@ -1272,20 +1293,20 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         //filtering after cordinates + Intervalsize
         aggregateMatchesITV(me, readSeqs);
 
-/*
 
-        std::cout << "Print Matches\n";
-        for(int i = 0; i < 20; ++i){
-//             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
-//             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
-            auto const & matches = me.matchesSetByCoord[i];
-            auto matchIt = begin(matches, Standard());
-            auto matchEnd = end(matches, Standard());
-            while(matchIt != matchEnd){
-                write(std::cout, *matchIt);
-                ++matchIt;
+
+        if(disOptions.verbose > 2){
+            std::cout << "Print Matches\n";
+            for(int i = 0; i < length(me.matchesSetByCoord); ++i){
+                auto const & matches = me.matchesSetByCoord[i];
+                auto matchIt = begin(matches, Standard());
+                auto matchEnd = end(matches, Standard());
+                while(matchIt != matchEnd){
+                    write(std::cout, *matchIt);
+                    ++matchIt;
+                }
             }
-        }*/
+        }
 
         std::cout << "Hits after filtering: " << lengthSum(me.matchesSetByCoord) << "\n\n";
 
@@ -1312,7 +1333,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                 bool ossMatch = getMember(*matchIt, Errors()) <= me.maxError;
 
                 oss += ossMatch;
-
+/*
                 if(!disOptions.determineExactSecondaryPos){
                     //check Neighborhood
                     if(matchIt != lValid && extendedLength <= (me.maxError * 10) &&
@@ -1352,6 +1373,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         ++dups;
                     }
                     else
+                    // match is not in Neighborhood of another match (to the left) do ITV or we want to determine the exact position of all (repeating) matches
                     {
                         bool valid = true;
                         if(!ossMatch)
@@ -1381,65 +1403,70 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                         }
                     }
                 }
-                else
+                else*/
                 {
-                    // match is not in Neighborhood of another match (to the left) do ITV or we want to determine the exact position of all (repeating) matches
-                    if(!ossMatch || !disOptions.noSAfilter)
+
+                    uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
+                    uint32_t readId = getReadId(readSeqs, readSeqId);
+                    bool valid;
+                    if(!disOptions.noSAfilter || (ossContext.delayITV && !ossMatch) || true) //TODO check inTextVerification
                     {
-                        uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
-                        uint32_t readId = getReadId(readSeqs, readSeqId);
-                        bool valid;
-                        if(disOptions.determineExactSecondaryPos || !disOptions.noSAfilter)
-                        {
-//                             write(std::cout, *matchIt);
-
-                            if(!disOptions.alignSecondary)
-                                valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
-                            else
-                                valid = true;
-
-//                                 write(std::cout, *matchIt);
+                        if(disOptions.verbose > 2){
+                            std::cout << "ITV:\n";
+                            write(std::cout, *matchIt);
                         }
-                        else
-                        {
-                            valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
-                        }
-                        if(!ossMatch)
+
+                        if(!disOptions.alignSecondary || true){ //TODO check inTextVerification
+                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
                             ++itvJobsDone;
-
-                        if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
-                            std::cout << "Error Rate to high delayed Intext\n";
-                            valid = false;
-                        }
-
-
-                        if(valid){
-                            setMapped(me.ctx, readId);
-                            setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
-                            ++valids;
                         }
                         else
                         {
-                            setInvalid(*matchIt);
+                            valid = me.maxError >= inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
                         }
+
+                        if(disOptions.verbose > 2)
+                            write(std::cout, *matchIt);
                     }
+                    else
+                    {
+                        //OSSMatch verify no random Ns
+                        valid = me.maxError >= inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                    }
+
+                    if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
+                        std::cout << "Error Rate to high delayed Intext\n";
+                        valid = false;
+                    }
+
+
+                    if(valid){
+                        setMapped(me.ctx, readId);
+                        setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
+                        ++valids;
+                    }
+                    else
+                    {
+                        setInvalid(*matchIt);
+                    }
+
                 }
                 ++matchIt;
             }
         }
-/*
-        std::cout << "Print aligned Matches\n";
-        for(int i = 0; i < 1; ++i){
-//             std::cout << "Is Read mapped: " << isMapped(ossContext.ctx, i) << "\n";
-//             std::cout << "ReadmapperCont: " << isMapped(me.ctx, i) << "\n";
-            auto const & matches = me.matchesSetByCoord[i];
-            auto matchIt = begin(matches, Standard());
-            auto matchEnd = end(matches, Standard());
-            while(matchIt != matchEnd){
-                write(std::cout, *matchIt);
-                ++matchIt;
+
+        if(disOptions.verbose > 2){
+            std::cout << "Print aligned Matches\n";
+            for(int i = 0; i < length(me.matchesSetByCoord); ++i){
+                auto const & matches = me.matchesSetByCoord[i];
+                auto matchIt = begin(matches, Standard());
+                auto matchEnd = end(matches, Standard());
+                while(matchIt != matchEnd){
+                    write(std::cout, *matchIt);
+                    ++matchIt;
+                }
             }
-        }*/
+        }
 
 
         stop(me.timer);
@@ -2396,20 +2423,22 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
 
     rankMatches2(mainMapper, mainMapper.reads.seqs);
 
-    /*
-    for(int i = 0; i < length(mainMapper.matchesSetByCoord); ++i){
-        auto const & matches = mainMapper.matchesSetByCoord[i];
+    if(disOptions.verbose > 2)
+    {
+        for(int i = 0; i < length(mainMapper.matchesSetByCoord); ++i){
+            auto const & matches = mainMapper.matchesSetByCoord[i];
             auto matchIt = begin(matches, Standard());
             auto matchEnd = end(matches, Standard());
             while(matchIt != matchEnd){
-                  if (getMember(*matchIt, ContigEnd()) - getMember(*matchIt, ContigBegin()) >= 200){
+                if (getMember(*matchIt, ContigEnd()) - getMember(*matchIt, ContigBegin()) >= 200){
                     std::cout << "After rank Match\n";
                     write(std::cout, *matchIt);
                 }
-//                 write(std::cout, *matchIt);
+                write(std::cout, *matchIt);
                 ++matchIt;
             }
-    }*/
+        }
+    }
 
 //     transferCigars(mainMapper, disOptions);
     std::cout << "Load All Contigs\n";

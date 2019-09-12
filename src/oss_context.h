@@ -556,6 +556,7 @@ struct OSSContext
 
     bool filterDelegate = true;
     bool trackReadCount = false;
+    bool delayContex = false;
     bool itv = true;
     bool delayITV = false;
     bool anyITV = false;
