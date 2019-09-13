@@ -389,10 +389,10 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
     }
     else
     {
-#ifdef DDR_YARA_LARGE_CONTIGS
+#if defined(DR_YARA_LARGE_CONTIGS) || defined(DR_YARA_LARGE_INDECES)
         saveIndex<TContigsSize, uint64_t>(me);
 #else
-        throw RuntimeError("Maximum contig length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+        throw RuntimeError("Maximum contig length exceeded. Recompile with -DDR_YARA_LARGE_INDECES=ON or -DDR_YARA_LARGE_CONTIGS=ON.");
 #endif
     }
 }
@@ -410,10 +410,10 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
     }
     else
     {
-#ifdef DDR_YARA_LARGE_CONTIGS
+#ifdef DR_YARA_MANY_SEQUENCES
         saveIndex<uint32_t>(me);
 #else
-        throw RuntimeError("Maximum number of contigs exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+        throw RuntimeError("Maximum number of contigs exceeded. Recompile with -DDR_YARA_MANY_SEQUENCES=ON.");
 #endif
     }
 }
