@@ -54,7 +54,7 @@ using namespace seqan;
 template <typename TSpec = void>
 struct SeqConfig
 {
-    typedef Dna5Q                   TAlphabet;
+    typedef DnaQ                   TAlphabet;
     typedef Alloc<>                 TSeqSpec;
     typedef Owner<ConcatDirect<> >  TSeqsSpec;
     typedef Owner<ConcatDirect<> >  TSeqNamesSpec;

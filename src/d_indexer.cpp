@@ -321,22 +321,40 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
 
     // Randomly replace Expanded Letter Code with with A, C, G, T.
 //     randomizeELCs(me.contigs);
-    randomizeNs(me.contigs);
+//     randomizeNs(me.contigs);
 
     // IndexFM is built on the reversed contigs.
 //     reverse(me.contigs);
 
-    Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec>> index; // (me.contigs.seqs)
+//     typedef StringSet<DnaString> TText;
+//     typedef StringSet<String<Dna5Q, Alloc<>>, Owner<ConcatDirect<> >>   TSeqs;
+//     typedef StringSet<String<Dna5, Alloc<> >>   TSeqs;
+//     DnaString  seq = "ACCCGCGGCGCGCGCGCGCGCG";
+//     TText seqs;
+//     appendValue(seqs, seq);
+//     TSeqs seqs = me.contigs.seqs;
+
+    typename TIndexConfig::Text seqs = me.contigs.seqs;
+//     typedef YaraFMConfig3<TContigsSize, TContigsLen, TContigsSum, Alloc<>>     TMeText;
+//     typedef Owner<ConcatDirect<TMeText> >               TSSetSpec_;
+//     typedef StringSet<String<Dna, Alloc<>>, TSSetSpec_>  Text;
+    Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec>> index(seqs);
+//     Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec>> index(me.contigs.seqs);
+//     Index<TText, BidirectionalIndex<TIndexSpec>> index(seqs);
+//     Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec>> index; // (me.contigs.seqs)
+
+
+//     Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec>> index; // (me.contigs.seqs)
 
     //info when saving reverse text separately contigs where reversed!!
     // This assignment *copies* the contigs to the index as the types differ.
-    setValue(index.fwd.text, me.contigs.seqs);
-    reverse(me.contigs);
-    setValue(index.rev.text, me.contigs.seqs);
+//     setValue(index.fwd.text, me.contigs.seqs);
+//     reverse(me.contigs);
+//     setValue(index.rev.text, me.contigs.seqs);
 
     // Clear the contigs - the index now owns its own copy.
-    clear(me.contigs);
-    shrinkToFit(me.contigs);
+//     clear(me.contigs);
+//     shrinkToFit(me.contigs);
 
     try
     {
