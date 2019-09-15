@@ -87,6 +87,7 @@ struct Options
     uint64_t        samplingRate;
 
     unsigned        threadsCount;
+    bool            outputFasta;
 
     bool            verbose;
 
@@ -153,6 +154,7 @@ void setupArgumentParser(ArgumentParser & parser, Options const & options)
     setDefaultValue(parser, "sampling", options.samplingRate);
 
     addOption(parser, ArgParseOption("v", "verbose", "Displays verbose output."));
+//     addOption(parser, ArgParseOption("rand", "randomizedText", "Output randomized text in index dir."));
 
     addSection(parser, "Output Options");
 
@@ -190,6 +192,8 @@ parseCommandLine(Options & options, ArgumentParser & parser, int argc, char cons
 
     // Parse verbose output option.
     getOptionValue(options.verbose, parser, "verbose");
+//     getOptionValue(options.outputFasta, parser, "randomizedText");
+
 
     // Parse contigs input file.
 //    getArgumentValue(options.contigsDir, parser, 0);
@@ -254,8 +258,29 @@ void loadContigs(YaraIndexer<TSpec, TConfig> & me)
 
     try
     {
-        readRecords(me.contigs, me.contigsDir);
-        trimSeqNames(me.contigs);
+        typedef SeqStore<TSpec, YaraContigsConfigLoad<> >   TContigsLoad;
+        typedef SeqStore<TSpec, YaraContigsConfig<> >   TContigs;
+        TContigsLoad dna5contigs;
+
+        readRecords(dna5contigs, me.contigsDir);
+        trimSeqNames(dna5contigs);
+        randomizeNs(dna5contigs);
+
+/*
+        if(me.options.outputFasta){
+            SeqFileOut seqFileout(static_cast<std::string>(toCString(me.options.contigsIndexFile)) + "/" + std::to_string(me.options.currentBinNo) + ".fa");
+            writeRecords(seqFileout, dna5contigs.seqs, dna5contigs.names);
+        }*/
+
+        me.contigs.seqs = std::move(dna5contigs.seqs);
+        me.contigs.names = std::move(dna5contigs.names);
+//TODO add compilerFlag
+/*
+        readRecords(dna5contigs, me.contigsDir);
+        trimSeqNames(dna5contigs);
+        randomizeNs(dna5contigs);
+*/
+
     }
     catch (BadAlloc const & /* e */)
     {

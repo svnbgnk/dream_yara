@@ -105,6 +105,15 @@ typedef SeqConfig<void>         YaraReadsConfig;
 // ----------------------------------------------------------------------------
 
 template <typename TSpec = Alloc<> >
+struct YaraContigsConfigLoad
+{
+    typedef Dna5                                    TAlphabet;
+    typedef Packed<TSpec>                           TSeqSpec;
+    typedef Owner<ConcatDirect<Limits<uint64_t> > > TSeqsSpec;
+    typedef Owner<ConcatDirect<Limits<uint32_t> > > TSeqNamesSpec;
+};
+
+template <typename TSpec = Alloc<> >
 struct YaraContigsConfig
 {
     typedef Dna                                    TAlphabet;
