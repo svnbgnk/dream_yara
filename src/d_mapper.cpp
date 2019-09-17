@@ -531,8 +531,11 @@ void configureDisMapper(DisOptions & disOptions,
     }
     else
     {
-//         throw RuntimeError("Maximum contig3 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+#if defined(DR_YARA_LARGE_CONTIGS) || defined(DR_YARA_LARGE_INDECES)
         spawnDisMapper<TContigsSize, TContigsLen, uint64_t>(disOptions, threading, sequencing, distance);
+#else
+        throw RuntimeError("Maximum index size exceeded. Recompile with -DDR_YARA_LARGE_INDECES=ON or -DDR_YARA_LARGE_CONTIGS=ON.");
+#endif
     }
 }
 
@@ -588,12 +591,14 @@ void configureDisMapper(DisOptions & disOptions,
     else if (disOptions.contigsSize <= MaxValue<uint16_t>::VALUE)
     {
          configureDisMapper<uint16_t>(disOptions, threading, sequencing, distance);
-//         throw RuntimeError("Maximum contig4 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
     }
     else
     {
-//        throw RuntimeError("Maximum contig2 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+#ifdef DR_YARA_MANY_SEQUENCES
         configureDisMapper<uint32_t>(disOptions, threading, sequencing, distance);
+#else
+        throw RuntimeError("Maximum number sequeces exceeded. Recompile with -DDR_YARA_MANY_SEQUENCES=ON.");
+#endif
     }
 }
 
@@ -603,8 +608,11 @@ void configureDisMapper(DisOptions & disOptions,
                         TSequencing const & sequencing)
 {
     if (disOptions.sensitivity == FULL){
+#ifdef DR_YARA_ALG
         return configureDisMapper(disOptions, threading, sequencing, EditDistance());
-//         throw RuntimeError("Maximum contig2 length exceeded. Recompile with -DDR_YARA_LARGE_CONTIGS=ON.");
+#else
+        throw RuntimeError("This option is only used by Yara. Full sensitivity is the default option. Use -hdp to use the heuristic search of OSS.");
+#endif
     }
     else
     {

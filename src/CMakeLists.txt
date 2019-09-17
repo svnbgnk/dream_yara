@@ -94,7 +94,9 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9.1)
         message (FATAL_ERROR "Your GCC version is too old. Minimum version is GCC-4.9.1!")
         return ()
-    endif ()
+    elseif (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.4.1)
+        message (WARNING "Your GCC version will probably expirience an internal compiler error for the calculation of mappability. Maximum Version is GCC-7.4.1!")
+    endif()
 elseif (COMPILER_IS_CLANG)
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6)
         message (FATAL_ERROR "Your Clang version is too old. Please upgrade to 3.8.0 or use GCC.")
@@ -167,10 +169,26 @@ endif ()
 
 set (SEQAN_APP_VERSION "1.0.2")
 
-option (DR_YARA_LARGE_CONTIGS "Set to OFF to disable support for more than 32k contigs or contigs longer than 4Gbp." ON)
+option (DR_YARA_LARGE_INDECES "Set to OFF to disable support for more 4Gbp indeces, also enabled by LARGE_CONTIGS (cumulative length of sequences)." ON)
+if (DR_YARA_LARGE_INDECES AND NOT SEQAN_TRAVIS_BUILD)
+  add_definitions (-DDR_YARA_LARGE_INDECES=1)
+endif (DR_YARA_LARGE_INDECES AND NOT SEQAN_TRAVIS_BUILD)
+
+option (DR_YARA_LARGE_CONTIGS "Set to OFF to disable support for more than contigs" ON)
 if (DR_YARA_LARGE_CONTIGS AND NOT SEQAN_TRAVIS_BUILD)
   add_definitions (-DDR_YARA_LARGE_CONTIGS=1)
 endif (DR_YARA_LARGE_CONTIGS AND NOT SEQAN_TRAVIS_BUILD)
+
+option (DR_YARA_MANY_SEQUENCES "Set to OFF to disable support for more than 32k contigs." ON)
+if (DR_YARA_MANY_SEQUENCES AND NOT SEQAN_TRAVIS_BUILD)
+  add_definitions (-DDR_YARA_MANY_SEQUENCES=1)
+endif (DR_YARA_MANY_SEQUENCES AND NOT SEQAN_TRAVIS_BUILD)
+
+option (DR_YARA_ALG "Set to OFF to disable support for options -ossOff and -y." ON)
+if (DR_YARA_ALG AND NOT SEQAN_TRAVIS_BUILD)
+  add_definitions (-DDR_YARA_ALG=1)
+endif (DR_YARA_ALG AND NOT SEQAN_TRAVIS_BUILD)
+
 
 # ----------------------------------------------------------------------------
 # Disable Compiler Warnings
