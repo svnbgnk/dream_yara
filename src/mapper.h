@@ -203,7 +203,6 @@ struct MapperTraits
     typedef typename std::vector<std::pair<sdsl::bit_vector, sdsl::rank_support_v<>>>    TBitvectors;
     typedef typename std::vector<std::pair<uint32_t, bool> >                         TBitvectorsMeta;
 
-
     typedef typename Size<TIndex>::Type                             TIndexSize;
     typedef typename Fibre<TIndex, FibreSA>::Type                   TSA;
 
@@ -333,6 +332,7 @@ struct Mapper
     typename Traits::TBiIndex           biIndex;
     typename Traits::TIndex           & index = biIndex.rev;
     typename Traits::TReads             reads;
+    std::vector<bool>                   checkReads;
 
     typename Traits::TBitvectors        bitvectors;
     typename Traits::TBitvectorsMeta    bitvectorsMeta;

@@ -1423,13 +1423,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     bool const checkMappa = !bitvectors.empty();
     bool const nowEdit = !std::is_same<TDistanceTag, EditDistance>::value && ossContext.hammingDpieces <=  blockIndex;
 
-
-    //TODO remove
-    if (ossContext.readSeqs[needleId] != needle){
-        std::cout << "needle != reads \n" << needle << "\n" << ossContext.readSeqs[needleId] << "\n";
-    }
-
-
     // Done. (Last step)
     if (done)
     {
@@ -1655,11 +1648,29 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             //check OSS match since randomized Ns or index error
             bool valid = true;
             uint32_t readId = getReadId(ossContext.readSeqs, needleId);
+
             if(!ossContext.delayContex && getMinErrors(ossContext.ctx, readId) > errors)
             {
+
                 //TODO remove ranges containing higher error than scheme but need acces to schemes
 //                  uint8_t upper = s.u[s.u.size() - 1];
+/*
+                bool check = false;
+                auto need = ossContext.readSeqs[needleId];
+                for(uint32_t i = 0; i < length(need); ++i)
+                {
+                    if(need[i] == 'N')
+                    {
+                        check = true;
+                        break;
+                    }
+                }*/
 
+                if(!ossContext.checkReads[needleId]){
+                    setMapped(ossContext.ctx, readId);
+                    setMinErrors(ossContext.ctx, readId, range.errors);
+                }
+                else
                 if(ossContext.maxError >= inTextVerification(ossContext, iter, range, ossContext.readSeqs[needleId], ossContext.maxError))
                 {
                     setMapped(ossContext.ctx, readId);

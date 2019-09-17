@@ -1192,7 +1192,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     DelegateUnfiltered delegateUnfiltered(appender, noOverlap);
     TContigSeqs & contigSeqs = me.contigs.seqs;
 
-    OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
+    OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, me.checkReads, contigSeqs);
 
     if(disOptions.verbose > 1){
         std::cout << "Mapping " << length(readSeqs) << " reads\n";
@@ -1731,6 +1731,23 @@ inline void loadFilteredReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCo
             disOptions.origReadIdMap[disOptions.currentBinNo].push_back(orgId + numReads);
         }
     }
+
+    //Check which reads contain N
+    clear(me.checkReads);
+    for(uint32_t i = 0; i < length(me.reads.seqs); ++i){
+//         auto & needle = me.reads.seqs[i];
+        bool check = false;
+        for(uint32_t p = 0; p < length(me.reads.seqs[i]); ++p)
+        {
+            if(me.reads.seqs[i][p] == 'N'){
+                check = true;
+                break;
+            }
+
+        }
+        me.checkReads.push_back(check);
+    }
+
     stop(mainMapper.timer);
     disOptions.copyReads += getValue(mainMapper.timer);
     disOptions.filteredReads += getReadsCount(me.reads.seqs);

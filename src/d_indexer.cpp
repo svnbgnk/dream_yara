@@ -441,7 +441,6 @@ inline void saveAllForwardContigs(Options & options)
         TContigs tmpContigs;
         CharString fileName;
         appendFileName(fileName, options.contigsIndexFile, i);
-        std::cout << toCString(fileName) << "\n";
 
         if (!open(tmpContigs, toCString(fileName), OPEN_RDONLY))
             throw RuntimeError("Error while opening reference file.");
