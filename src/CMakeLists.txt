@@ -169,25 +169,30 @@ endif ()
 
 set (SEQAN_APP_VERSION "1.0.2")
 
-option (DR_YARA_LARGE_INDECES "Set to OFF to disable support for more 4Gbp indeces, also enabled by LARGE_CONTIGS (cumulative length of sequences)." ON)
+option (DR_YARA_LARGE_INDECES "Set to ON to enable support for more 4Gbp indeces (cumulative length of sequences), also enabled by LARGE_CONTIGS." OFF)
 if (DR_YARA_LARGE_INDECES AND NOT SEQAN_TRAVIS_BUILD)
   add_definitions (-DDR_YARA_LARGE_INDECES=1)
 endif (DR_YARA_LARGE_INDECES AND NOT SEQAN_TRAVIS_BUILD)
 
-option (DR_YARA_LARGE_CONTIGS "Set to OFF to disable support for more than contigs" ON)
+option (DR_YARA_LARGE_CONTIGS "Set to ON to enable support for more than 4Gbp long contigs" OFF)
 if (DR_YARA_LARGE_CONTIGS AND NOT SEQAN_TRAVIS_BUILD)
   add_definitions (-DDR_YARA_LARGE_CONTIGS=1)
 endif (DR_YARA_LARGE_CONTIGS AND NOT SEQAN_TRAVIS_BUILD)
 
-option (DR_YARA_MANY_SEQUENCES "Set to OFF to disable support for more than 32k contigs." ON)
+option (DR_YARA_MANY_SEQUENCES "Set to ON to enable support for more than 32k contigs." OFF)
 if (DR_YARA_MANY_SEQUENCES AND NOT SEQAN_TRAVIS_BUILD)
   add_definitions (-DDR_YARA_MANY_SEQUENCES=1)
 endif (DR_YARA_MANY_SEQUENCES AND NOT SEQAN_TRAVIS_BUILD)
 
-option (DR_YARA_ALG "Set to OFF to disable support for options -ossOff and -y." ON)
+option (DR_YARA_ALG "Set to ON to enable support for options -ossOff and -y." OFF)
 if (DR_YARA_ALG AND NOT SEQAN_TRAVIS_BUILD)
   add_definitions (-DDR_YARA_ALG=1)
 endif (DR_YARA_ALG AND NOT SEQAN_TRAVIS_BUILD)
+
+#option (DR_MEASURE_LOCATE_TIME "Set to ON to disable saving of matches used to benchmark backtracking and location time." OFF)
+#if (DR_MEASURE_LOCATE_TIME AND NOT SEQAN_TRAVIS_BUILD)
+#  add_definitions (-DDR_MEASURE_LOCATE_TIME=1)
+#endif (DR_MEASURE_LOCATE_TIME AND NOT SEQAN_TRAVIS_BUILD)
 
 
 # ----------------------------------------------------------------------------
