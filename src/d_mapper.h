@@ -56,7 +56,7 @@ public:
     CharString              superOutputFile;
 
     CharString              MappabilityDirectory;
-    bool                    noDelayContex = false;
+    bool                    noDelayContex = true;
     bool                    ossOff = false;
     bool                    itv = false;
     bool                    noSAfilter = false;

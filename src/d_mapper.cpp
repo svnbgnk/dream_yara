@@ -156,8 +156,8 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
     hideOption(getOption(parser, "compare"));
 
     addOption(parser, ArgParseOption("nM", "noMappability", "Do not use Mappability in Search Schemes"));
-
-    addOption(parser, ArgParseOption("nDC", "noDelayContex", "Do not delay the update on the read context after the in text verification. This strategy has a runtime advantage for large bins and high error rates"));
+/*
+    addOption(parser, ArgParseOption("nDC", "noDelayContex", "Do not delay the update on the read context after the in text verification. This strategy has a runtime advantage for large bins and high error rates"));*/
 
     addOption(parser, ArgParseOption("I", "ITV", "Use In Text Verification to align potential occurrences found Optimum Search Schemes immediatly, this makes sense for large bins with reads occurring often."));
 
@@ -165,7 +165,7 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("nD", "noDelayITV", "Use In Text Verification right after finding a potential Position"));
 
-    addOption(parser, ArgParseOption("ap", "approximateITVJobs", "Do not determine exact starting and endposition of secondary matches (Instead a range which contains the match is given.)"));
+//     addOption(parser, ArgParseOption("ap", "approximateITVJobs", "Do not determine exact starting and endposition of secondary matches (Instead a range which contains the match is given.)"));
 
     addOption(parser, ArgParseOption("ea", "earlyLeaf", "When using FM-tree use use early Leaf method (which requires reverse index suffix array). Generally slowes down read mapper"));
 
@@ -377,7 +377,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     getOptionValue(disOptions.fmTreeBreak, parser, "fmTreeBreak");
 
 
-    if (isSet(parser, "noDelayContex")) disOptions.noDelayContex = true;
+//     if (isSet(parser, "noDelayContex")) disOptions.noDelayContex = true;
     if (isSet(parser, "ossOff")) disOptions.ossOff = true;
     if (isSet(parser, "hammingD")) disOptions.hammingDistance = true;
     if (isSet(parser, "compare")) disOptions.compare = true;
@@ -385,7 +385,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "ITV")) disOptions.itv = true;
     if (isSet(parser, "noSAfilter")) disOptions.noSAfilter = true;
     if (isSet(parser, "noDelayITV")) disOptions.noDelayITV = true;
-    if (isSet(parser, "approximateITVJobs")) disOptions.determineExactSecondaryPos = false;
+//     if (isSet(parser, "approximateITVJobs")) disOptions.determineExactSecondaryPos = false;
 
     if (isSet(parser, "earlyLeaf")) disOptions.earlyLeaf = true;
     if (isSet(parser, "bioSeqZip")) disOptions.zipFastq = true;
