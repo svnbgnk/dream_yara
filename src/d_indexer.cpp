@@ -315,8 +315,12 @@ void saveIndex(YaraIndexer<TSpec, TConfig> & me)
         mtx.unlock();
     }
 
+    randomizeNs(me.contigs);
 
-    typename TIndexConfig::Text dna4text = std::move(me.contigs.seqs);
+    typename TIndexConfig::Text dna4text{me.contigs.seqs};
+
+    clear(me.contigs);
+    shrinkToFit(me.contigs);
     Index<typename TIndexConfig::Text, BidirectionalIndex<TIndexSpec>> index(dna4text); // (me.contigs.seqs)
 
     try
