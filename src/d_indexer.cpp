@@ -197,6 +197,7 @@ parseCommandLine(Options & options, ArgumentParser & parser, int argc, char cons
     // std::map<uint32_t, CharString>  binContigs;
     // Parse contig input files.
     uint32_t updateCount = getArgumentValueCount(parser, 0);
+    options.numberOfBins = updateCount;
     for (uint32_t i = 0; i < updateCount; ++i)
     {
         CharString  currentFile;
@@ -413,6 +414,45 @@ void runYaraIndexer(Options & options)
     saveIndex(indexer);
 }
 
+template <typename TSpec = void>
+struct AllContigs
+{
+    typedef SeqStore<TSpec, YaraContigsConfig<> >   TContigs;
+
+    TContigs            contigs;
+};
+
+
+// ----------------------------------------------------------------------------
+// Function saveAllForwardContigs()
+// ----------------------------------------------------------------------------
+
+inline void saveAllForwardContigs(Options & options)
+{
+    typedef SeqStore<void, YaraContigsConfig<> >   TContigs;
+
+    CharString allContigsFile = options.contigsIndexFile;
+    allContigsFile += "allContigs";
+    AllContigs<> allContigs;
+    for (uint32_t i=0; i < options.numberOfBins; ++i)
+    {
+        if(options.verbose > 1)
+            std::cout << "Load contig from bin" << i << ".\n";
+        TContigs tmpContigs;
+        CharString fileName;
+        appendFileName(fileName, options.contigsIndexFile, i);
+        std::cout << toCString(fileName) << "\n";
+
+        if (!open(tmpContigs, toCString(fileName), OPEN_RDONLY))
+            throw RuntimeError("Error while opening reference file.");
+        append(allContigs.contigs.seqs, tmpContigs.seqs);
+        append(allContigs.contigs.names, tmpContigs.names);
+    }
+
+    if (!save(allContigs.contigs, toCString(allContigsFile)))
+        throw RuntimeError("Error while saving all Contig references.");
+}
+
 // ----------------------------------------------------------------------------
 // Function main()
 // ----------------------------------------------------------------------------
@@ -486,6 +526,18 @@ int main(int argc, char const ** argv)
         std::cerr << getAppName(parser) << ": " << e.what() << std::endl;
         return 1;
     }
+
+    try
+    {
+        saveAllForwardContigs(options);
+    }
+    catch (Exception const & e)
+    {
+        std::cerr << getAppName(parser) << ": " << e.what() << std::endl;
+        return 1;
+    }
+
+
 
     return 0;
 }
