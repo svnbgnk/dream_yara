@@ -133,6 +133,7 @@ struct DelegateDirect
     template <typename TNeedleId, typename TMatchErrors>
     void operator() (OSSContext<TSpec, TConfig> & ossContext, TContigsPos const & start, TContigsPos const & end, TNeedleId const needleId, TMatchErrors errors)
     {
+#ifndef DR_MEASURE_LOCATE_TIME
         TReadId readId = getReadId(ossContext.readSeqs, needleId);
         TMatch hit;
         setContigPosition(hit, start, end);
@@ -156,6 +157,13 @@ struct DelegateDirect
         {
             ++ossContext.itvJobs;
         }
+#else
+    ignoreUnusedVariableWarning(ossContext);
+    ignoreUnusedVariableWarning(start);
+    ignoreUnusedVariableWarning(end);
+    ignoreUnusedVariableWarning(needleId);
+    ignoreUnusedVariableWarning(errors);
+#endif
     }
 };
 
@@ -190,44 +198,50 @@ struct Delegate
     template <typename TNeedleId, typename TSARange, typename TPos>
     void operator() (OSSContext<TSpec, TConfig> & ossContext, TNeedleId const needleId, TSARange const & rangeInfo, TPos & pos)
     {
-        //TODO move into function calls
-        int16_t overlap_l = maxError;
-        int16_t overlap_r = maxError;
-        uint32_t occLength = rangeInfo.repLength;
-        TMatch hit;
-        if(noOverlap){
-            setContigPosition(hit, pos, posAdd(pos, occLength));
-        }
-        else
-        {
-            overlap_l = (overlap_l <=  getSeqOffset(pos)) ? overlap_l : 0;
-            setContigPosition(hit, posAdd(pos, -overlap_l), posAdd(pos, occLength + overlap_r));
-        }
+#ifndef DR_MEASURE_LOCATE_TIME
+    int16_t overlap_l = maxError;
+    int16_t overlap_r = maxError;
+    uint32_t occLength = rangeInfo.repLength;
+    TMatch hit;
+    if(noOverlap){
+        setContigPosition(hit, pos, posAdd(pos, occLength));
+    }
+    else
+    {
+        overlap_l = (overlap_l <=  getSeqOffset(pos)) ? overlap_l : 0;
+        setContigPosition(hit, posAdd(pos, -overlap_l), posAdd(pos, occLength + overlap_r));
+    }
 
-        hit.errors = rangeInfo.errors;
-        setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
+    hit.errors = rangeInfo.errors;
+    setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
-          if (ossContext.errorRate < getErrorRate(hit, ossContext.readSeqs)){
-            std::cout << "Error Rate to high del\n";
-            return;
-        }
+    if (ossContext.errorRate < getErrorRate(hit, ossContext.readSeqs)){
+        std::cout << "Error Rate to high del\n";
+        return;
+    }
 
 
-        appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
+    appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
 
-        if(!ossContext.noSAfilter && getSeqOffset(pos) == 0)
-        {
+    if(!ossContext.noSAfilter && getSeqOffset(pos) == 0)
+    {
 //             std::cout << "append additional Match\n";
-            TMatch hit2 = hit;
-            hit2.errors = 127;
-            setContigPosition(hit2, pos, posAdd(pos, occLength));
-            appendValue(matches, hit2, Generous(), typename Traits::TThreading());
-        }
+        TMatch hit2 = hit;
+        hit2.errors = 127;
+        setContigPosition(hit2, pos, posAdd(pos, occLength));
+        appendValue(matches, hit2, Generous(), typename Traits::TThreading());
+    }
 
         //read Context is done as soon as a range is reported
 //             TReadId readId = getReadId(ossContext.readSeqs, needleId);
 //             setMapped(ossContext.ctx, readId);
 //             setMinErrors(ossContext.ctx, readId, errors);
+#else
+    ignoreUnusedVariableWarning(ossContext);
+    ignoreUnusedVariableWarning(needleId);
+    ignoreUnusedVariableWarning(rangeInfo);
+    ignoreUnusedVariableWarning(pos);
+#endif
     }
 };
 
