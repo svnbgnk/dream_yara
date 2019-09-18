@@ -216,7 +216,7 @@ struct Delegate
     setReadId(hit, ossContext.readSeqs, needleId); // needleId is used to determine if read is reverse complement
 
     if (ossContext.errorRate < getErrorRate(hit, ossContext.readSeqs)){
-        std::cout << "Error Rate to high del\n";
+//         std::cout << "Error Rate to high del\n";
         return;
     }
 
@@ -986,8 +986,9 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     TContigsLen seqOffset = getMember(match, ContigBegin());
     TContigsLen seqOffsetEnd = getMember(match, ContigEnd());
 
-    if (verbose && length(contigSeqs[seqNo]) < seqOffsetEnd){
-        std::cout << "Match end overlaps sequence\n";
+    if (length(contigSeqs[seqNo]) < seqOffsetEnd){
+        if(verbose)
+            std::cout << "Match end overlaps sequence\n";
         seqOffsetEnd = length(contigSeqs[seqNo]);
         TContigPos contigBegin(seqNo, getMember(match, ContigBegin()));
         TContigPos newContigEnd(seqNo, seqOffsetEnd);

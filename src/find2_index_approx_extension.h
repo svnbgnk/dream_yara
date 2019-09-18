@@ -1588,12 +1588,12 @@ inline int inTextVerification(OSSContext<TSpec, TConfig> & ossContext,
         }
 
         if(minErrors > range.errors)
-        {
+        {/*
             if(true){
                 std::cout << "OSS delegate error" << "\n";
                 std::cout << "myers error: " << minErrors << "\tOSS error: " << (int)range.errors << "\n";
                 std::cout << ex_aligned_text << "\n" << aligned_text << "\n" << needle << "\n";
-            }
+            }*/
             range.errors = minErrors;
         }
     }
