@@ -442,8 +442,10 @@ inline void saveAllForwardContigs(Options & options)
         CharString fileName;
         appendFileName(fileName, options.contigsIndexFile, i);
 
-        if (!open(tmpContigs, toCString(fileName), OPEN_RDONLY))
+        if (!open(tmpContigs, toCString(fileName), OPEN_RDONLY)){
+            std::cout << "Cannot open file: " << toCString(fileName) << "\n";
             throw RuntimeError("Error while opening reference file.");
+        }
         append(allContigs.contigs.seqs, tmpContigs.seqs);
         append(allContigs.contigs.names, tmpContigs.names);
     }
@@ -526,6 +528,8 @@ int main(int argc, char const ** argv)
         return 1;
     }
 
+    if (options.verbose)
+        std::cerr <<"Save referenes in single file!\t" << std::endl;
     try
     {
         saveAllForwardContigs(options);

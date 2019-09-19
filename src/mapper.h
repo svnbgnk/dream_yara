@@ -187,6 +187,7 @@ struct MapperTraits
     typedef typename TConfig::TAlloc                                TAlloc;
 
     typedef SeqStore<void, YaraContigsConfig<TAlloc> >              TContigs;
+    typedef SeqStore<void, YaraContigsConfig<MMap<>> >              TContigsMMap;
     typedef typename TContigs::TSeqs                                TContigSeqs;
     typedef typename TContigs::TSeqNames                            TContigNames;
     typedef typename Value<TContigSeqs>::Type                       TContig;
@@ -308,6 +309,7 @@ struct Stats
     {}
 };
 
+
 // ----------------------------------------------------------------------------
 // Class Mapper
 // ----------------------------------------------------------------------------
@@ -315,6 +317,7 @@ struct Stats
 template <typename TSpec, typename TConfig = void>
 struct Mapper
 {
+public:
     typedef MapperTraits<TSpec, TConfig>    Traits;
 
     Options const &                     options;
@@ -327,6 +330,7 @@ struct Mapper
     unsigned                            libraryLength;
     unsigned                            libraryDev;
 
+    typename Traits::TContigsMMap       contigsALL;
     typename Traits::TContigs           contigs;
 //     typename Traits::TIndex             index;
     typename Traits::TBiIndex           biIndex;
@@ -375,6 +379,7 @@ struct Mapper
         cigars(concat(cigarsSet))
     {};
 };
+
 
 // ============================================================================
 // Functions
@@ -435,6 +440,29 @@ inline void loadContigsIndex(Mapper<TSpec, TConfig> & me)
     {
         throw RuntimeError("Insufficient memory to load the reference index.");
     }
+    stop(me.timer);
+    me.stats.loadContigs += getValue(me.timer);
+
+    if (me.options.verbose > 1)
+        std::cout << "Loading reference index:\t\t" << me.timer << std::endl;
+}
+
+template <typename TSpec, typename TConfig, typename TString>
+inline void loadContigsBiIndex(Mapper<TSpec, TConfig> & me, auto & mybiIndex, TString & filename)
+{
+    start(me.timer);
+    try
+    {
+        if (!open(mybiIndex, toCString(filename), OPEN_RDONLY))
+            throw RuntimeError("Error while opening reference index file.");
+    }
+    catch (BadAlloc const & /* e */)
+    {
+        throw RuntimeError("Insufficient memory to load the reference index.");
+    }
+
+//     me.biIndex = mybiIndex;
+
     stop(me.timer);
     me.stats.loadContigs += getValue(me.timer);
 
@@ -1356,13 +1384,13 @@ inline void alignMatches(Mapper<TSpec, TConfig> & me)
 
     TConcatenator matchesConcat = concat(me.matchesSet);
     if (me.options.rabema && me.options.alignSecondary)
-        TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
     else if (me.options.rabema && !me.options.alignSecondary)
-        TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
     else if (!me.options.rabema && me.options.alignSecondary)
-        TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
     else
-        TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
 
     setHost(me.primaryCigars, me.cigars);
     setCargo(me.primaryCigars, me.primaryCigarPositions);

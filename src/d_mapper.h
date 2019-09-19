@@ -1797,10 +1797,17 @@ inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & 
     loadContigs(me);
     std::cout << "loaded Contigs" << "\n" << length(me.contigs.seqs)<< "\n";
 //     loadContigsIndex(me);
-    loadContigsBiIndex(me, mybiIndex);
-    std::cout << "loaded Index" << "\nIndexSize: ";
-//     std::cout << length(me.biIndex.fwd.sa) << "\n";
-    mapReads(me, mainMapper, mybiIndex, disOptions);
+    if(disOptions.numberOfBins > 1){
+        loadContigsBiIndex(me, mybiIndex);
+        std::cout << "loaded Index" << "\n";
+    //     std::cout << length(me.biIndex.fwd.sa) << "\n";
+        mapReads(me, mainMapper, mybiIndex, disOptions);
+    }
+    else
+    {
+        std::cout << "Use already loaded Index" << "\n";
+        mapReads(me, mainMapper, mainMapper.biIndex, disOptions);
+    }
     std::cout << "Mapped Reads" << "\n";
 }
 
@@ -1952,7 +1959,7 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
     allContigsFile += "allContigs";
 //     std::cout << "AllContigsFile name " << allContigsFile << "\n";
     TContigs tmpContigs;
-    if (!open(mainMapper.contigs, toCString(allContigsFile), OPEN_RDONLY)){
+    if (!open(mainMapper.contigsALL, toCString(allContigsFile), OPEN_RDONLY)){
         start(mainMapper.timer);
 //         std::cout << "Load with Alloc\n";
         try
@@ -1977,8 +1984,8 @@ inline void loadAllContigs(Mapper<TSpec, TConfig> & mainMapper, DisOptions & dis
 
             if (!save(/*mainMapper.contigs*/allContigs.contigs, toCString(allContigsFile)))
                 throw RuntimeError("Error while saving all Contig references.");
-            append(mainMapper.contigs.seqs, std::move(allContigs.contigs.seqs));
-            append(mainMapper.contigs.names, std::move(allContigs.contigs.names));
+            append(mainMapper.contigsALL.seqs, std::move(allContigs.contigs.seqs));
+            append(mainMapper.contigsALL.names, std::move(allContigs.contigs.names));
         }
         catch (BadAlloc const & /* e */)
         {
@@ -2271,7 +2278,11 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
     }
 
     std::cout << "Load All Contigs\n";
+
+    start(mainMapper.timer);
     loadAllContigs(mainMapper, disOptions);
+    stop(mainMapper.timer);
+    std::cout << "All Contig loading times " << mainMapper.timer << "\n";
     std::cout << "Align all matches\n";
     alignMatches(mainMapper);
 
@@ -2303,6 +2314,12 @@ template <typename TSpec, typename TMainConfig, typename TFilter>
 inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const & filter, DisOptions & disOptions)
 {
     configureThreads(mainMapper);
+
+    if(disOptions.numberOfBins == 1){
+        CharString singleIndexFileName;
+        appendFileName(singleIndexFileName, disOptions.IndicesDirectory, 0);
+        loadContigsBiIndex(mainMapper, mainMapper.biIndex, singleIndexFileName);
+    }
 
     // Open output file and write header.
     openOutputFile(mainMapper, disOptions);
@@ -2374,7 +2391,8 @@ inline void spawnDisMapper(DisOptions & disOptions,
                            TSeedsDistance const & /* tag */)
 {
     disOptions.outputFile = disOptions.superOutputFile;
-    typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, MMap<>>  TMainConfig;
+    typedef ReadMapperConfig<TThreading, TSequencing, TSeedsDistance, TContigsSize, TContigsLen, TContigsSum, Alloc<>>  TMainConfig;
+
     Mapper<void, TMainConfig> disMapper(disOptions);
 
     Timer<double> timer;
