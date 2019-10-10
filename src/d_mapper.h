@@ -1423,7 +1423,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
                     uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
                     uint32_t readId = getReadId(readSeqs, readSeqId);
-                    bool valid;
+                    bool valid = true;
                     if(!disOptions.noSAfilter || (ossContext.delayITV && !ossMatch) || true) //TODO check inTextVerification
                     {
                         if(disOptions.verbose > 2){
@@ -1445,8 +1445,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     }
                     else
                     {
-                        //OSSMatch verify no random Ns
-                        valid = me.maxError >= inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                       if(ossContext.checkReads[readSeqId])
+                        {
+                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
+                        }
                     }
 
                     if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
@@ -2280,7 +2282,18 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
     std::cout << "Load All Contigs\n";
 
     start(mainMapper.timer);
-    loadAllContigs(mainMapper, disOptions);
+    if(disOptions.numberOfBins > 1){
+        loadAllContigs(mainMapper, disOptions);
+    }
+    else
+    {
+        CharString fileName;
+        CharString directory = disOptions.IndicesDirectory;
+        appendFileName(fileName, disOptions.IndicesDirectory, 0);
+        disOptions.IndicesDirectory = fileName;
+        loadContigs(mainMapper);
+        disOptions.IndicesDirectory = directory;
+    }
     stop(mainMapper.timer);
     std::cout << "All Contig loading times " << mainMapper.timer << "\n";
     std::cout << "Align all matches\n";

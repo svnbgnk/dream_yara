@@ -1383,14 +1383,28 @@ inline void alignMatches(Mapper<TSpec, TConfig> & me)
     typename TTraits::TCigarLimits cigarLimits;
 
     TConcatenator matchesConcat = concat(me.matchesSet);
-    if (me.options.rabema && me.options.alignSecondary)
-        TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
-    else if (me.options.rabema && !me.options.alignSecondary)
-        TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
-    else if (!me.options.rabema && me.options.alignSecondary)
-        TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+    if(length(me.contigsALL.seqs) > 0)
+    {
+        if (me.options.rabema && me.options.alignSecondary)
+            TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+        else if (me.options.rabema && !me.options.alignSecondary)
+            TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+        else if (!me.options.rabema && me.options.alignSecondary)
+            TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+        else
+            TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+    }
     else
-        TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+    {
+        if (me.options.rabema && me.options.alignSecondary)
+            TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        else if (me.options.rabema && !me.options.alignSecondary)
+            TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        else if (!me.options.rabema && me.options.alignSecondary)
+            TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        else
+            TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+    }
 
     setHost(me.primaryCigars, me.cigars);
     setCargo(me.primaryCigars, me.primaryCigarPositions);
