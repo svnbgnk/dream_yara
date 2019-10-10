@@ -1576,25 +1576,20 @@ inline int inTextVerification(OSSContext<TSpec, TConfig> & ossContext,
 
 //     TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
 
-
         TFinder finderInfix(aligned_text);
         TPatternInfix patternInfix = needle;
+        int currentErrors;
 
         while (find(finderInfix, patternInfix, patternInfixState, -static_cast<int>(maxErrors + 1)))
         {
-            int currentErrors = -getScore(patternInfixState);
+            currentErrors = -getScore(patternInfixState);
             if(minErrors > currentErrors)
                 minErrors = currentErrors;
         }
 
-        if(minErrors > range.errors)
-        {/*
-            if(true){
-                std::cout << "OSS delegate error" << "\n";
-                std::cout << "myers error: " << minErrors << "\tOSS error: " << (int)range.errors << "\n";
-                std::cout << ex_aligned_text << "\n" << aligned_text << "\n" << needle << "\n";
-            }*/
-            range.errors = minErrors;
+        if(currentErrors > range.errors && currentErrors <= maxErrors)
+        {
+            range.errors = currentErrors;
         }
     }
 
@@ -1699,14 +1694,13 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 //         std::cout << "no SA filter\n";
         auto delegateFMTree = [&delegate](OSSContext<TSpec, TConfig> & ossContext, auto const & iter, auto const needleId, uint8_t const errors, bool const goRight)
         {
-//             TContigSeqs const & genome = ossContext.contigSeqs;
-
             //only required for stats
 //             ossContext.delegateOcc += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
 
             SARange<TContigsSum> saRange;
             saRange.repLength = repLength(iter);
             saRange.errors = errors;
+            saRange.range = iter.fwdIter.vDesc.range;
 
             uint32_t readId = getReadId(ossContext.readSeqs, needleId);
             if(!ossContext.delayContex && getMinErrors(ossContext.ctx, readId) > errors)
