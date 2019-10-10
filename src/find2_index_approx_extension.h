@@ -675,17 +675,6 @@ inline void inTextVerificationN(TContex & ossContext,
         }
     }
 
-//     std::cout << "final cut" << needleId << "\t" << posAdd(sa_info_tmp, endPos - startPos) << "\t" << posAdd(sa_info_tmp, endPos) << "\n";
-//     std::cout << infix(ex_infix, endPos - startPos, endPos) << "\n\n";
-/*
-    // no used in the moment need to check for correctness
-    TSAValue sa_info_tmp = posAdd(sa_info_tmp, endPos - startPos);
-    if(usingReverseText){
-        saPosOnFwd(sa_info_tmp, genomelength, endPos - startPos);
-    }
-    call delegateDirect with delegateDirect(ossContext, sa_info_tmp, ...
-    */
-
     delegateDirect(ossContext, posAdd(sa_info_tmp, length(ex_infix) - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
 }
 
@@ -799,6 +788,7 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 //TODO search <0, 2> need to search till 0 is found or 1
                 if(!ossContext.itv ||  ossContext.delayITV && (isMapped(ossContext.ctx, readId && getMinErrors(ossContext.ctx, readId) + ossContext.strata <= upper) || getMinErrors(ossContext.ctx, readId) <= s.l[s.l.size() - 1] || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError))
                 {
+
                     delegateDirect(ossContext, posAdd(sa_info, 0 - overlap_l_tmp), posAdd(sa_info, needleL + overlap_r), needleId, 127);
                 }
                 else
@@ -1670,8 +1660,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                     setMapped(ossContext.ctx, readId);
                     setMinErrors(ossContext.ctx, readId, range.errors);
                 }
-                else
-                if(ossContext.maxError >= inTextVerification(ossContext, iter, range, ossContext.readSeqs[needleId], ossContext.maxError))
+                else if(ossContext.maxError >= inTextVerification(ossContext, iter, range, ossContext.readSeqs[needleId], ossContext.maxError))
                 {
                     setMapped(ossContext.ctx, readId);
                     setMinErrors(ossContext.ctx, readId, range.errors);
@@ -1715,7 +1704,11 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                 //TODO remove ranges containing higher error than scheme but need acces to schemes
 //                  uint8_t upper = s.u[s.u.size() - 1];
 
-                if(ossContext.maxError >= inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError))
+                if(!ossContext.checkReads[needleId]){
+                    setMapped(ossContext.ctx, readId);
+                    setMinErrors(ossContext.ctx, readId, saRange.errors);
+                }
+                else if(ossContext.maxError >= inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError))
                 {
                     setMapped(ossContext.ctx, readId);
                     setMinErrors(ossContext.ctx, readId, saRange.errors);
@@ -1729,61 +1722,12 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             if(ossContext.fmTreeThreshold < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 && ossContext.samplingRate > 1)
             {
                 ossContext.fmtreeLocates += iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1;
-                auto uniIter = (ossContext.earlyLeaf && goRight) ? iter.revIter : iter.fwdIter;
+                auto uniIter = iter.fwdIter;
                 uint32_t counter = 0;
-/*
-                //early leaf node calculation (corresponds to the last level of the fm_tree)
-                if(ossContext.earlyLeaf){
-                    TContigsSum ssp = getRank(uniIter.index->sa.sparseString.indicators, uniIter._parentDesc.range.i1 - 1);
-                    TContigsSum sep = getRank(uniIter.index->sa.sparseString.indicators, uniIter._parentDesc.range.i2 - 1);
-                    auto lastChar = uniIter.vDesc.lastChar;
-
-                    if (goRight){
-//                         std::cout << "\nrevIndex\n";
-                        for(TContigsSum i = ssp; i < sep; ++i){
-//                        for(TContigsSum i = iter.revIter._parentDesc.range.i1; i < iter.revIter._parentDesc.range.i2; ++i){
-//                            if(getValue(iter.revIter.index->sa.sparseString.indicators, i)){
-                             TContigsPos pos = getValue(uniIter.index->sa.sparseString.values, i);
-//                             TContigsPos pos = iter.revIter.index->sa[i];
-                             setSeqOffset(pos, getSeqOffset(pos) - 1);
-                        //     std::cout << "Rev Pos: " << pos << "\t" << i << "\n";
-                             //Calculate last position of backtracking in reverse Index on the forward Text;
-                            setSeqOffset(pos, ossContext.sequenceLengths[getSeqNo(pos)] - getSeqOffset(pos) - 1);
-                      //      std::cout << "End Pos: " << pos << "\n";
-                            //Calculate start position
-
-                         //   std::cout << "lastChar " << lastChar << "\n";
-                            if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
-                                //searched one less char the we use range from parent
-                                setSeqOffset(pos, getSeqOffset(pos) - (saRange.repLength - 1));
-        //                        std::cout << "Genome: " << infix(genome, pos, posAdd(pos, 140)) << "\n";
-                                delegate(ossContext, needleId, saRange, pos);
-                            }
-                            else
-                            {
-                                setSeqOffset(pos, getSeqOffset(pos) - (saRange.repLength - 1));
-                            }
-                        }
-
-                    }
-                    else
-                    {
-                        for(TContigsSum i = ssp; i < sep; ++i){
-                            TContigsPos pos = posAdd(getValue(uniIter.index->sa.sparseString.values, i), (-1));
-                            if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
-                                //Report position
-                                delegate(ossContext, needleId, saRange, pos);
-                            }
-                        }
-                    }
-                }*/
-
-                bool goRight2 = /*ossContext.earlyLeaf*/false && goRight;
-                fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(0/*ossContext.earlyLeaf*/), counter);
+                fm_tree(ossContext, delegate, needleId, saRange, uniIter, false, 0, static_cast<uint8_t>(0), counter);
             }
             else
             {
-//                 ossContext.defaultLocates += saRange.range.i2 - saRange.range.i1;
                 for (TContigsSum i = iter.fwdIter.vDesc.range.i1; i < iter.fwdIter.vDesc.range.i2; ++i)
                 {
                     TContigsPos pos = iter.fwdIter.index->sa[i];
@@ -1796,29 +1740,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             _optimalSearchScheme(ossContext, delegateFMTree, delegateDirect, it, bitvectors, needle, needleId, s, TDistanceTag());
     }
 }
-
-/*
-template <typename TSpec, typename TConfig,
-          typename TDelegate,
-          typename TDelegateD,
-          typename TIndex,// typename TIndexSpec,
-          typename TBitvectorPair,
-          typename TNeedle,
-          size_t nbrBlocks, size_t N,
-          typename TDistanceTag>
-inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
-                                 TDelegate & delegate,
-                                 TDelegateD & delegateDirect,
-                                 Iter<TIndex, VSTree<TopDown<> > > it,
-                                 std::vector<TBitvectorPair > & bitvectors,
-                                 TNeedle const & needle,
-                                 uint32_t needleId,
-                                 std::array<OptimalSearch<nbrBlocks>, N> const & ss,
-                                 TDistanceTag const &)
-{
-    for (auto & s : ss)
-        _optimalSearchScheme(ossContext, delegate, delegateDirect, it, bitvectors, needle, needleId, s, TDistanceTag());
-}*/
 
 template <typename TContex,
           typename TDelegate, typename TDelegateD,

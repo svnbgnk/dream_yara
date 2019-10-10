@@ -967,8 +967,14 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     typedef Finder<TContigSeqInfix>                        TFinder;
     typedef Finder<TStringInfixRev>                        TFinderRev;
 
-    typedef Pattern<TNeedleInfix const, Myers<FindInfix> >   TPatternInfix;
-    typedef typename PatternState<TPatternInfix>::Type TPatternInfixState;
+//     typedef Pattern<TNeedleInfix const, Myers<FindInfix> >   TPatternInfix;
+//     typedef typename PatternState<TPatternInfix>::Type TPatternInfixState;
+
+    typedef AlignTextBanded<FindInfix,
+                            NMatchesNone_,
+                            NMatchesNone_>                    TMyersSpecInfix;
+    typedef PatternState_<TNeedle, Myers<TMyersSpecInfix, True, void> >  TPatternInfix;
+
 
     typedef Pattern<TNeedleInfix const, Myers<FindPrefix> >   TPatternPrefix;
     typedef typename PatternState<TPatternPrefix>::Type TPatternPrefixState;
@@ -976,7 +982,7 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
     typedef Pattern<TNeedleInfixRev const, Myers<FindPrefix> >   TPatternPrefixRev;
     typedef typename PatternState<TPatternPrefixRev>::Type TPatternPrefixRevState;
 
-    TPatternInfixState  patternInfixState;
+//     TPatternInfixState  patternInfixState;
     TPatternPrefixState patternPrefixState;
     TPatternPrefixRevState patternPrefixStateRev;
 
@@ -1000,11 +1006,11 @@ inline bool inTextVerificationE(Mapper<TSpec, TConfig> & me, TMatch & match, TNe
 
     int minErrors = maxErrors + 1;
     TFinder finderInfix(text);
-    TPatternInfix patternInfix = needle;
+    TPatternInfix patternInfix/* = needle*/;
 
-    while (find(finderInfix, patternInfix, patternInfixState, -static_cast<int>(maxErrors + 1)))
+    while (find(finderInfix, needle, patternInfix, -static_cast<int>(maxErrors + 1)))
     {
-        int currentErrors = -getScore(patternInfixState);
+        int currentErrors = -getScore(patternInfix);
         if(minErrors > currentErrors)
             minErrors = currentErrors;
     }
@@ -1160,6 +1166,7 @@ template <typename TSpec, typename TConfig, typename TMainConfig, typename TRead
 inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                           Mapper<TSpec, TMainConfig>  & mainMapper,
                           auto & mybiIndex,
+                          auto & contigs,
                           StringSet<TReadSeqs, TSeqsSpec> & readSeqs,
                           DisOptions & disOptions)
 {
@@ -1191,9 +1198,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     Delegate delegate(appender, noOverlap, me.maxError);
     DelegateDirect delegateDirect(appender);
 //     DelegateUnfiltered delegateUnfiltered(appender, noOverlap);
-    TContigSeqs & contigSeqs = me.contigs.seqs;
+//     TContigSeqs & contigSeqs = contigs.seqs;
 
-    OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, me.checkReads, contigSeqs);
+    OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, me.checkReads, contigs.seqs);
 
     if(disOptions.verbose > 1){
         std::cout << "Mapping " << length(readSeqs) << " reads\n";
@@ -1213,7 +1220,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         if(!me.bitvectors.empty() && disOptions.verbose > 1){
             std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << "\n";
             std::cout << "Index Size: " << length(me.biIndex.fwd.sa) << "\n";
-            std::cout << "Number of Sequences: " << length(me.contigs.seqs) << "\n";
+            std::cout << "Number of Sequences: " << length(contigs.seqs) << "\n";
 
             std::cout << "Length of Bitvectors: " << me.bitvectors[0].first.size() << "\n";
             ossContext.bitvectorsMeta = me.bitvectorsMeta;
@@ -1230,7 +1237,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     if(disOptions.verbose > 1)
         std::cout << "SAMPLING RATE: " << me.samplingRate << "\n";
 
-    ossContext.loadInputParameters(me.maxError, me.strata, disOptions.errorRate, disOptions.strataRate, disOptions.readLength, length(me.contigs.seqs), me.samplingRate, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
+    ossContext.loadInputParameters(me.maxError, me.strata, disOptions.errorRate, disOptions.strataRate, disOptions.readLength, length(contigs.seqs), me.samplingRate, disOptions.fmTreeThreshold, disOptions.fmTreeBreak);
     ossContext.delayContex = !disOptions.noDelayContex;
     ossContext.itv = disOptions.itv;
     ossContext.normal.suspectunidirectional = false;
@@ -1423,8 +1430,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
                     uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
                     uint32_t readId = getReadId(readSeqs, readSeqId);
-                    bool valid;
-                    if(!disOptions.noSAfilter || (ossContext.delayITV && !ossMatch) || true) //TODO check inTextVerification
+                    bool valid = true;
+                    if(!disOptions.noSAfilter || (ossContext.delayITV && !ossMatch)) //TODO check inTextVerification
                     {
                         if(disOptions.verbose > 2){
                             std::cout << "ITV:\n";
@@ -1445,8 +1452,11 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     }
                     else
                     {
-                        //OSSMatch verify no random Ns
-                        valid = me.maxError >= inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
+                        //OSSMatch verify if there are random Ns
+                        if(ossContext.checkReads[readSeqId])
+                        {
+                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
+                        }
                     }
 
                     if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
@@ -1754,18 +1764,6 @@ inline void loadFilteredReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCo
     disOptions.filteredReads += getReadsCount(me.reads.seqs);
 }
 
-// ----------------------------------------------------------------------------
-// Function mapReads()
-// ----------------------------------------------------------------------------
-template <typename TSpec, typename TConfig, typename TMainConfig>
-inline void mapReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig>  & mainMapper, auto & mybiIndex, DisOptions & disOptions)
-{
-    _mapReadsImpl(me, mainMapper, mybiIndex, me.reads.seqs, disOptions);
-}
-
-
-
-
 template <typename TSpec, typename TConfig, typename TMainConfig>
 inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & mainMapper, DisOptions & disOptions)
 {
@@ -1794,19 +1792,21 @@ inline void runMapper(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainConfig> & 
     loadFilteredReads(me, mainMapper, disOptions);
     std::cout << "loaded Reads"<< "\n" << length(me.reads.seqs) << "\n";
     if (empty(me.reads.seqs)) return;
-    loadContigs(me);
-    std::cout << "loaded Contigs" << "\n" << length(me.contigs.seqs)<< "\n";
+
 //     loadContigsIndex(me);
     if(disOptions.numberOfBins > 1){
+        loadContigs(me);
+        std::cout << "loaded Contigs" << "\n" << length(me.contigs.seqs)<< "\n";
         loadContigsBiIndex(me, mybiIndex);
         std::cout << "loaded Index" << "\n";
     //     std::cout << length(me.biIndex.fwd.sa) << "\n";
-        mapReads(me, mainMapper, mybiIndex, disOptions);
+        _mapReadsImpl(me, mainMapper, mybiIndex, me.contigs, me.reads.seqs, disOptions);
     }
     else
     {
-        std::cout << "Use already loaded Index" << "\n";
-        mapReads(me, mainMapper, mainMapper.biIndex, disOptions);
+
+        std::cout << "Use already loaded Index and contigs" << "\n";
+        _mapReadsImpl(me, mainMapper, mainMapper.biIndex, mainMapper.contigs, me.reads.seqs, disOptions);
     }
     std::cout << "Mapped Reads" << "\n";
 }
@@ -2280,7 +2280,16 @@ inline void finalizeMainMapper(Mapper<TSpec, TMainConfig> & mainMapper, DisOptio
     std::cout << "Load All Contigs\n";
 
     start(mainMapper.timer);
-    loadAllContigs(mainMapper, disOptions);
+    if(disOptions.numberOfBins > 1){
+        loadAllContigs(mainMapper, disOptions);
+    }else{
+        CharString fileName;
+        CharString directory = disOptions.IndicesDirectory;
+        appendFileName(fileName, disOptions.IndicesDirectory, 0);
+        disOptions.IndicesDirectory = fileName;
+        loadContigs(mainMapper);
+        disOptions.IndicesDirectory = directory;
+    }
     stop(mainMapper.timer);
     std::cout << "All Contig loading times " << mainMapper.timer << "\n";
     std::cout << "Align all matches\n";
@@ -2318,6 +2327,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
     if(disOptions.numberOfBins == 1){
         CharString singleIndexFileName;
         appendFileName(singleIndexFileName, disOptions.IndicesDirectory, 0);
+        loadContigs(mainMapper, singleIndexFileName);
         loadContigsBiIndex(mainMapper, mainMapper.biIndex, singleIndexFileName);
     }
 
@@ -2383,8 +2393,7 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
 // ----------------------------------------------------------------------------
 // Function spawnDisMapper()
 // ----------------------------------------------------------------------------
-template <typename TContigsSize, typename TContigsLen, typename TContigsSum,
-typename TThreading, typename TSequencing, typename TSeedsDistance>
+template <typename TContigsSize, typename TContigsLen, typename TContigsSum, typename TThreading, typename TSequencing, typename TSeedsDistance>
 inline void spawnDisMapper(DisOptions & disOptions,
                            TThreading const & /* tag */,
                            TSequencing const & /* tag */,

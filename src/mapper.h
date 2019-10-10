@@ -423,6 +423,31 @@ inline void loadContigs(Mapper<TSpec, TConfig> & me)
         std::cout << "Loading reference:\t\t\t" << me.timer << std::endl;
 }
 
+
+// ----------------------------------------------------------------------------
+// Function loadContigs()
+// ----------------------------------------------------------------------------
+
+template <typename TSpec, typename TConfig, typename TString>
+inline void loadContigs(Mapper<TSpec, TConfig> & me, TString & filename)
+{
+    start(me.timer);
+    try
+    {
+        if (!open(me.contigs, toCString(filename), OPEN_RDONLY))
+            throw RuntimeError("Error while opening reference file.");
+    }
+    catch (BadAlloc const & /* e */)
+    {
+        throw RuntimeError("Insufficient memory to load the reference.");
+    }
+    stop(me.timer);
+    me.stats.loadContigs += getValue(me.timer);
+
+    if (me.options.verbose > 1)
+        std::cout << "Loading reference:\t\t\t" << me.timer << std::endl;
+}
+
 // ----------------------------------------------------------------------------
 // Function loadContigsIndex()
 // ----------------------------------------------------------------------------
@@ -1383,14 +1408,28 @@ inline void alignMatches(Mapper<TSpec, TConfig> & me)
     typename TTraits::TCigarLimits cigarLimits;
 
     TConcatenator matchesConcat = concat(me.matchesSet);
-    if (me.options.rabema && me.options.alignSecondary)
-        TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
-    else if (me.options.rabema && !me.options.alignSecondary)
-        TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
-    else if (!me.options.rabema && me.options.alignSecondary)
-        TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+    if(length(me.contigsALL.seqs) > 0){
+        if (me.options.rabema && me.options.alignSecondary)
+            TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+        else if (me.options.rabema && !me.options.alignSecondary)
+            TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+        else if (!me.options.rabema && me.options.alignSecondary)
+            TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+        else
+            TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+    }
     else
-        TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigsALL.seqs, me.reads.seqs, me.options, me.maxError);
+    {
+    if (me.options.rabema && me.options.alignSecondary)
+        if (me.options.rabema && me.options.alignSecondary)
+            TLinearAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        else if (me.options.rabema && !me.options.alignSecondary)
+            TLinearAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        else if (!me.options.rabema && me.options.alignSecondary)
+            TAffineAlignerConcat aligner(me.cigars, cigarLimits, matchesConcat, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+        else
+            TAffineAligner aligner(me.cigars, cigarLimits, me.primaryMatches, me.contigs.seqs, me.reads.seqs, me.options, me.maxError);
+    }
 
     setHost(me.primaryCigars, me.cigars);
     setCargo(me.primaryCigars, me.primaryCigarPositions);
