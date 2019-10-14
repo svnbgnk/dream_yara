@@ -620,13 +620,17 @@ inline void inTextVerificationN(TContex & ossContext,
     // sa_info is given my reference so copy it
     TSAValue sa_info_tmp = sa_info;
 
-    // In this case all matches have overlap (OSS need them for SA filter) therefore we do not determine correct start and end position
-    if (!ossContext.noSAfilter)
-    {
-        delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, length(ex_infix)), needleId, minErrors);
-        return;
+    if(ossContext.itv && !ossContext.delayITV){
+        std::cerr << "Warning: Due no delaying ITV some matches will have incorrect start (smaller) and end positions (larger)\n";
     }
 
+    uint32_t readId = getReadId(ossContext.readSeqs, needleId);
+    setMapped(ossContext.ctx, readId);
+    setMinErrors(ossContext.ctx, readId, minErrors);
+    delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, length(ex_infix)), needleId, 127);
+
+
+/*
     TFinder finder(ex_infix);
     int mErrors = max_e * 4;
     TContigsLen endPos = 0;
@@ -673,7 +677,7 @@ inline void inTextVerificationN(TContex & ossContext,
                 startPos = currentEnd;
             }
         }
-    }
+    }*/
 
 //     std::cout << "final cut" << needleId << "\t" << posAdd(sa_info_tmp, endPos - startPos) << "\t" << posAdd(sa_info_tmp, endPos) << "\n";
 //     std::cout << infix(ex_infix, endPos - startPos, endPos) << "\n\n";
@@ -686,7 +690,7 @@ inline void inTextVerificationN(TContex & ossContext,
     call delegateDirect with delegateDirect(ossContext, sa_info_tmp, ...
     */
 
-    delegateDirect(ossContext, posAdd(sa_info_tmp, length(ex_infix) - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
+//     delegateDirect(ossContext, posAdd(sa_info_tmp, length(ex_infix) - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
 }
 
 template <typename TSpec, typename TConfig,
@@ -1587,7 +1591,7 @@ inline int inTextVerification(OSSContext<TSpec, TConfig> & ossContext,
                 minErrors = currentErrors;
         }
 
-        if(minErrors == range.error)
+        if(minErrors == range.errors)
             return minErrors;
     }
 
@@ -1716,7 +1720,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                 }
                 else
                 {
-                    int minError = inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError)
+                    int minError = inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError);
                     if(ossContext.maxError >= minError)
                     {
                         setMapped(ossContext.ctx, readId);
@@ -1823,6 +1827,7 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     }
 
     // Iterate over all reads.
+    int searched = 0;
     iterate(needles, [&](TReadIt const & readIt)
     {
         bool skip = false;
@@ -1837,10 +1842,12 @@ find(OSSContext<TSpec, TConfig> & ossContext,
         }
 
         if(!skip){
+            ++searched;
 //             std::cout << "Search\n";
             find(ossContext, delegate, delegateDirect, index, bitvectors, it, position(readIt), scheme, TDistanceTag());
         }
     }, Rooted(), typename TTraits::TThreading());
+    std::cout << "searched: " << searched << "\n";
 }
 
 
