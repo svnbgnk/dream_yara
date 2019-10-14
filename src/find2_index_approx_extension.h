@@ -1570,13 +1570,13 @@ inline int inTextVerification(OSSContext<TSpec, TConfig> & ossContext,
         //locate on forward Index
         TSAValue sa_value = iter.fwdIter.index->sa[i];
         uint32_t repLen = range.repLength;
-        TContigSeqInfix aligned_text = infix(ossContext.contigSeqs[getSeqNo(sa_value)], getSeqOffset(sa_value), getSeqOffset(sa_value) + repLen);
+//         TContigSeqInfix aligned_text = infix(ossContext.contigSeqs[getSeqNo(sa_value)], getSeqOffset(sa_value), getSeqOffset(sa_value) + repLen);
 
         TContigSeqInfix ex_aligned_text = infix(ossContext.contigSeqs[getSeqNo(sa_value)], getSeqOffset(sa_value) - maxErrors, getSeqOffset(sa_value) + repLen + maxErrors);
 
 //     TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
 
-        TFinder finderInfix(aligned_text);
+        TFinder finderInfix(ex_aligned_text);
         TPatternInfix patternInfix = needle;
         int currentErrors;
 
@@ -1587,10 +1587,8 @@ inline int inTextVerification(OSSContext<TSpec, TConfig> & ossContext,
                 minErrors = currentErrors;
         }
 
-        if(currentErrors > range.errors && currentErrors <= maxErrors)
-        {
-            range.errors = currentErrors;
-        }
+        if(minErrors == range.error)
+            return minErrors;
     }
 
     return minErrors;
@@ -1665,14 +1663,18 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                     setMapped(ossContext.ctx, readId);
                     setMinErrors(ossContext.ctx, readId, range.errors);
                 }
-                else if(ossContext.maxError >= inTextVerification(ossContext, iter, range, ossContext.readSeqs[needleId], ossContext.maxError))
-                {
-                    setMapped(ossContext.ctx, readId);
-                    setMinErrors(ossContext.ctx, readId, range.errors);
-                }
                 else
                 {
-                    valid = false;
+                    int minError = inTextVerification(ossContext, iter, range, ossContext.readSeqs[needleId], ossContext.maxError);
+                    if(ossContext.maxError >= minError)
+                    {
+                        setMapped(ossContext.ctx, readId);
+                        setMinErrors(ossContext.ctx, readId, minError);
+                    }
+                    else
+                    {
+                        valid = false;
+                    }
                 }
             }
             //NOTE even though in best mapping matches with the same amount of errors are supposed to be together due to randomized Ns higer error matches are still merged (the algorithm works for all-mapping so this is fine)
@@ -1712,14 +1714,18 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                     setMapped(ossContext.ctx, readId);
                     setMinErrors(ossContext.ctx, readId, saRange.errors);
                 }
-                else if(ossContext.maxError >= inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError))
-                {
-                    setMapped(ossContext.ctx, readId);
-                    setMinErrors(ossContext.ctx, readId, saRange.errors);
-                }
                 else
                 {
-                    return;
+                    int minError = inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError)
+                    if(ossContext.maxError >= minError)
+                    {
+                        setMapped(ossContext.ctx, readId);
+                        setMinErrors(ossContext.ctx, readId, minError);
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
             }
 

@@ -1170,6 +1170,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     me.strata = disOptions.strata;
     Mapper<void, TConfig> me2(disOptions);
 
+    if(me.maxError == me.strata)
+        disOptions.noDelayContex = false;
+
     //tracking
     uint32_t itvJobsDone = 0;
 
