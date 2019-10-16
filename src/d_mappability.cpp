@@ -254,6 +254,9 @@ inline void runMappability(OptionsM & options)
 
     mappability_path += ".gmapp" + string(options.high ? "16" : "8");
 
+    if(options.verbose)
+        std::cout << "Mappability file: " << mappability_path << "\n";
+
     //calculate mappability
     if(!file_exists(mappability_path))
     {
@@ -369,7 +372,7 @@ inline void runDisMappability(OptionsM & options)
 
         const int dir_test = mkdir(path_dir.data(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         if (-1 == dir_test)
-            std::cerr << "Error creating directory!\n";
+            std::cerr << "Bin directory already exists!\n";
 
         options.currentBinNo = i;
         OptionsM binOption = options;
@@ -425,7 +428,7 @@ int main(int argc, char const ** argv)
 
     const int dir_test = mkdir(path_dir.data(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (-1 == dir_test)
-        std::cerr << path_dir << ": Dir already exist\n";
+        std::cerr << path_dir << ": Output dir already exist\n";
 
 //    std::string comExt = commonExtension(options.contigsDir, options.numberOfBins);
 //     typedef std::map<uint32_t,CharString>::iterator mapIter;

@@ -1170,8 +1170,10 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
     me.strata = disOptions.strata;
     Mapper<void, TConfig> me2(disOptions);
 
-    if(me.maxError == me.strata)
+    if(me.maxError == me.strata){
         disOptions.noDelayContex = false;
+    }
+
 
     //tracking
     uint32_t itvJobsDone = 0;
@@ -1209,21 +1211,21 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         start(me.timer);
         CharString bPath = me.options.mappabilitySubDirectory;
         bPath += "/";
-        if(disOptions.verbose > 1)
+        if(disOptions.verbose > 0)
             std::cout << "\nLoading Bitvectors: " << bPath << "\n";
         loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, disOptions.readLength, (disOptions.verbose > 1));
 
-        if(!me.bitvectors.empty() && disOptions.verbose > 1){
+        if(!me.bitvectors.empty() && disOptions.verbose > 0){
             std::cout << "Bit vectors loaded. Number: " << me.bitvectors.size() << "\n";
             std::cout << "Index Size: " << length(me.biIndex.fwd.sa) << "\n";
             std::cout << "Number of Sequences: " << length(me.contigs.seqs) << "\n";
 
             std::cout << "Length of Bitvectors: " << me.bitvectors[0].first.size() << "\n";
-            ossContext.bitvectorsMeta = me.bitvectorsMeta;
         }
+        ossContext.bitvectorsMeta = me.bitvectorsMeta;
         stop(me.timer);
         me.stats.loadingBitvectors += getValue(me.timer);
-        if(disOptions.verbose > 1)
+        if(disOptions.verbose > 0)
             std::cout << "Loading Bitvectors time:\t\t\t" << me.timer << std::endl;
     }
 

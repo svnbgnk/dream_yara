@@ -104,7 +104,7 @@ In addition, Yara generates the following optional tags:
 Contact
 -------
 
-For questions or comments, feel free to contact: Temesgen H. Dadi <temesgen.dadi@fu-berlin.de>
+For questions or comments, feel free to contact: Sven Boenigk <sven.boenigk@fu-berlin.de>
 
 
 References
