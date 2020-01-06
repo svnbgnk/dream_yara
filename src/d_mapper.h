@@ -61,6 +61,7 @@ public:
     bool                    itv = false;
     bool                    noSAfilter = false;
     bool                    noDelayITV = false;
+    bool                    checkIndexResults = false;
     bool                    determineExactSecondaryPos = true;
     bool                    noMappability = false;
     bool                    earlyLeaf = false;
@@ -1451,8 +1452,8 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     else
                     {
                         // speed up if we dont check but aligned reference can contain Ns we were wrongly aligned with the index?
-                        //TODO add option
-                        valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
+                        if(disOptions.checkIndexResults)
+                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
                     }
 
                     if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){

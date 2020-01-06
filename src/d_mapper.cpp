@@ -165,9 +165,11 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
 
     addOption(parser, ArgParseOption("nD", "noDelayITV", "Use In Text Verification right after finding a potential Position"));
 
+    addOption(parser, ArgParseOption("cI", "checkIndexResults", "If the reference contains Ns than they will be replace by a randomized bases for the Index. This results in aligning to a wrong position if the Ns randomly match the read, this is however resolved by comparing all matches directly to the original reference."));
+
 //     addOption(parser, ArgParseOption("ap", "approximateITVJobs", "Do not determine exact starting and endposition of secondary matches (Instead a range which contains the match is given.)"));
 
-    addOption(parser, ArgParseOption("ea", "earlyLeaf", "When using FM-tree use use early Leaf method (which requires reverse index suffix array). Generally slowes down read mapper"));
+//     addOption(parser, ArgParseOption("ea", "earlyLeaf", "When using FM-tree use use early Leaf method (which requires reverse index suffix array). Generally slowes down read mapper"));
 
     addOption(parser, ArgParseOption("Ith", "itvOccThreshold", "Start In Text Verification when search Interval on Index is smaller", ArgParseOption::INTEGER));
     hideOption(getOption(parser, "itvOccThreshold"));
@@ -388,9 +390,11 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     if (isSet(parser, "ITV")) disOptions.itv = true;
     if (isSet(parser, "noSAfilter")) disOptions.noSAfilter = true;
     if (isSet(parser, "noDelayITV")) disOptions.noDelayITV = true;
+    if (isSet(parser, "checkIndexResults")) disOptions.checkIndexResults = true;
+
 //     if (isSet(parser, "approximateITVJobs")) disOptions.determineExactSecondaryPos = false;
 
-    if (isSet(parser, "earlyLeaf")) disOptions.earlyLeaf = true;
+//     if (isSet(parser, "earlyLeaf")) disOptions.earlyLeaf = true;
     if (isSet(parser, "bioSeqZip")) disOptions.zipFastq = true;
 
     if(disOptions.hammingDistance && disOptions.noSAfilter){
