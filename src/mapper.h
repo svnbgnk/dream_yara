@@ -105,6 +105,7 @@ struct Options
         contigsSum(),
         samplingRate(10),
         zipFastq(false),
+        mappabilitySubDirectory(""),
         unmappedFileName(""),
         hammingDistance(false),
         secondaryMatches(TAG),
@@ -336,7 +337,6 @@ public:
     typename Traits::TBiIndex           biIndex;
     typename Traits::TIndex           & index = biIndex.rev;
     typename Traits::TReads             reads;
-    std::vector<bool>                   checkReads;
 
     typename Traits::TBitvectors        bitvectors;
     typename Traits::TBitvectorsMeta    bitvectorsMeta;

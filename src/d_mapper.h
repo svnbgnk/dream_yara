@@ -1198,7 +1198,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 //     DelegateUnfiltered delegateUnfiltered(appender, noOverlap);
     TContigSeqs & contigSeqs = me.contigs.seqs;
 
-    OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, me.checkReads, contigSeqs);
+    OSSContext<TSpec, TConfig> ossContext(me.ctx, appender, readSeqs, contigSeqs);
 
     if(disOptions.verbose > 1){
         std::cout << "Mapping " << length(readSeqs) << " reads\n";
@@ -1429,7 +1429,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
                     uint32_t readId = getReadId(readSeqs, readSeqId);
                     bool valid = true;
-                    if(!disOptions.noSAfilter || (ossContext.delayITV && !ossMatch)) //TODO check inTextVerification
+                    if(!disOptions.noSAfilter || (ossContext.delayITV && !ossMatch))
                     {
                         if(disOptions.verbose > 2){
                             std::cout << "ITV:\n";
@@ -1450,10 +1450,9 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     }
                     else
                     {
-                       if(ossContext.checkReads[readSeqId])
-                        {
-                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
-                        }
+                        // speed up if we dont check but aligned reference can contain Ns we were wrongly aligned with the index?
+                        //TODO add option
+                        valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
                     }
 
                     if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
@@ -1738,22 +1737,6 @@ inline void loadFilteredReads(Mapper<TSpec, TConfig> & me, Mapper<TSpec, TMainCo
             appendValue(me.reads.seqs, mainMapper.reads.seqs[orgId + numReads]);
             disOptions.origReadIdMap[disOptions.currentBinNo].push_back(orgId + numReads);
         }
-    }
-
-    //Check which reads contain N
-    clear(me.checkReads);
-    for(uint32_t i = 0; i < length(me.reads.seqs); ++i){
-//         auto & needle = me.reads.seqs[i];
-        bool check = false;
-        for(uint32_t p = 0; p < length(me.reads.seqs[i]); ++p)
-        {
-            if(me.reads.seqs[i][p] == 'N'){
-                check = true;
-                break;
-            }
-
-        }
-        me.checkReads.push_back(check);
     }
 
     stop(mainMapper.timer);

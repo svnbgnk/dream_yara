@@ -613,7 +613,6 @@ struct OSSContext
 
     // Shared-memory read-only data.
     TReadSeqs & readSeqs;
-    std::vector<bool> & checkReads;
     TContigSeqs const & contigSeqs;
     TBitvectorsMeta bitvectorsMeta;
 
@@ -622,12 +621,10 @@ struct OSSContext
     OSSContext(TReadsContext & ctx,
                  TMatches & matches,
                  TReadSeqs & readSeqs,
-                 std::vector<bool> & checkReads,
                  TContigSeqs const & contigSeqs) :
         ctx(ctx),
         matches(matches),
         readSeqs(readSeqs),
-        checkReads(checkReads),
         contigSeqs(contigSeqs)
     {
         sequenceLengths = getSingleSeqLengths<uint32_t, TContigsLen>(contigSeqs);

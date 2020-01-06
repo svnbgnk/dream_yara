@@ -1649,7 +1649,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             if(!ossContext.delayContex && getMinErrors(ossContext.ctx, readId) > errors)
             {
 
-                //TODO remove ranges containing higher error than scheme but need acces to schemes
+                //TODO remove ranges containing higher error than scheme but need access to schemes
 //                  uint8_t upper = s.u[s.u.size() - 1];
 /*
                 bool check = false;
@@ -1662,12 +1662,12 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                         break;
                     }
                 }*/
-
+/*
                 if(!ossContext.checkReads[needleId]){
                     setMapped(ossContext.ctx, readId);
                     setMinErrors(ossContext.ctx, readId, range.errors);
                 }
-                else
+                else*/
                 {
                     int minError = inTextVerification(ossContext, iter, range, ossContext.readSeqs[needleId], ossContext.maxError);
                     if(ossContext.maxError >= minError)
@@ -1679,7 +1679,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                     {
                         valid = false;
                     }
-                }
+//                 }
             }
             //NOTE even though in best mapping matches with the same amount of errors are supposed to be together due to randomized Ns higer error matches are still merged (the algorithm works for all-mapping so this is fine)
             if(valid)
@@ -1713,13 +1713,13 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             {
                 //TODO remove ranges containing higher error than scheme but need acces to schemes
 //                  uint8_t upper = s.u[s.u.size() - 1];
-
+/*
                 if(!ossContext.checkReads[needleId]){
                     setMapped(ossContext.ctx, readId);
                     setMinErrors(ossContext.ctx, readId, saRange.errors);
                 }
                 else
-                {
+                {*/
                     int minError = inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError);
                     if(ossContext.maxError >= minError)
                     {
@@ -1730,7 +1730,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
                     {
                         return;
                     }
-                }
+//                 }
             }
 
             if(ossContext.fmTreeThreshold < iter.fwdIter.vDesc.range.i2 - iter.fwdIter.vDesc.range.i1 && ossContext.samplingRate > 1)

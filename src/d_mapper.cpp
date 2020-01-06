@@ -367,7 +367,9 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
     getOptionValue(disOptions.hammingDpercentage, parser, "hammingDpercentage");
 
     getOptionValue(disOptions.MappabilityDirectory, parser, "mappability");
-    appendTrailingSlash(disOptions.MappabilityDirectory);
+    if(isSet("mappability")
+        appendTrailingSlash(disOptions.MappabilityDirectory);
+    )
 
     getOptionValue(disOptions.threshold, parser, "threshold");
 
