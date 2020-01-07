@@ -5,10 +5,6 @@
 #include <sdsl/bit_vectors.hpp>
 #include <numeric>
 #include <limits>
-// #include "find2_index_approx_unidirectional.h"
-
-
-
 
 namespace seqan{
 
@@ -16,10 +12,6 @@ template<typename TContigsSum>
 struct SARange
 {
     Pair<TContigsSum, TContigsSum> range;
-//     Pair<TContigsSum, TContigsSum> revRange;
-//     Pair<TContigsSum, TContigsSum> parentRange;
-//     Pair<TContigsSum, TContigsSum> parentRevRange;
-//     Dna lastChar;
     uint32_t repLength;
     uint8_t errors;
     bool goRight;
@@ -120,62 +112,9 @@ inline void locate(OSSContext<TSpec, TConfig> & ossContext,
             uniIter.vDesc.range = /*(ossContext.earlyLeaf && saRange.goRight) ? saRange.revRange :*/ saRange.range;
 
             uint32_t counter = 0;
-            /*
-            //early leaf node calculation (corresponds to the last level of the fm_tree)
-            if(ossContext.earlyLeaf){
-                TContigsSum ssp = (saRange.goRight) ?
-                    getRank(uniIter.index->sa.sparseString.indicators, saRange.parentRevRange.i1 - 1) :
-                    getRank(uniIter.index->sa.sparseString.indicators, saRange.parentRange.i1 - 1);
-                TContigsSum sep = (saRange.goRight) ?
-                    getRank(uniIter.index->sa.sparseString.indicators, saRange.parentRevRange.i2 - 1) :
-                    getRank(uniIter.index->sa.sparseString.indicators, saRange.parentRange.i2 - 1);
-                auto lastChar = saRange.lastChar;
 
-                if (saRange.goRight){
-//                     std::cout << "\nrevIndex\n";
-
-                    for(TContigsSum i = ssp; i < sep; ++i){
-                        TContigsPos pos = getValue(uniIter.index->sa.sparseString.values, i);
-                        setSeqOffset(pos, getSeqOffset(pos) - 1);
-                        //Calculate position in forward text
-                        setSeqOffset(pos, ossContext.sequenceLengths[getSeqNo(pos)] - getSeqOffset(pos) - 1);
-                        if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
-                            setSeqOffset(pos, getSeqOffset(pos) - (saRange.repLength - 1));
-//                             std::cout << "FPos calc from reverseIndex: " << pos << "\n";
-                            delegate(ossContext, needleId, saRange, pos);
-                        }
-                    }
-
-                        //Debugging
-                        for (TContigsSum i = saRange.range.i1; i < saRange.range.i2; ++i)
-                        {
-                            TContigsPos pos2 = iter.fwdIter.index->sa[i];
-//                             std::cout << "All forward Pos: " << pos2 << "\t(" << i << ")\n";
-                        }
-
-                }else{
-//                     std::cout << "\nfwdIndex\n";
-                    for(TContigsSum i = ssp; i < sep; ++i){
-                        TContigsPos pos = posAdd(getValue(uniIter.index->sa.sparseString.values, i), (-1));
-
-                        if (genome[getSeqNo(pos)][getSeqOffset(pos)] == lastChar){
-                            //Report position
-//                             std::cout << "FPos: " << pos << "\n";
-                            delegate(ossContext, needleId, saRange, pos);
-                        }
-                    }
-                }
-            }*/
-         /*
-            //Debugging
-            for (TContigsSum i = uniIter.vDesc.range.i1; i < uniIter.vDesc.range.i2; ++i)
-                        {
-                TContigsPos pos2 = iter.fwdIter.index->sa[i];
-                std::cout << "All forward Pos: " << pos2 << "\t(" << i << ")\n";
-            }*/
-
-            bool goRight2 = /*ossContext.earlyLeaf*/false && saRange.goRight;
-            fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(0/*ossContext.earlyLeaf*/), counter);
+            bool goRight2 = false && saRange.goRight;
+            fm_tree(ossContext, delegate, needleId, saRange, uniIter, goRight2, 0, static_cast<uint8_t>(0), counter);
 //             ossContext.fmtreeBacktrackings += 2 * counter;
     }
     else
@@ -628,69 +567,6 @@ inline void inTextVerificationN(TContex & ossContext,
     setMapped(ossContext.ctx, readId);
     setMinErrors(ossContext.ctx, readId, minErrors);
     delegateDirect(ossContext, sa_info_tmp, posAdd(sa_info_tmp, length(ex_infix)), needleId, 127);
-
-
-/*
-    TFinder finder(ex_infix);
-    int mErrors = max_e * 4;
-    TContigsLen endPos = 0;
-    while (find(finder, needle, pattern, -static_cast<int>(max_e * 4)))
-    {
-        int currentEnd = position(finder) + 1;
-        int currentErrors = -getScore(pattern);
-//         if (getValue(ex_infix, currentEnd) != back(needle))
-//             ++currentErrors;
-//         std::cout << currentErrors << "\t" << currentEnd << "\n";
-        if (currentErrors <= mErrors)
-        {
-            mErrors = currentErrors;
-            endPos = currentEnd;
-        }
-    }
-
-    TContigsLen startPos;
-    if(minErrors == 0){
-        startPos = length(ex_infix) - (endPos - length(needle));
-    }
-    else
-    {
-
-        // no longer use known prefix to calculate start position
-        // just reverse both sequences
-    //     TString infixPrefix = infix(ex_infix, 0, endPos);
-
-        TStringInfixRev infixRev(ex_infix);
-        TNeedleInfixRev needleRev(needle);
-        TFinder2 finder2(infixRev);
-
-        mErrors = max_e * 4;
-        TContigsLen startPos = endPos;
-
-        while (find(finder2, needleRev, patternRev, -static_cast<int>(max_e * 4)))
-        {
-            int currentEnd = position(finder2) + 1;
-            int currentErrors = -getScore(patternRev);
-
-            if (currentErrors <= mErrors)
-            {
-                mErrors = currentErrors;
-                startPos = currentEnd;
-            }
-        }
-    }*/
-
-//     std::cout << "final cut" << needleId << "\t" << posAdd(sa_info_tmp, endPos - startPos) << "\t" << posAdd(sa_info_tmp, endPos) << "\n";
-//     std::cout << infix(ex_infix, endPos - startPos, endPos) << "\n\n";
-/*
-    // no used in the moment need to check for correctness
-    TSAValue sa_info_tmp = posAdd(sa_info_tmp, endPos - startPos);
-    if(usingReverseText){
-        saPosOnFwd(sa_info_tmp, genomelength, endPos - startPos);
-    }
-    call delegateDirect with delegateDirect(ossContext, sa_info_tmp, ...
-    */
-
-//     delegateDirect(ossContext, posAdd(sa_info_tmp, length(ex_infix) - startPos), posAdd(sa_info_tmp, endPos), needleId, minErrors);
 }
 
 template <typename TSpec, typename TConfig,
@@ -1635,10 +1511,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             SARange<TContigsSum> range;
             range.errors = errors;
             range.range = Pair<TContigsSum, TContigsSum> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
-//             range.revRange = Pair<TContigsSum, TContigsSum> (iter.revIter.vDesc.range.i1, iter.revIter.vDesc.range.i2);
-//             range.parentRange = Pair<TContigsSum, TContigsSum> (iter.fwdIter._parentDesc.range.i1, iter.fwdIter._parentDesc.range.i2);
-//             range.parentRevRange = Pair<TContigsSum, TContigsSum> (iter.revIter._parentDesc.range.i1, iter.revIter._parentDesc.range.i2);
-//             range.lastChar = (goRight) ? iter.revIter.vDesc.lastChar : iter.fwdIter.vDesc.lastChar;
             range.repLength = repLength(iter);
             range.goRight = goRight;
 
@@ -1648,37 +1520,16 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
 
             if(!ossContext.delayContex && getMinErrors(ossContext.ctx, readId) > errors)
             {
-
-                //TODO remove ranges containing higher error than scheme but need access to schemes
-//                  uint8_t upper = s.u[s.u.size() - 1];
-/*
-                bool check = false;
-                auto need = ossContext.readSeqs[needleId];
-                for(uint32_t i = 0; i < length(need); ++i)
+                int minError = inTextVerification(ossContext, iter, range, ossContext.readSeqs[needleId], ossContext.maxError);
+                if(ossContext.maxError >= minError)
                 {
-                    if(need[i] == 'N')
-                    {
-                        check = true;
-                        break;
-                    }
-                }*/
-/*
-                if(!ossContext.checkReads[needleId]){
                     setMapped(ossContext.ctx, readId);
-                    setMinErrors(ossContext.ctx, readId, range.errors);
+                    setMinErrors(ossContext.ctx, readId, minError);
                 }
-                else*/
+                else
                 {
-                    int minError = inTextVerification(ossContext, iter, range, ossContext.readSeqs[needleId], ossContext.maxError);
-                    if(ossContext.maxError >= minError)
-                    {
-                        setMapped(ossContext.ctx, readId);
-                        setMinErrors(ossContext.ctx, readId, minError);
-                    }
-                    else
-                    {
-                        valid = false;
-                    }
+                    valid = false;
+                }
 //                 }
             }
             //NOTE even though in best mapping matches with the same amount of errors are supposed to be together due to randomized Ns higer error matches are still merged (the algorithm works for all-mapping so this is fine)
@@ -1711,15 +1562,8 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             uint32_t readId = getReadId(ossContext.readSeqs, needleId);
             if(!ossContext.delayContex && getMinErrors(ossContext.ctx, readId) > errors)
             {
-                //TODO remove ranges containing higher error than scheme but need acces to schemes
+                //TODO remove ranges containing higher error than scheme but need access to schemes
 //                  uint8_t upper = s.u[s.u.size() - 1];
-/*
-                if(!ossContext.checkReads[needleId]){
-                    setMapped(ossContext.ctx, readId);
-                    setMinErrors(ossContext.ctx, readId, saRange.errors);
-                }
-                else
-                {*/
                     int minError = inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError);
                     if(ossContext.maxError >= minError)
                     {
