@@ -241,7 +241,7 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
                                      Decrease this threshold to decrease the runtime.",
                                      ArgParseOption::DOUBLE));
     setMinValue(parser, "error-rate", "0.0");
-    setMaxValue(parser, "error-rate", "10.0");
+//     setMaxValue(parser, "error-rate", "10.0");
     setDefaultValue(parser, "error-rate", 100.0 * disOptions.errorRate);
 
     addOption(parser, ArgParseOption("s", "strata-rate", "Consider suboptimal alignments within this percentual number \
@@ -249,7 +249,7 @@ void setupArgumentParser(ArgumentParser & parser, DisOptions const & disOptions)
                                      the number of alternative alignments at the expense of runtime.",
                                      ArgParseOption::DOUBLE));
     setMinValue(parser, "strata-rate", "0.0");
-    setMaxValue(parser, "strata-rate", "10.0");
+//     setMaxValue(parser, "strata-rate", "10.0");
     setDefaultValue(parser, "strata-rate", 100.0 * disOptions.strataRate);
 
     addOption(parser, ArgParseOption("y", "sensitivity", "Sensitivity with respect to edit distance. \
@@ -396,7 +396,7 @@ parseCommandLine(DisOptions & disOptions, ArgumentParser & parser, int argc, cha
 //     if (isSet(parser, "earlyLeaf")) disOptions.earlyLeaf = true;
     if (isSet(parser, "bioSeqZip")) disOptions.zipFastq = true;
 
-    if(disOptions.hammingDistance && disOptions.noSAfilter){
+    if(disOptions.hammingDistance && !disOptions.noSAfilter){
         std::cerr << "WARNING: It is strongly suggested to turn of the SA filter algorithm alignment with HD, since it only provides an advantage for multiple alternative alignments of the same position\n";
     }
 

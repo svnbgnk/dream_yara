@@ -222,7 +222,7 @@ struct Delegate
     }
 
 
-    appendValue(matches, hit, Generous(), typename Traits::TThreading()); //TODO does this make any sense (always single occ)
+    appendValue(matches, hit, Generous(), typename Traits::TThreading());
 
     if(!ossContext.noSAfilter && getSeqOffset(pos) == 0)
     {
@@ -484,7 +484,7 @@ int testReadOcc(TIndex & index, TContigSeqs & text, TMatch & match, uint32_t len
     int64_t seqOffset = getMember(match, ContigBegin());
     int64_t seqOffsetEnd = seqOffset + len;//getMember(match, ContigEnd());
     bool rC = onReverseStrand(match);
-    if(edit) //reverse this //TODO revert this !!!!
+    if(edit)
         seqOffsetEnd += maxErrors;
     if(!edit){ //edit
         Dna5String part = infix(text[seqNo], seqOffset, seqOffsetEnd);
@@ -770,7 +770,7 @@ void compareHits(Mapper<TSpec, TConfig> & me,
                             if(same2){
                                 break;
                             }
-                            smaller = matchSmaller(*matchIt_temp, *matchIt); //TODO move into while
+                            smaller = matchSmaller(*matchIt_temp, *matchIt);
                         }
                         //Skip missed hits
                         if(same2){
@@ -798,8 +798,8 @@ void compareHits(Mapper<TSpec, TConfig> & me,
                             Dna5StringReverseComplement revN(tneedle);
                             std::cout << "needle: \n  " << tneedle << "\n  " << revN << "\n";
 
-                            //TODO use true for editMappability
-                            int nhits = testReadOcc(me.biIndex, me.contigs.seqs, *matchIt, maxError, disOptions.readLength, disOptions.threshold, true, false); //TODO add Threshold as input option for me
+                            //use true for editMappability
+                            int nhits = testReadOcc(me.biIndex, me.contigs.seqs, *matchIt, maxError, disOptions.readLength, disOptions.threshold, true, false); //add Threshold as input option for me
                             bool wrong = false; //revert this
                             if(nhits < disOptions.threshold)
                                 wrong = true;
@@ -943,6 +943,49 @@ inline int inTextVerification(Mapper<TSpec, TConfig> & me, TMatch & match, TNeed
     }
 
     return minErrors;
+}
+
+template<typename TSpec, typename TConfig, typename TMatch, typename TNeedle, typename TError>
+inline bool inTextVerificationHD(Mapper<TSpec, TConfig> & me, TMatch & match, TNeedle const & needle, TError maxErrors, bool const verbose = false)
+{
+    typedef MapperTraits<TSpec, TConfig>                        TTraits;
+    typedef typename TConfig::TContigsLen                       TContigsLen;
+    typedef typename TConfig::TContigsSize                      TContigsSize;
+
+    typedef typename TTraits::TContigSeqs                       TContigSeqs;
+    typedef typename Value<TContigSeqs const>::Type              TContigSeq;
+//     typedef typename Value<TContigSeqs>::Type                       TContig;
+    typedef typename StringSetPosition<TContigSeqs const>::Type TContigPos;
+    typedef typename InfixOnValue<TContigSeq const>::Type      TContigSeqInfix;
+
+    //get Infix
+    TContigSeqs & contigSeqs = me.contigs.seqs;
+    TContigsSize seqNo = getMember(match, ContigId());
+    TContigsLen seqOffset = getMember(match, ContigBegin());
+    TContigsLen seqOffsetEnd = getMember(match, ContigEnd());
+
+    if (length(contigSeqs[seqNo]) < seqOffsetEnd){
+        if(verbose)
+            std::cout << "Match end overlaps sequence\n";
+        seqOffsetEnd = length(contigSeqs[seqNo]);
+        TContigPos contigBegin(seqNo, getMember(match, ContigBegin()));
+        TContigPos newContigEnd(seqNo, seqOffsetEnd);
+        setContigPosition(match, contigBegin, newContigEnd);
+    }
+    uint32_t errors = 0;
+    TContigSeqInfix text = infix(contigSeqs[seqNo], seqOffset, seqOffsetEnd);
+
+    if(verbose){
+        std::cout << "ITV HD: \n";
+        std::cout << text << "\n" << needle << "\n";
+    }
+
+    for(uint32_t i = 0; i < length(needle); ++i)
+        errors += needle[i] != text[i];
+
+    if(verbose)
+        std::cout << "Errors: " << (int)errors << "\n";
+    return errors <= maxErrors;
 }
 
 // ----------------------------------------------------------------------------
@@ -1212,7 +1255,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         start(me.timer);
         CharString bPath = me.options.mappabilitySubDirectory;
         bPath += "/";
-        if(disOptions.verbose > 0)
+        if(disOptions.verbose > 1)
             std::cout << "\nLoading Bitvectors: " << bPath << "\n";
         loadAllBitvectors(bPath, me.bitvectors, me.bitvectorsMeta, disOptions.readLength, (disOptions.verbose > 1));
 
@@ -1226,7 +1269,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         ossContext.bitvectorsMeta = me.bitvectorsMeta;
         stop(me.timer);
         me.stats.loadingBitvectors += getValue(me.timer);
-        if(disOptions.verbose > 0)
+        if(disOptions.verbose > 1)
             std::cout << "Loading Bitvectors time:\t\t\t" << me.timer << std::endl;
     }
 
@@ -1288,7 +1331,7 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         clear(me.matchesByCoord);
         aggregateMatchesOSS(me2, readSeqs);
     }
-    else if(!ossContext.delayITV && noOverlap)
+    else if(!ossContext.delayITV && noOverlap && !disOptions.checkIndexResults)
     {
         std::cout << "No overlap was used there for filtering without alignment\n";
         aggregateMatchesOSS(me, readSeqs);
@@ -1352,85 +1395,13 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
 
             while(matchIt != matchEnd){
                 bool ossMatch = getMember(*matchIt, Errors()) <= me.maxError;
-
                 oss += ossMatch;
-/*
-                if(!disOptions.determineExactSecondaryPos){
-                    //check Neighborhood
-                    if(matchIt != lValid && extendedLength <= (me.maxError * 10) &&
-                      getMember(*matchIt, ContigId()) == getMember(*lValid, ContigId()) &&
-                      !(onForwardStrand(*matchIt) ^ onForwardStrand(*lValid)) &&
-                    getMember(*lValid, ContigBegin()) + 2 * me.maxError >= getMember(*matchIt, ContigBegin()))
-                    {
-                        bool valid = true;
-                        if(!ossMatch)
-                        {
-                            uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
-                            uint32_t readId = getReadId(readSeqs, readSeqId);
-                            valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
-                            ++itvJobsDone;
-                            if(valid){
-                                setMapped(me.ctx, readId);
-                                setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
-                            }
-                        }
-                        if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
-                            std::cout << "Error Rate to high delayed Intext ap merge\n";
-                            valid = false;
-                        }
-
-                        // extend the last valid match if the current match is valid
-                        if(valid){
-                            int32_t shift = static_cast<int32_t>(getMember(*matchIt, ContigEnd())) - getMember(*lValid, ContigEnd());
-                            if(shift > 0)
-                            {
-                                extendedLength += shift;
-                                //merge oss and ITV if extendedLength is under threshold into the lastValid match
-                                shiftEnd(*lValid, shift);
-                            }
-                            ++merges;
-                        }
-                        setInvalid(*matchIt);
-                        ++dups;
-                    }
-                    else
-                    // match is not in Neighborhood of another match (to the left) do ITV or we want to determine the exact position of all (repeating) matches
-                    {
-                        bool valid = true;
-                        if(!ossMatch)
-                        {
-                            uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
-                            uint32_t readId = getReadId(readSeqs, readSeqId);
-                            valid = inTextVerification(me, *matchIt, readSeqs[readSeqId], me.maxError);
-                            ++itvJobsDone;
-                            if(valid){
-                                ++valids;
-                                setMapped(me.ctx, readId);
-                                setMinErrors(me.ctx, readId, getMember(*matchIt, Errors()));
-                            }
-                        }
-                        if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
-                            std::cout << "Error Rate to high delayed Intext ap\n";
-                            valid = false;
-                        }
-                        if(!valid){
-                            setInvalid(*matchIt);
-                            ++dups;
-                        }
-                        else
-                        {
-                            lValid = matchIt;
-                            extendedLength = 0;
-                        }
-                    }
-                }
-                else*/
                 {
 
                     uint32_t readSeqId = getReadSeqId(*matchIt, readSeqs);
                     uint32_t readId = getReadId(readSeqs, readSeqId);
                     bool valid = true;
-                    if(!disOptions.noSAfilter || (ossContext.delayITV && !ossMatch))
+                    if(!disOptions.hammingDistance && !disOptions.noSAfilter || (ossContext.delayITV && !ossMatch))
                     {
                         if(disOptions.verbose > 2){
                             std::cout << "ITV:\n";
@@ -1452,8 +1423,13 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
                     else
                     {
                         // speed up if we dont check but aligned reference can contain Ns we were wrongly aligned with the index?
-                        if(disOptions.checkIndexResults)
-                            valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
+                        if(disOptions.checkIndexResults){
+                            //TODO add hamming distance
+                            if(!disOptions.hammingDistance)
+                                valid = inTextVerificationE(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
+                            else
+                                valid = inTextVerificationHD(me, *matchIt, readSeqs[readSeqId], me.maxError, disOptions.verbose > 1);
+                        }
                     }
 
                     if (valid && disOptions.errorRate < getErrorRate(*matchIt, readSeqs)){
@@ -1580,8 +1556,6 @@ inline void _mapReadsImpl(Mapper<TSpec, TConfig> & me,
         {
             std::cerr << "Unique Matches count:\t\t\t" << lengthSum(me.matchesSetByCoord)/*length(me.matchesByCoord)*/ << std::endl;
         }
-
-        //TODO use optimal Search Schemes again to get "correct Positions"
 
         if(disOptions.compare){
 //             compareHits(me, me2, me.maxError, me.strata, disOptions);
@@ -2351,7 +2325,6 @@ inline void runDisMapper(Mapper<TSpec, TMainConfig> & mainMapper, TFilter const 
 
         if(disOptions.filterType == NONE){
             for(uint32_t i = disOptions.startBin; i < disOptions.numberOfBins; ++i){
-                //TODO iterate over reads batches using one Index
                 std::cout << "\n\nIn bin Number: " << i << "\n";
                 disOptions.currentBinNo = i;
                 Options options = mainMapper.options;

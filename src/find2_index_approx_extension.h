@@ -226,7 +226,7 @@ inline void getConsOnes(std::vector<TBitvectorPair > & bitvectors,
     TSALength startOneInterval = inside_bit_interval.i2.i1;
     while(k < inside_bit_interval.i2.i2){
         TSALength interval = 0;
-        //TODO delete second condition it should end with 1
+        // delete second condition it should end with 1?
         while(b[k + interval] == 0 && (k + interval) < inside_bit_interval.i2.i2){
             ++interval;
         }
@@ -347,8 +347,6 @@ inline void saPosOnFwd(TSAValue & sa_info,
 //     sa_info.i2 = genomelength - sa_info.i2 - occLength;
 }
 
-
-//TODO TSAValue to TContigPos
 template <typename TContex,
           typename TDelegateD,
           typename TString,
@@ -620,8 +618,6 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
     ModifiedString<TNeedle, ModReverse > revneedle(needle);
 
     if (std::is_same<TDistanceTag, EditDistance>::value){
-        //TODO put this into a function
-        //TODO if we are only interested in the best hit call return after delegate calls
         uint32_t needleL = length(needle);
         uint8_t max_e = ossContext.maxError;
         //there are different search with different upper and lower -> something goes wrong?
@@ -676,7 +672,6 @@ inline void directSearch(OSSContext<TSpec, TConfig> & ossContext,
                 int8_t overlap_l_tmp = (overlap_l <= seqOffset) ? overlap_l : 0;
 
 //                 std::cout << ossContext.strata + s.l[s.l.size() - 1] << "\t" << ossContext.maxError << "\n";
-                //TODO search <0, 2> need to search till 0 is found or 1
                 if(!ossContext.itv ||  ossContext.delayITV && ((isMapped(ossContext.ctx, readId) && getMinErrors(ossContext.ctx, readId) + ossContext.strata <= upper) || getMinErrors(ossContext.ctx, readId) <= s.l[s.l.size() - 1] || ossContext.strata + s.l[s.l.size() - 1] >= ossContext.maxError))
                 {
                     delegateDirect(ossContext, posAdd(sa_info, 0 - overlap_l_tmp), posAdd(sa_info, needleL + overlap_r), needleId, 127);
@@ -787,7 +782,6 @@ inline void get_bitvector_interval_inside(Iter<TIndex, VSTree<TopDown<> > > iter
         needed_bitvector = bitvsize - s.max[blockIndex - 1];
     else
         needed_bitvector = s.min[blockIndex - 1] - 1;
-    //TODO use request_bitvector_interval
 
 //     uint32_t nseq = countSequences(*iter.fwdIter.index);
     dirrange.i1 = dirrange.i1 - numberOfSequences;
@@ -908,7 +902,7 @@ inline ReturnCode checkInterval(TContex & ossContext,
     if(ossContext.normal.directsearch && ossContext.itvCondition(s, blockIndex, ivalOne))
         return ReturnCode::DIRECTSEARCH;
 
-    if(ossContext.normal.compmappable && ivalOne == (brange.i2.i2 - brange.i2.i1)) //TODO maybe allow some zeroes
+    if(ossContext.normal.compmappable && ivalOne == (brange.i2.i2 - brange.i2.i1))
         return ReturnCode::COMPMAPPABLE;
 /*
     //equal or more than half zeroes
@@ -1028,18 +1022,6 @@ inline ReturnCode checkMappability(OSSContext<TSpec, TConfig> & ossContext,
             _optimalSearchScheme(ossContext, delegate, delegateDirect, iter, needle, needleId, empty_bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, lastEdit, TDir(), TDistanceTag());
             return ReturnCode::FINISHED;
         }
-/*
-        case ReturnCode::SUSPECTUNIDIRECTIONAL:
-        {
-            //test unidirectional changes iter range if true
-            //TODO modfy functions for TDIR
-            bool goToRight2 = std::is_same<TDir, Rev>::value;
-            if(testUnidirectionalFilter(ossContext, iter, bitvectors, bit_interval, s, blockIndex, goToRight2)){
-                //range on iter was changed in function before
-                filter_interval(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, current_needleLeftPos, current_needleRightPos, errors, s, blockIndex, bit_interval, TDir(), TDistanceTag());
-                return ReturnCode::FINISHED;
-            }
-        }*/
         default:
             return ReturnCode::MAPPABLE;
     }
@@ -1258,7 +1240,7 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
             if(i != lastStart){
                 iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
                 iter.fwdIter.vDesc.range.i2 = rangeStart + i - 1;
-                //TODO add direction
+                //add direction
 //                 delegate(ossContext, iter, needleId, errors, DIR);
             }
             lastStart = i + 1;
@@ -1267,7 +1249,7 @@ inline void filteredDelegate(OSSContext<TSpec, TConfig> & ossContext,
     if(lastStart < rangeEnd - rangeStart){
         iter.fwdIter.vDesc.range.i1 = rangeStart + lastStart;
         iter.fwdIter.vDesc.range.i2 = rangeStart + rangeEnd - rangeStart;
-        //TODO add direction
+        //add direction
 //         delegate(ossContext, iter, needleId, errors);
     }
 }
@@ -1301,7 +1283,7 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     bool const done = minErrorsLeftInBlock == 0 && needleLeftPos == 0 && needleRightPos == length(needle) + 1;
     bool const atBlockEnd = (blockIndex > 0) ? needleRightPos - needleLeftPos - 1 == s.blocklength[blockIndex - 1] : false;        //is not true if we finished needle
     bool const checkMappa = !bitvectors.empty();
-    bool const nowEdit = !std::is_same<TDistanceTag, EditDistance>::value && ossContext.hammingDpieces <=  blockIndex;
+    bool const nowEdit = !std::is_same<TDistanceTag, EditDistance>::value && ossContext.hammingDpieces > 0 && ossContext.hammingDpieces <=  blockIndex;
 
     // Done. (Last step)
     if (done)
@@ -1327,7 +1309,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
     // Exact search in current block.
     if (maxErrorsLeftInBlock == 0)
     {
-        //TODO change if nowEdit change to Edit even though there are no errors in the block?
         _optimalSearchSchemeExact(ossContext, delegate, delegateDirect, iter, needle, needleId, bitvectors, needleLeftPos, needleRightPos, errors, s, blockIndex, TDir(), TDistanceTag());
     }
     else if(!checkMappa && ossContext.itvConditionComp(iter, needleLeftPos, needleRightPos, errors, s, blockIndex))
@@ -1562,7 +1543,6 @@ inline void _optimalSearchScheme(OSSContext<TSpec, TConfig> & ossContext,
             uint32_t readId = getReadId(ossContext.readSeqs, needleId);
             if(!ossContext.delayContex && getMinErrors(ossContext.ctx, readId) > errors)
             {
-                //TODO remove ranges containing higher error than scheme but need access to schemes
 //                  uint8_t upper = s.u[s.u.size() - 1];
                     int minError = inTextVerification(ossContext, iter, saRange, ossContext.readSeqs[needleId], ossContext.maxError);
                     if(ossContext.maxError >= minError)
@@ -1653,11 +1633,12 @@ find(OSSContext<TSpec, TConfig> & ossContext,
     typedef typename TTraits::TReadSeqs                                                 TReadSeqs;
     typedef typename Size<TReadSeqs>::Type                                              TReadId;
 
-    //TODO use readLength to only calculate scheme for bitvectors use real read length to search for it
     auto scheme = OptimalSearchSchemes<minErrors, maxErrors>::VALUE;
     calcConstParameters(scheme);
 
     std::cout << "Scheme: " << minErrors << "\t" << maxErrors << ">\n";
+    if(!std::is_same<TDistanceTag, EditDistance>::value)
+        std::cout << "With Hamming Distance\n";
     std::vector<TBitvectorPair * > lbitvectors;
     //load Bitvectors needed for scheme (Blocklength and chronblockLengths have to be calculated therefore I need to assume needle length)
     //use either specified maxumum readLength given as input or length of first needle
