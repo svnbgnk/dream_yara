@@ -985,6 +985,7 @@ inline bool inTextVerificationHD(Mapper<TSpec, TConfig> & me, TMatch & match, TN
 
     if(verbose)
         std::cout << "Errors: " << (int)errors << "\n";
+    setErrors(match, errors);
     return errors <= maxErrors;
 }
 
